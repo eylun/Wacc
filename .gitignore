@@ -24,6 +24,7 @@ project/metals.sbt
 .tasty
 
 # sbt
+wacccompiler
 project/project/
 project/target/
 target/

@@ -2,8 +2,8 @@
 
 # Useful locations
 
-SOURCE_DIR	 := src
-OUTPUT_DIR	 := bin
+SOURCE_DIR := src
+OUTPUT := wacccompiler
 
 # Project tools
 
@@ -15,11 +15,11 @@ SBT := sbt
 
 # run the antlr build script then attempts to compile all .java files within src/antlr
 all:
-	$(MKDIR) $(OUTPUT_DIR)
 	$(SBT) assembly
 
 # clean up all of the compiled files
 clean:
-	$(RM) $(OUTPUT_DIR)
+	$(RM) $(OUTPUT)
+	$(SBT) clean
 
 .PHONY: all clean
