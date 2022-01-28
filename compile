@@ -1,5 +1,5 @@
 # front-end interface to the WACC compiler.
 # language can be changed, but do not change its name.
 
-sbt compile
-sbt run
+java -jar ./target/scala-2.13/wacccompiler-assembly-0.1.0.jar
+
