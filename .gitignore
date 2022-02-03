@@ -19,6 +19,7 @@ project/metals.sbt
 
 # vs code
 .vscode
+.scalafmt.conf
 
 # scala 3
 .tasty
