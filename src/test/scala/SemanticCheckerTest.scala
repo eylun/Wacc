@@ -8,7 +8,7 @@ class SemanticCheckerTest extends AnyFlatSpec {
     1 should be(1);
   }
 
-  it should "check nodes fpr booleans"
+  it should "check nodes for booleans"
 
   it should "check nodes for arrays"
 
