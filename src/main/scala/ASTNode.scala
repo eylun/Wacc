@@ -5,7 +5,7 @@ sealed trait ASTNode
 case class ProgramNode(flist: List[FuncNode], s: StatNode) extends ASTNode {}
 
 // Function
-case class FuncNode(t: TypeNode, ) extends ASTNode {}
+case class FuncNode(t: TypeNode) extends ASTNode {}
 
 // Param
 case class ParamNode() extends ASTNode {}

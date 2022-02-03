@@ -1,5 +1,6 @@
 import parsley.Parsley
 import parsley.Parsley._
+import scala.language.implicitConversions
 
 object utility {
   val keywords = Set(
@@ -37,7 +38,19 @@ object utility {
     "null"
   )
   val operators = Set(
-    "*" | "/" | "%" | "+" | "-" | ">" | ">=" | "<" | "<=" | "==" | "!=" | "&&" | "||"
+    "*",
+    "/",
+    "%",
+    "+",
+    "-",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "==",
+    "!=",
+    "&&",
+    "||"
   )
 }
 
@@ -59,19 +72,46 @@ object lexer {
 
   val lexer = new Lexer(lang)
 
-  def fully[A](p: => Parsley[A]): Parsley[A] = lex.whiteSpace ~> p <~ eof
+  def fully[A](p: => Parsley[A]): Parsley[A] = lexer.whiteSpace ~> p <~ eof
 
-  val number = lexer.decimal
+  val digit = lexer.decimal
   val identifier = lexer.identifier
+
+  /* LITERALS */
 
   // escaped-char := '0' | 'b' | 't' | 'n' | 'f' | 'r' | '"' | ''' | '\'
   val escapedChar =
     "0" <|> "b" <|> "t" <|> "n" <|> "f" <|> "r" <|> "\"" <|> "'" <|> "\\"
 
-  val charLit = Parser(
-    "'" ~> (noneOf('"', '\'', '\\') <|> ("\\" <~> escapedChar)) <~ "'"
-  )
+  val character = noneOf('"', '\'', '\\') <|> ("\\" <~> escapedChar)
 
+  // int-sign := '+' | '-'
+  val intSign = lexer.maxOp("+") <|> lexer.maxOp("-")
+
+  // char-liter := ''' <character> '''
+  val charLiter =
+    lexer.whiteSpace ~> "'" ~> character <~ "'" <~ lexer.whiteSpace
+
+  // int-liter := <int-sign>? <digit>+
+  val intLiter = optional(intSign) <~> some(digit)
+
+  // TODO: Try to use implicits to not use 'lex.keyword' everytime
+  // bool-liter := true | false
+  val boolLiter = lexer.keyword("true") <|> lexer.keyword("false")
+
+  // pair-liter := null
+  val pairLiter = lexer.keyword("null")
+
+  // string-liter := '"' <character>* '"'
+  val stringLiter =
+    lexer.whiteSpace ~> "\"" ~> many(character) <~ "\"" <~ lexer.whiteSpace
+
+  // ident := ('_' | 'a'-'z' | 'A'-'Z') ('_' | 'a'-'z' | 'A'-'Z' | '0'-'9')*
+  // val ident = ???
+
+  // TODO: remove - this is here for testing purposes
+  val literal =
+    intLiter <|> boolLiter <|> pairLiter <|> charLiter <|> stringLiter
   object implicits {
     implicit def implicitLexeme(s: String): Parsley[Unit] = {
       if (lang.keywords(s)) lexer.keyword(s)
@@ -83,43 +123,13 @@ object lexer {
 
 /* Syntax Parser */
 object syntax {
-  import lexer.{fully, lex}
-  import parsley.implicits.character.{charLift, stringLift}
-  import parsley.character.{anyChar, digit, endOfLine, noneOf}
+  import lexer.{fully, literal}
+  import lexer.implicits.implicitLexeme
   import parsley.combinator.{eof, many, manyUntil, optional, some}
-
-  /* COMMENTS */
-
-  // comment := '#' (any character except EOL)* <EOL>
-  // val comment = "#" ~> manyUntil(anyChar, endOfLine)
-
-  /* LITERALS */
-
-  // int-sign := '+' | '-'
-  val intSign = "+" <|> "-"
-
-  // int-liter := <int-sign>? <digit>+
-  val intLiter = optional(intSign) <~> some(digit)
-
-  // TODO: Try to use implicits to not use 'lex.keyword' everytime
-  // bool-liter := true | false
-  val boolLiter = lex.keyword("true") <|> lex.keyword("false")
-
-  // pair-liter := null
-  val pairLiter = "null"
-
-  // string-liter := '"' <character>* '"'
-  val stringLiter = "\"" ~> many(character) <~ "\""
-
-  // ident := ('_' | 'a'-'z' | 'A'-'Z') ('_' | 'a'-'z' | 'A'-'Z' | '0'-'9')*
-  // val ident = ???
-
-  // TODO: remove - this is here for testing purposes
-  val literal =
-    intLiter <|> boolLiter <|> pairLiter <|> charLiter <|> stringLiter <|> lex
-      .keyword("comment")
 
   // TODO: change this at the end - currently set to check literals
   // program := 'begin' <func>* <stat> 'end'
-  val program = fully(lex.keyword("begin") ~> literal)
+  lazy val program = "begin" ~> many(literal) <~ "end"
+
+  val parse = fully(program)
 }
