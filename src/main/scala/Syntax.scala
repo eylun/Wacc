@@ -137,8 +137,15 @@ object syntax {
   // expr := literal <|> identifier <|> array-elem <|> unary op  <|> bin op <|> paren
   // array-elem := identifier ('[' <expr> ']')+
   // unary-oper
-  lazy val expr: Parsley[literal] = precedence[literal](literal, identifier, '(' *> expr <* ')')(
-    Ops(Prefix)(unaryOp #> ()
-  )
+  lazy val expr: Parsley[literal] = literal <|> 
+    ident <|> 
+    arrayElem <|> 
+    unaryOp *> expr <|>
+    (expr <**> (binaryOp #> binaryOp <*> expr)) <|>
+    "(" *> expr <* ")" 
+  
+  
+  lazy val arrayElem = identifier *> some( "[" *> expr <* "]")
 
+  val unaryOp = "!" #> 
 }
