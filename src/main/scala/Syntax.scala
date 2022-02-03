@@ -36,6 +36,9 @@ object utility {
     "false",
     "null"
   )
+  val operators = Set(
+    "*" | "/" | "%" | "+" | "-" | ">" | ">=" | "<" | "<=" | "==" | "!=" | "&&" | "||"
+  )
 }
 
 /* Lexer */
@@ -44,18 +47,38 @@ object lexer {
   import parsley.token.{LanguageDef, Lexer, Parser, Predicate}
   import parsley.implicits.character.{charLift, stringLift}
   import parsley.combinator.{eof, many, manyUntil, optional, some}
-  val lex = new Lexer(
-    LanguageDef.plain.copy(
-      commentStart = "#",
-      commentEnd = "\n",
-      space = Predicate(isWhitespace),
-      identStart = Parser("_" <|> letter),
-      identLetter = Parser("_" <|> alphaNum),
-      keywords = utility.keywords
-    )
+
+  val lang = LanguageDef.plain.copy(
+    commentLine = "#",
+    space = Predicate(isWhitespace),
+    identStart = Predicate(_.isLetterOrDigit),
+    identLetter = Parser("_" <|> alphaNum),
+    keywords = utility.keywords,
+    operators = utility.operators
   )
 
+  val lexer = new Lexer(lang)
+
   def fully[A](p: => Parsley[A]): Parsley[A] = lex.whiteSpace ~> p <~ eof
+
+  val number = lexer.decimal
+  val identifier = lexer.identifier
+
+  // escaped-char := '0' | 'b' | 't' | 'n' | 'f' | 'r' | '"' | ''' | '\'
+  val escapedChar =
+    "0" <|> "b" <|> "t" <|> "n" <|> "f" <|> "r" <|> "\"" <|> "'" <|> "\\"
+
+  val charLit = Parser(
+    "'" ~> (noneOf('"', '\'', '\\') <|> ("\\" <~> escapedChar)) <~ "'"
+  )
+
+  object implicits {
+    implicit def implicitLexeme(s: String): Parsley[Unit] = {
+      if (lang.keywords(s)) lexer.keyword(s)
+      else if (lang.operators(s)) lexer.maxOp(s)
+      else void(lexer.symbol_(s))
+    }
+  }
 }
 
 /* Syntax Parser */
@@ -84,17 +107,6 @@ object syntax {
 
   // pair-liter := null
   val pairLiter = "null"
-
-  // escaped-char := '0' | 'b' | 't' | 'n' | 'f' | 'r' | '"' | ''' | '\'
-  val escapedChar =
-    "0" <|> "b" <|> "t" <|> "n" <|> "f" <|> "r" <|> "\"" <|> "'" <|> "\\"
-
-  // TODO: fix behavior of char and string literals - escaped '\'' below not working
-  // character := (any ASCII char except '\', ''', '"') | <escaped-char>
-  val character = noneOf('"', '\'', '\\') <|> ("\\" <~> escapedChar)
-
-  // char-liter := ''' <character> '''
-  val charLiter = "'" ~> character <~ "'"
 
   // string-liter := '"' <character>* '"'
   val stringLiter = "\"" ~> many(character) <~ "\""
