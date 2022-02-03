@@ -107,11 +107,12 @@ object lexer {
     lexer.whiteSpace ~> "\"" ~> many(character) <~ "\"" <~ lexer.whiteSpace
 
   // ident := ('_' | 'a'-'z' | 'A'-'Z') ('_' | 'a'-'z' | 'A'-'Z' | '0'-'9')*
-  // val ident = ???
+  val ident = ("_" <|> letter) *> many("_" <|> letter <|> digit)
 
   // TODO: remove - this is here for testing purposes
   val literal =
     intLiter <|> boolLiter <|> pairLiter <|> charLiter <|> stringLiter
+  
   object implicits {
     implicit def implicitLexeme(s: String): Parsley[Unit] = {
       if (lang.keywords(s)) lexer.keyword(s)
@@ -132,4 +133,12 @@ object syntax {
   lazy val program = "begin" ~> many(literal) <~ "end"
 
   val parse = fully(program)
+
+  // expr := literal <|> identifier <|> array-elem <|> unary op  <|> bin op <|> paren
+  // array-elem := identifier ('[' <expr> ']')+
+  // unary-oper
+  lazy val expr: Parsley[literal] = precedence[literal](literal, identifier, '(' *> expr <* ')')(
+    Ops(Prefix)(unaryOp #> ()
+  )
+
 }
