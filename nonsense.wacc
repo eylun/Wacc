@@ -1,17 +1,14 @@
 begin
-# Literals
-"X";
-'x';
-5000;
--500;
-+5000;
- 5000;
-# Expressions
-5 + 10;
-5 + 'x';
-5 + x;
-(5);
-5;
-(((((((1000))))))) * ((((((((x))))))));
-(!x % (2 - 10))
+int;
+bool;
+char;
+string;
+pair(int, string);
+int[];
+char[][][];
+pair(int[][], bool);
+pair(int[][], bool[][])
+#pair(int[][], bool[][])[]
+#pair(pair, pair)
+#pair(pair(int[][], bool[][])[], pair(char, string)[])
 end
