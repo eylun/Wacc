@@ -1,4 +1,5 @@
 begin
+<<<<<<< HEAD
 pair(int, string);
 int;
 bool;
@@ -11,4 +12,27 @@ pair(int[][], bool[][]);
 pair(int[][], bool[][])[];
 pair(pair, pair);
 pair(pair(int[][], bool[][])[], pair(char, string)[])
+=======
+# Statements
+skip;
+return x + 5;
+print +5000;
+println "hello32";
+
+if true 
+    then print "true" 
+else 
+    free x && y
+fi ;
+
+while y > 0
+    do read z
+done 
+;
+
+begin 
+print "hello world"
+end 
+
+>>>>>>> feat: statements parsing
 end
