@@ -62,7 +62,13 @@ case class CharTypeNode() extends BaseTypeNode
 case class StringTypeNode() extends BaseTypeNode
 
 // Array Type
-case class ArrayTypeNode() extends BaseTypeNode with PairElemTypeNode
+/* Special Representation: dimension tracks how many dimensions the identifier's
+ * array is. This is inserted upon parsing to make it less tedious for
+ * semantic checking.
+ */
+case class ArrayTypeNode(t: TypeNode, dimension: Int)
+    extends TypeNode
+    with PairElemTypeNode
 
 // Pair Type
 case class PairTypeNode(fst: PairElemTypeNode, snd: PairElemTypeNode)
@@ -92,22 +98,22 @@ case class Div(x: ExprNode, y: ExprNode) extends BinaryOpNode
 case class Mod(x: ExprNode, y: ExprNode) extends BinaryOpNode
 case class Add(x: ExprNode, y: ExprNode) extends BinaryOpNode
 case class Sub(x: ExprNode, y: ExprNode) extends BinaryOpNode
-case class Greater(x: ExprNode, y: ExprNode) extends BinaryOpNode
-case class GreaterOrEqual(x: ExprNode, y: ExprNode) extends BinaryOpNode
-case class Smaller(x: ExprNode, y: ExprNode) extends BinaryOpNode
-case class SmallerOrEqual(x: ExprNode, y: ExprNode) extends BinaryOpNode
-case class Equal(x: ExprNode, y: ExprNode) extends BinaryOpNode
-case class NotEqual(x: ExprNode, y: ExprNode) extends BinaryOpNode
+case class GT(x: ExprNode, y: ExprNode) extends BinaryOpNode
+case class GTE(x: ExprNode, y: ExprNode) extends BinaryOpNode
+case class LT(x: ExprNode, y: ExprNode) extends BinaryOpNode
+case class LTE(x: ExprNode, y: ExprNode) extends BinaryOpNode
 case class Equal(x: ExprNode, y: ExprNode) extends BinaryOpNode
 case class NotEqual(x: ExprNode, y: ExprNode) extends BinaryOpNode
 case class And(x: ExprNode, y: ExprNode) extends BinaryOpNode
 case class Or(x: ExprNode, y: ExprNode) extends BinaryOpNode
 
 // Indentifier
-case class IdentNode() extends ExprNode with AssignLHSNode
+case class IdentNode(s: String) extends ExprNode with AssignLHSNode
 
 // Array Elem
-case class ArrayElemNode() extends ExprNode with AssignLHSNode
+case class ArrayElemNode(i: IdentNode, es: List[ExprNode])
+    extends ExprNode
+    with AssignLHSNode
 
 // Pair Elem
 sealed trait PairElemNode extends ExprNode with AssignLHSNode with AssignRHSNode
@@ -117,14 +123,14 @@ case class FirstPairElemNode(e: ExprNode) extends PairElemNode
 case class SecondPairElemNode(e: ExprNode) extends PairElemNode
 
 // Literals
-case class IntLiter() extends ExprNode
+case class IntLiterNode(i: Int) extends ExprNode
 
-case class BoolLiter() extends ExprNode
+case class BoolLiterNode(b: Boolean) extends ExprNode
 
-case class CharLiter() extends ExprNode
+case class CharLiterNode(c: Char) extends ExprNode
 
-case class StrLiter() extends ExprNode
+case class StringLiterNode(s: String) extends ExprNode
 
-case class PairLiter() extends ExprNode
+case class PairLiterNode() extends ExprNode
 
-case class ArrayLiterNode() extends ExprNode with AssignRHSNode
+case class ArrayLiterNode(es: List[ExprNode]) extends AssignRHSNode

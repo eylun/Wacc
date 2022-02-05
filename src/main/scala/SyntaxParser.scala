@@ -11,6 +11,7 @@ object SyntaxParser {
         val parseResult = syntax.parse.parseFromFile(waccFile)
         parseResult.get match {
             case Success(x) =>
+                println(x)
                 println(s"${args(0)} is valid!")
                 System.exit(0)
             case Failure(err) =>
