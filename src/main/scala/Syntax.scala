@@ -174,4 +174,22 @@ object syntax {
     // array-elem := identifier ('[' <expr> ']')+
     lazy val arrayElem =
         ArrayElemNode.lift(identifier, some("[" *> expr <* "]"))
-}
+    
+    // pair-elem := 'fst' expr <|> 'snd' expr
+    lazy val firstPairElem = FirstPairElemNode.lift(lexer.keyword("fst") *> expr)
+    lazy val secondPairElem = SecondPairElemNode.lift(lexer.keyword("snd") *> expr)
+
+    // assignLHS := ident <|> array-elem <|> pair-elem
+    lazy val assignLHS = identifier <|> arrayElem <|> firstPairElem <|> secondPairElem
+
+
+    // TODO: ssign-rhs := expr <|> array-liter <|> 'newpair' '(' expr ',' expr ')' <|> pair-elem 
+    //               <|> 'call' ident '(' arg-list? ')'
+    
+
+
+
+
+}   
+
+
