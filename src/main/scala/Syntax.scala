@@ -120,7 +120,7 @@ object lexer {
                 ) <~ "\""
               ))
               .map(s => s.mkString)
-        )
+        ) 
 
     // expression atoms
     val exprAtoms: Parsley[ExprNode] =
@@ -140,7 +140,7 @@ object lexer {
 object syntax {
     import lexer.{fully, exprAtoms, number, identifier}
     import lexer.implicits.implicitLexeme
-    import parsley.combinator.{eof, many, manyUntil, optional, some, sepBy}
+    import parsley.combinator.{eof, many, manyUntil, optional, some, sepBy, sepBy1}
     import parsley.expr.{precedence, Ops, InfixL, Prefix}
 
     /* TODO: change this at the end - currently set to check multiple
@@ -176,8 +176,8 @@ object syntax {
         ArrayElemNode.lift(identifier, some("[" *> expr <* "]"))
     
     // pair-elem := 'fst' expr <|> 'snd' expr
-    lazy val firstPairElem = FirstPairElemNode.lift(lexer.keyword("fst") *> expr)
-    lazy val secondPairElem = SecondPairElemNode.lift(lexer.keyword("snd") *> expr)
+    lazy val firstPairElem = FirstPairElemNode.lift("fst" *> expr)
+    lazy val secondPairElem = SecondPairElemNode.lift("snd" *> expr)
 
     lazy val pairElem = firstPairElem <|> secondPairElem
 
@@ -185,18 +185,18 @@ object syntax {
     lazy val assignLHS = identifier <|> arrayElem <|> pairElem
 
     // arg-list := expr (',' expr )*
-    lazy val exprArgList: Parsley[List[ExprNode]] = expr <::> many("," *> expr) 
+    lazy val exprArgList: Parsley[List[ExprNode]] = sepBy(expr, ",") 
 
     // Variables newPair, arrayLiter and call are for assign-rhs parsing
     // newPair := 'newpair''(' expr ',' expr ')'
-    lazy val newPair = NewPairNode.lift(lexer.keyword("newpair") *> "(" *> expr <* ",", expr <* ")")
+    lazy val newPair = NewPairNode.lift("newpair" *> "(" *> expr <* ",", expr <* ")")
+
+    // call := ‘call’ ⟨ident⟩ ‘(’ ⟨arg-list⟩? ‘)’
+    lazy val call = CallNode.lift("call" *> identifier, "(" *> exprArgList <* ")")
 
     // array-liter := ‘[’ ( ⟨expr ⟩ (‘,’ ⟨expr ⟩)* )? ‘]’
     // ***Note: difference between option vs. optional?
-    lazy val arrayLiter = ArrayLiterNode.lift("[" *> optional(exprArgList) <* "]")
-
-    // call := ‘call’ ⟨ident⟩ ‘(’ ⟨arg-list⟩? ‘)’
-    lazy val call = CallNode.lift(identifier, "(" *> optional(exprArgList) <* ")")
+    lazy val arrayLiter = ArrayLiterNode.lift("[" *> sepBy1(expr, ",") <* "]")   
 
 
     // assign-rhs := expr <|> array-liter <|> 'newpair' '(' expr ',' expr ')' <|> pairElem 
