@@ -1,17 +1,23 @@
 begin
-# Literals
-"X";
-'x';
-5000;
--500;
-+5000;
- 5000;
-# Expressions
-5 + 10;
-5 + 'x';
-5 + x;
-(5);
-5;
-(((((((1000))))))) * ((((((((x))))))));
-(!x % (2 - 10))
+# Statements
+skip;
+return x + 5;
+print +5000;
+println "hello32";
+
+if true 
+    then print "true" 
+else 
+    free x && y
+fi ;
+
+while y > 0
+    do read z
+done 
+;
+
+begin 
+print "hello world"
+end 
+
 end
