@@ -174,4 +174,40 @@ object syntax {
     // array-elem := identifier ('[' <expr> ']')+
     lazy val arrayElem =
         ArrayElemNode.lift(identifier, some("[" *> expr <* "]"))
-}
+    
+    // pair-elem := 'fst' expr <|> 'snd' expr
+    lazy val firstPairElem = FirstPairElemNode.lift(lexer.keyword("fst") *> expr)
+    lazy val secondPairElem = SecondPairElemNode.lift(lexer.keyword("snd") *> expr)
+
+    lazy val pairElem = firstPairElem <|> secondPairElem
+
+    // assignLHS := ident <|> array-elem <|> pair-elem
+    lazy val assignLHS = identifier <|> arrayElem <|> pairElem
+
+    // arg-list := expr (',' expr )*
+    lazy val exprArgList: Parsley[List[ExprNode]] = expr <::> many("," *> expr) 
+
+    // Variables newPair, arrayLiter and call are for assign-rhs parsing
+    // newPair := 'newpair''(' expr ',' expr ')'
+    lazy val newPair = NewPairNode.lift(lexer.keyword("newpair") *> "(" *> expr <* ",", expr <* ")")
+
+    // array-liter := ‘[’ ( ⟨expr ⟩ (‘,’ ⟨expr ⟩)* )? ‘]’
+    // ***Note: difference between option vs. optional?
+    lazy val arrayLiter = ArrayLiterNode.lift("[" *> optional(exprArgList) <* "]")
+
+    // call := ‘call’ ⟨ident⟩ ‘(’ ⟨arg-list⟩? ‘)’
+    lazy val call = CallNode.lift(identifier, "(" *> optional(exprArgList) <* ")")
+
+
+    // assign-rhs := expr <|> array-liter <|> 'newpair' '(' expr ',' expr ')' <|> pairElem 
+    //               <|> 'call' ident '(' arg-list? ')'
+    lazy val assignRHS = expr <|> arrayLiter <|> newPair <|> pairElem <|> call
+    
+    
+
+
+
+
+}   
+
+
