@@ -1,4 +1,5 @@
 import parsley.Parsley, Parsley._
+import parsley.implicits.lift.{Lift0, Lift1, Lift2, Lift3, Lift4}
 import scala.language.implicitConversions
 
 object utility {
@@ -73,43 +74,59 @@ object lexer {
 
     def fully[A](p: => Parsley[A]): Parsley[A] = lexer.whiteSpace ~> p <~ eof
 
-    val identifier = lexer.identifier
-    val number = digit.foldLeft1[Int](0)((n, d) => n * 10 + d.asDigit)
-    /* LITERALS */
+    val identifier = IdentNode.lift(lexer.identifier)
+    val number =
+        lexer.lexeme(digit.foldLeft1[Int](0)((n, d) => n * 10 + d.asDigit))
 
     // escaped-char := '0' | 'b' | 't' | 'n' | 'f' | 'r' | '"' | ''' | '\'
     val escapedChar =
-        "0" <|> "b" <|> "t" <|> "n" <|> "f" <|> "r" <|> "\"" <|> "'" <|> "\\"
+        '0' <|> 'b' <|> 't' <|> 'n' <|> 'f' <|> 'r' <|> '\"' <|> '\'' <|> '\\'
 
-    val character = noneOf('"', '\'', '\\') <|> ("\\" <~> escapedChar)
+    val character: Parsley[Char] =
+        noneOf('"', '\'', '\\') <|> ("\\" ~> escapedChar)
 
     // int-sign := '+' | '-'
-    val intSign = "+" <|> "-"
+    val intSign = "+" #> identity[Int] _ <|> "-" #> ((x: Int) => -x)
+
+    /* LITERALS */
 
     // char-liter := ''' <character> '''
     val charLiter =
-        lexer.whiteSpace ~> "'" ~> character <~ "'" <~ lexer.whiteSpace
+        CharLiterNode.lift(
+          lexer.lexeme("'" ~> character <~ "'")
+        )
 
     // int-liter := <int-sign>? <digit>+
-    val intLiter = optional(intSign) <~> number
+    val intLiter: Parsley[ExprNode] =
+        IntLiterNode.lift(intSign <*> number <|> number)
 
     // TODO: Try to use implicits to not use 'lex.keyword' everytime
     // bool-liter := true | false
-    val boolLiter = lexer.keyword("true") <|> lexer.keyword("false")
+    val boolLiter =
+        BoolLiterNode.lift(
+          lexer.keyword("true") #> true <|> lexer.keyword("false") #> false
+        )
 
     // pair-liter := null
-    val pairLiter = lexer.keyword("null")
+    val pairLiter = lexer.keyword("null") #> PairLiterNode()
 
     // string-liter := '"' <character>* '"'
     val stringLiter =
-        lexer.whiteSpace ~> "\"" ~> many(character) <~ "\"" <~ lexer.whiteSpace
+        StringLiterNode.lift(
+          (lexer
+              .lexeme(
+                "\"" ~> many(
+                  character
+                ) <~ "\""
+              ))
+              .map(s => s.mkString)
+        )
 
-    // ident := ('_' | 'a'-'z' | 'A'-'Z') ('_' | 'a'-'z' | 'A'-'Z' | '0'-'9')*
-    // val ident = ???
+    // expression atoms
+    val exprAtoms: Parsley[ExprNode] =
+        intLiter <|> boolLiter <|> charLiter <|> stringLiter <|> pairLiter <|>
+            identifier
 
-    // TODO: remove - this is here for testing purposes
-    val literal =
-        intLiter <|> boolLiter <|> pairLiter <|> charLiter <|> stringLiter
     object implicits {
         implicit def implicitLexeme(s: String): Parsley[Unit] = {
             if (lang.keywords(s)) lexer.keyword(s)
@@ -121,13 +138,40 @@ object lexer {
 
 /* Syntax Parser */
 object syntax {
-    import lexer.{fully, literal}
+    import lexer.{fully, exprAtoms, number, identifier}
     import lexer.implicits.implicitLexeme
-    import parsley.combinator.{eof, many, manyUntil, optional, some}
+    import parsley.combinator.{eof, many, manyUntil, optional, some, sepBy}
+    import parsley.expr.{precedence, Ops, InfixL, Prefix}
 
-    // TODO: change this at the end - currently set to check literals
+    /* TODO: change this at the end - currently set to check multiple
+       expressions separareted by semicolons */
+
     // program := 'begin' <func>* <stat> 'end'
-    lazy val program = "begin" ~> many(literal) <~ "end"
+    lazy val program = "begin" ~> sepBy(expr, ";") <~ "end"
 
     val parse = fully(program)
+
+    // expr := literal <|> identifier <|> array-elem <|> unary op
+    // 		<|> bin op <|> paren
+    // unary-oper
+    lazy val expr: Parsley[ExprNode] =
+        precedence[ExprNode]("(" *> expr <* ")" <|> exprAtoms <|> arrayElem)(
+          Ops(Prefix)(
+            "!" #> Not,
+            attempt("-" <~ notFollowedBy(number)) #> Neg,
+            "len" #> Len,
+            "ord" #> Ord,
+            "chr" #> Chr
+          ),
+          Ops(InfixL)("*" #> Mult, "/" #> Div, "%" #> Mod),
+          Ops(InfixL)("+" #> Add, "-" #> Sub),
+          Ops(InfixL)(">=" #> GTE, "<=" #> LTE, "<" #> LT, ">" #> GT),
+          Ops(InfixL)("==" #> Equal, "!=" #> NotEqual),
+          Ops(InfixL)("&&" #> And),
+          Ops(InfixL)("||" #> Or)
+        )
+
+    // array-elem := identifier ('[' <expr> ']')+
+    lazy val arrayElem =
+        ArrayElemNode.lift(identifier, some("[" *> expr <* "]"))
 }
