@@ -1,125 +1,177 @@
-import parsley.Parsley
-import parsley.Parsley._
+import parsley.Parsley, Parsley._
+import parsley.implicits.lift.{Lift0, Lift1, Lift2, Lift3, Lift4}
+import scala.language.implicitConversions
 
 object utility {
-  val keywords = Set(
-    "begin",
-    "end",
-    "is",
-    "skip",
-    "read",
-    "free",
-    "return",
-    "exit",
-    "print",
-    "println",
-    "if",
-    "then",
-    "else",
-    "fi",
-    "while",
-    "do",
-    "done",
-    "newpair",
-    "call",
-    "fst",
-    "snd",
-    "int",
-    "bool",
-    "chr",
-    "string",
-    "pair",
-    "len",
-    "ord",
-    "chr",
-    "true",
-    "false",
-    "null"
-  )
-  val operators = Set(
-    "*" | "/" | "%" | "+" | "-" | ">" | ">=" | "<" | "<=" | "==" | "!=" | "&&" | "||"
-  )
+    val keywords = Set(
+      "begin",
+      "end",
+      "is",
+      "skip",
+      "read",
+      "free",
+      "return",
+      "exit",
+      "print",
+      "println",
+      "if",
+      "then",
+      "else",
+      "fi",
+      "while",
+      "do",
+      "done",
+      "newpair",
+      "call",
+      "fst",
+      "snd",
+      "int",
+      "bool",
+      "chr",
+      "string",
+      "pair",
+      "len",
+      "ord",
+      "chr",
+      "true",
+      "false",
+      "null"
+    )
+    val operators = Set(
+      "*",
+      "/",
+      "%",
+      "+",
+      "-",
+      ">",
+      ">=",
+      "<",
+      "<=",
+      "==",
+      "!=",
+      "&&",
+      "||"
+    )
 }
 
 /* Lexer */
 object lexer {
-  import parsley.character._
-  import parsley.token.{LanguageDef, Lexer, Parser, Predicate}
-  import parsley.implicits.character.{charLift, stringLift}
-  import parsley.combinator.{eof, many, manyUntil, optional, some}
+    import parsley.character.{digit, isWhitespace, alphaNum, noneOf, string}
+    import parsley.token.{LanguageDef, Lexer, Parser, Predicate}
+    import parsley.implicits.character.{charLift, stringLift}
+    import parsley.combinator.{eof, many, manyUntil, optional, some}
 
-  val lang = LanguageDef.plain.copy(
-    commentLine = "#",
-    space = Predicate(isWhitespace),
-    identStart = Predicate(_.isLetterOrDigit),
-    identLetter = Parser("_" <|> alphaNum),
-    keywords = utility.keywords,
-    operators = utility.operators
-  )
+    val lang = LanguageDef.plain.copy(
+      commentLine = "#",
+      space = Predicate(isWhitespace),
+      identStart = Predicate(_.isLetterOrDigit),
+      identLetter = Parser("_" <|> alphaNum),
+      keywords = utility.keywords,
+      operators = utility.operators
+    )
 
-  val lexer = new Lexer(lang)
+    val lexer = new Lexer(lang)
 
-  def fully[A](p: => Parsley[A]): Parsley[A] = lex.whiteSpace ~> p <~ eof
+    def fully[A](p: => Parsley[A]): Parsley[A] = lexer.whiteSpace ~> p <~ eof
 
-  val number = lexer.decimal
-  val identifier = lexer.identifier
+    val identifier = IdentNode.lift(lexer.identifier)
+    val number =
+        lexer.lexeme(digit.foldLeft1[Int](0)((n, d) => n * 10 + d.asDigit))
 
-  // escaped-char := '0' | 'b' | 't' | 'n' | 'f' | 'r' | '"' | ''' | '\'
-  val escapedChar =
-    "0" <|> "b" <|> "t" <|> "n" <|> "f" <|> "r" <|> "\"" <|> "'" <|> "\\"
+    // escaped-char := '0' | 'b' | 't' | 'n' | 'f' | 'r' | '"' | ''' | '\'
+    val escapedChar =
+        '0' <|> 'b' <|> 't' <|> 'n' <|> 'f' <|> 'r' <|> '\"' <|> '\'' <|> '\\'
 
-  val charLit = Parser(
-    "'" ~> (noneOf('"', '\'', '\\') <|> ("\\" <~> escapedChar)) <~ "'"
-  )
+    val character: Parsley[Char] =
+        noneOf('"', '\'', '\\') <|> ("\\" ~> escapedChar)
 
-  object implicits {
-    implicit def implicitLexeme(s: String): Parsley[Unit] = {
-      if (lang.keywords(s)) lexer.keyword(s)
-      else if (lang.operators(s)) lexer.maxOp(s)
-      else void(lexer.symbol_(s))
+    // int-sign := '+' | '-'
+    val intSign = "+" #> identity[Int] _ <|> "-" #> ((x: Int) => -x)
+
+    /* LITERALS */
+
+    // char-liter := ''' <character> '''
+    val charLiter =
+        CharLiterNode.lift(
+          lexer.lexeme("'" ~> character <~ "'")
+        )
+
+    // int-liter := <int-sign>? <digit>+
+    val intLiter: Parsley[ExprNode] =
+        IntLiterNode.lift(intSign <*> number <|> number)
+
+    // TODO: Try to use implicits to not use 'lex.keyword' everytime
+    // bool-liter := true | false
+    val boolLiter =
+        BoolLiterNode.lift(
+          lexer.keyword("true") #> true <|> lexer.keyword("false") #> false
+        )
+
+    // pair-liter := null
+    val pairLiter = lexer.keyword("null") #> PairLiterNode()
+
+    // string-liter := '"' <character>* '"'
+    val stringLiter =
+        StringLiterNode.lift(
+          (lexer
+              .lexeme(
+                "\"" ~> many(
+                  character
+                ) <~ "\""
+              ))
+              .map(s => s.mkString)
+        )
+
+    // expression atoms
+    val exprAtoms: Parsley[ExprNode] =
+        intLiter <|> boolLiter <|> charLiter <|> stringLiter <|> pairLiter <|>
+            identifier
+
+    object implicits {
+        implicit def implicitLexeme(s: String): Parsley[Unit] = {
+            if (lang.keywords(s)) lexer.keyword(s)
+            else if (lang.operators(s)) lexer.maxOp(s)
+            else void(lexer.symbol_(s))
+        }
     }
-  }
 }
 
 /* Syntax Parser */
 object syntax {
-  import lexer.{fully, lex}
-  import parsley.implicits.character.{charLift, stringLift}
-  import parsley.character.{anyChar, digit, endOfLine, noneOf}
-  import parsley.combinator.{eof, many, manyUntil, optional, some}
+    import lexer.{fully, exprAtoms, number, identifier}
+    import lexer.implicits.implicitLexeme
+    import parsley.combinator.{eof, many, manyUntil, optional, some, sepBy}
+    import parsley.expr.{precedence, Ops, InfixL, Prefix}
 
-  /* COMMENTS */
+    /* TODO: change this at the end - currently set to check multiple
+       expressions separareted by semicolons */
 
-  // comment := '#' (any character except EOL)* <EOL>
-  // val comment = "#" ~> manyUntil(anyChar, endOfLine)
+    // program := 'begin' <func>* <stat> 'end'
+    lazy val program = "begin" ~> sepBy(expr, ";") <~ "end"
 
-  /* LITERALS */
+    val parse = fully(program)
 
-  // int-sign := '+' | '-'
-  val intSign = "+" <|> "-"
+    // expr := literal <|> identifier <|> array-elem <|> unary op
+    // 		<|> bin op <|> paren
+    // unary-oper
+    lazy val expr: Parsley[ExprNode] =
+        precedence[ExprNode]("(" *> expr <* ")" <|> exprAtoms <|> arrayElem)(
+          Ops(Prefix)(
+            "!" #> Not,
+            attempt("-" <~ notFollowedBy(number)) #> Neg,
+            "len" #> Len,
+            "ord" #> Ord,
+            "chr" #> Chr
+          ),
+          Ops(InfixL)("*" #> Mult, "/" #> Div, "%" #> Mod),
+          Ops(InfixL)("+" #> Add, "-" #> Sub),
+          Ops(InfixL)(">=" #> GTE, "<=" #> LTE, "<" #> LT, ">" #> GT),
+          Ops(InfixL)("==" #> Equal, "!=" #> NotEqual),
+          Ops(InfixL)("&&" #> And),
+          Ops(InfixL)("||" #> Or)
+        )
 
-  // int-liter := <int-sign>? <digit>+
-  val intLiter = optional(intSign) <~> some(digit)
-
-  // TODO: Try to use implicits to not use 'lex.keyword' everytime
-  // bool-liter := true | false
-  val boolLiter = lex.keyword("true") <|> lex.keyword("false")
-
-  // pair-liter := null
-  val pairLiter = "null"
-
-  // string-liter := '"' <character>* '"'
-  val stringLiter = "\"" ~> many(character) <~ "\""
-
-  // ident := ('_' | 'a'-'z' | 'A'-'Z') ('_' | 'a'-'z' | 'A'-'Z' | '0'-'9')*
-  // val ident = ???
-
-  // TODO: remove - this is here for testing purposes
-  val literal =
-    intLiter <|> boolLiter <|> pairLiter <|> charLiter <|> stringLiter <|> lex
-      .keyword("comment")
-
-  // TODO: change this at the end - currently set to check literals
-  // program := 'begin' <func>* <stat> 'end'
-  val program = fully(lex.keyword("begin") ~> literal)
+    // array-elem := identifier ('[' <expr> ']')+
+    lazy val arrayElem =
+        ArrayElemNode.lift(identifier, some("[" *> expr <* "]"))
 }
