@@ -3,157 +3,112 @@ import org.scalatest.matchers.should.Matchers._
 import parsley.Parsley, Parsley._
 
 class LexerSpec extends AnyFlatSpec {
-    import parsley.{Success, Failure}
+    import parsley.{Result, Success, Failure}
 
-    def checkMatch[A](expected: A, actual: A) = {
+    def assertResultEquals[A](expected: Result[String, A], actual: Result[String, A]) = {
+        expected match {
+            case Success(x) => {
+                actual match {
+                    case Success(y) => checkTokenMatch(x, y)
+                    case Failure(err) => fail(err)
+                }
+            }
+            case Failure(_) => {
+                actual match {
+                    case Success(s) => fail("did not fail as expected, actual: " + s)
+                    case Failure(_) => succeed
+                }
+            }
+        }
+    }
+
+    def checkTokenMatch[A](expected: A, actual: A) = {
         if (expected == actual) succeed 
         else fail("matched incorrect token (expected: " + expected + ", actual: " + actual + ")")        
     }
 
     behavior of "<bool-liter> parser combinator"
     it should "parse only the 'true' and 'false' keywords" in {
-        lexer.boolLiter.parse("true") match {
-            case Success(x) => checkMatch(BoolLiterNode(true), x)
-            case Failure(err) => fail(err)
-        }
-        lexer.boolLiter.parse("false") match {
-            case Success(x) => checkMatch(BoolLiterNode(false), x)
-            case Failure(err) => fail(err)
-        }
-        lexer.boolLiter.parse("tru") match {
-            case Success(_) => fail("matched on misspelled 'tru'")
-            case Failure(_) => succeed
-        }
-        lexer.boolLiter.parse("truee") match {
-            case Success(_) => fail("matched on misspelled 'truee'")
-            case Failure(_) => succeed
-        }
-        lexer.boolLiter.parse("fasle") match {
-            case Success(_) => fail("matched on misspelled 'fasle'")
-            case Failure(_) => succeed
-        }
+        assertResultEquals(Success(BoolLiterNode(true)), lexer.boolLiter.parse("true"))
+        assertResultEquals(Success(BoolLiterNode(false)), lexer.boolLiter.parse("false"))
+        assertResultEquals(Failure(""), lexer.boolLiter.parse("tru"))
+        assertResultEquals(Failure(""), lexer.boolLiter.parse("truee"))
+        assertResultEquals(Failure(""), lexer.boolLiter.parse("fasle"))
     }
 
     behavior of "<pair-liter> parser combinator"
     it should "parse only the 'null' keyword" in {
-        lexer.pairLiter.parse("null") match {
-            case Success(PairLiterNode()) => succeed
-            case Failure(err)             => fail(err)
-        }
-        lexer.pairLiter.parse("nul") match {
-            case Success(_) => fail("matched on misspelled 'nul'")
-            case Failure(_) => succeed
-        }
-        lexer.pairLiter.parse("nulll") match {
-            case Success(_) => fail("matched on misspelled 'nulll'")
-            case Failure(_) => succeed
-        }
+        assertResultEquals(Success(PairLiterNode()), lexer.pairLiter.parse("null"))
+        assertResultEquals(Failure(""), lexer.pairLiter.parse("nul"))
+        assertResultEquals(Failure(""), lexer.pairLiter.parse("nulll"))
     }
 
     behavior of "<int-liter> parser combinator"
     it should "parse a sign followed by a sequence of digits" in {
-        lexer.intLiter.parse("+12345") match {
-            case Success(x)   => checkMatch(IntLiterNode(12345), x)
-            case Failure(err) => fail(err)
-        }
-        lexer.intLiter.parse("-1232") match {
-            case Success(x) => checkMatch(IntLiterNode(-1232), x)
-            case Failure(err) => fail(err)
-        }
-        lexer.intLiter.parse("-") match {
-            case Success(_) => fail("matched on - with no digits after it")
-            case Failure(_) => succeed
-        }
-        lexer.intLiter.parse("+") match {
-            case Success(_) => fail("matched on + with no digits after it")
-            case Failure(_) => succeed
-        }
-        lexer.intLiter.parse("+ 04") match {
-            case Success(_) => fail("matched on number with space after sign")
-            case Failure(_) => succeed
-        }
+        assertResultEquals(Success(IntLiterNode(12345)), lexer.intLiter.parse("+12345"))
+        assertResultEquals(Success(IntLiterNode(-1232)), lexer.intLiter.parse("-1232"))
+        assertResultEquals(Failure(""), lexer.intLiter.parse("-"))
+        assertResultEquals(Failure(""), lexer.intLiter.parse("+"))
+        assertResultEquals(Failure(""), lexer.intLiter.parse("+ 04"))
     }
     it should "parse a sequence of digits" in {
-        lexer.intLiter.parse("42") match {
-            case Success(x) => checkMatch(IntLiterNode(42), x)
-            case Failure(err) => fail(err)
-        }
-        lexer.intLiter.parse("868 34") match {
-            case Success(x) => checkMatch(IntLiterNode(868), x)
-            case Failure(err) => fail(err)
-        }
+        assertResultEquals(Success(IntLiterNode(42)), lexer.intLiter.parse("42"))
+        assertResultEquals(Success(IntLiterNode(868)), lexer.intLiter.parse("868 34"))
     }
 
     behavior of "<char-liter> parser combinator"
     it should "parse a character contained in single quotations" in {
-        lexer.charLiter.parse("'c'") match {
-            case Success(x) => checkMatch(CharLiterNode('c'), x)
-            case Failure(err) => fail(err)
-        }
-        lexer.charLiter.parse("'\\0'") match {
-            case Success(x) => checkMatch(CharLiterNode('\u0000'), x)
-            case Failure(err) => fail(err)
-        }
-        lexer.charLiter.parse("'\\\\'") match {
-            case Success(x) => checkMatch(CharLiterNode('\\'), x)
-            case Failure(err) => fail(err)
-        }
+        assertResultEquals(Success(CharLiterNode('c')), lexer.charLiter.parse("'c'"))
+        assertResultEquals(Success(CharLiterNode('\u0000')), lexer.charLiter.parse("'\\0'"))
+        assertResultEquals(Success(CharLiterNode('\\')), lexer.charLiter.parse("'\\\\'"))
     }
     it should "fail on an empty character literal" in {
-        lexer.charLiter.parse("''") match {
-            case Success(_) => fail("did not fail on an empty character")
-            case Failure(_) => succeed
-        }
+        assertResultEquals(Failure(""), lexer.charLiter.parse("''"))
     }
     it should "fail on un-escaped \\, \', \"" in {
-        lexer.charLiter.parse("'\\'") match {
-            case Success(_) => fail("did not fail on '\\'")
-            case Failure(_) => succeed
-        }
-        lexer.charLiter.parse("'\''") match {
-            case Success(_) => fail("did not fail on '\''")
-            case Failure(_) => succeed
-        }
-        lexer.charLiter.parse("'\"'") match {
-            case Success(_) => fail("did not fail on '\"'")
-            case Failure(_) => succeed
-        }
+        assertResultEquals(Failure(""), lexer.charLiter.parse("'\\'"))
+        assertResultEquals(Failure(""), lexer.charLiter.parse("'\''"))
+        assertResultEquals(Failure(""), lexer.charLiter.parse("'\"'"))
     }
     it should "fail on multiple characters in single quotations" in {
-        lexer.charLiter.parse("'hello'") match {
-            case Success(_) =>
-                fail("matched on multiple characters in single quotes")
-            case Failure(_) => succeed
-        }
+        assertResultEquals(Failure(""), lexer.charLiter.parse("'hello'"))
     }
     it should "fail on unmatched single quotations" in {
-        lexer.charLiter.parse("'a") match {
-            case Success(_) => fail("did not fail on missing single quote")
-            case Failure(_) => succeed
-        }
-        lexer.charLiter.parse("''b'") match {
-            case Success(_) => fail("did not fail on extra single quote")
-            case Failure(_) => succeed
-        }
+        assertResultEquals(Failure(""), lexer.charLiter.parse("'a"))
+        assertResultEquals(Failure(""), lexer.charLiter.parse("''b'"))
     }
 
     behavior of "<str-liter> parser combinator"
     it should "parse an empty string" in {
-        lexer.stringLiter.parse("\"\"") match {
-            case Success(x) => checkMatch(StringLiterNode(""), x)
-            case Failure(err) => fail(err)
-        }
+        assertResultEquals(Success(StringLiterNode("")), lexer.stringLiter.parse("\"\""))
     }
     it should "parse a sequence of characters contained in double quotations" in {
-        lexer.stringLiter.parse("\"hello world!\\n\"") match {
-            case Success(x) => checkMatch(StringLiterNode("hello world!\n"), x)
-            case Failure(err) => fail(err)
-        }
+        assertResultEquals(Success(StringLiterNode("hello world!\n")), lexer.stringLiter.parse("\"hello world!\\n\""))
     }
     it should "fail with strings containing illegal unescaped characters" in {
-        lexer.stringLiter.parse("\"hello \\ there\"") match {
-            case Success(_) => fail("matched with unescaped \\ in string")
-            case Failure(_) => succeed
-        }
+        assertResultEquals(Failure(""), lexer.stringLiter.parse("\"hello \\ there\""))
+    }
+
+    behavior of "<ident> parser combinator"
+    it should "parse any legal identifier string" in {
+        assertResultEquals(Success(IdentNode("camelCaseIdent")), lexer.identifier.parse("camelCaseIdent"))
+        assertResultEquals(Success(IdentNode("_underscorewithlowercase")), lexer.identifier.parse("_underscorewithlowercase"))
+        assertResultEquals(Success(IdentNode("_underscoreWithCamelCase")), lexer.identifier.parse("_underscoreWithCamelCase"))
+        assertResultEquals(Success(IdentNode("UppercaseIdent")), lexer.identifier.parse("UppercaseIdent"))
+        assertResultEquals(Success(IdentNode("CONST_IDENT")), lexer.identifier.parse("CONST_IDENT"))
+        assertResultEquals(Success(IdentNode("_09")), lexer.identifier.parse("_09"))
+        assertResultEquals(Success(IdentNode("snake_case")), lexer.identifier.parse("snake_case"))
+        assertResultEquals(Success(IdentNode("combinedIdent_with_Nums_230")), lexer.identifier.parse("combinedIdent_with_Nums_230"))
+    }
+    it should "fail with a non-alphabetic/underscore first character" in {
+        assertResultEquals(Failure(""), lexer.identifier.parse("10_startsWithNumber"))
+        assertResultEquals(Failure(""), lexer.identifier.parse("12345"))
+        assertResultEquals(Failure(""), lexer.identifier.parse("!!_starts_with_exclamation"))
+    }
+    it should "fail with non-alphanumeric/underscore characters" in {
+        assertResultEquals(Failure(""), lexer.identifier.parse("kebab-case"))
+        assertResultEquals(Failure(""), lexer.identifier.parse("_contains_\\\n_newline"))
+        assertResultEquals(Failure(""), lexer.identifier.parse("ident with space"))
+        assertResultEquals(Failure(""), lexer.identifier.parse("ident;AnotherIdent;"))
     }
 }
