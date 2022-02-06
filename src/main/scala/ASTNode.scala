@@ -116,7 +116,7 @@ case class NotEqual(x: ExprNode, y: ExprNode) extends BinaryOpNode
 case class And(x: ExprNode, y: ExprNode) extends BinaryOpNode
 case class Or(x: ExprNode, y: ExprNode) extends BinaryOpNode
 
-// Indentifier
+// Identifier
 case class IdentNode(s: String) extends ExprNode with AssignLHSNode
 
 // Array Elem
