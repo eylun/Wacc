@@ -220,7 +220,7 @@ object syntax {
     lazy val pairElem = firstPairElem <|> secondPairElem
 
     // assignLHS := ident <|> array-elem <|> pair-elem
-    lazy val assignLHS = identifier <|> arrayElem <|> pairElem
+    lazy val assignLHS = attempt(arrayElem) <|> identifier <|> pairElem
 
     // arg-list := expr (',' expr )*
     lazy val exprArgList: Parsley[List[ExprNode]] = sepBy(expr, ",")
