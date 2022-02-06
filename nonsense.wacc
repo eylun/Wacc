@@ -1,38 +1,25 @@
 begin
-<<<<<<< HEAD
-pair(int, string);
-int;
-bool;
-char;
-string;
-int[];
-char[][][];
-pair(int[][], bool);
-pair(int[][], bool[][]);
-pair(int[][], bool[][])[];
-pair(pair, pair);
-pair(pair(int[][], bool[][])[], pair(char, string)[])
-=======
 # Statements
-skip;
-return x + 5;
-print +5000;
-println "hello32";
+#skip 
+#return x + 5 
+#print +5000 
+#println "hello32"
 
 if true 
     then print "true" 
 else 
-    free x && y
-fi ;
+    free x && y;
+	println "hello32";
+	int x = "haha";
+	char[][][][][][][][] waccccccc = 55
+fi
 
-while y > 0
-    do read z
-done 
-;
+#while y > 0
+#    do read z
+#done ;
 
-begin 
-print "hello world"
-end 
+#begin 
+#print "hello world"
+#end 
 
->>>>>>> feat: statements parsing
 end
