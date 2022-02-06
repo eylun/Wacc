@@ -55,17 +55,17 @@ object utility {
     )
 
     val escapedChars = Map(
-        '0' -> '\u0000',
-        'b' -> '\b',
-        't' -> '\t',
-        'n' -> '\n',
-        'f' -> '\f',
-        'r' -> '\r',
-        '"' -> '\"',
-        '\'' -> '\'',
-        '\\' -> '\\',
-        )
-    }
+      '0' -> '\u0000',
+      'b' -> '\b',
+      't' -> '\t',
+      'n' -> '\n',
+      'f' -> '\f',
+      'r' -> '\r',
+      '"' -> '\"',
+      '\'' -> '\'',
+      '\\' -> '\\'
+    )
+}
 
 /* Lexer */
 object lexer {
@@ -135,22 +135,26 @@ object lexer {
                 ) <~ "\""
               ))
               .map(s => s.mkString)
-        ) 
+        )
 
     // expression atoms
     val exprAtoms: Parsley[ExprNode] =
         intLiter <|> boolLiter <|> charLiter <|> stringLiter <|> pairLiter <|>
             identifier
 
-
     /* TYPES */
     // base-type := 'int' | 'bool' | 'char' | 'string'
-    val intType = lexer.keyword("int") #> IntTypeNode()
-    val boolType = lexer.keyword("bool") #> BoolTypeNode()
-    val charType = lexer.keyword("char") #> CharTypeNode()
-    val stringType = lexer.keyword("string") #> StringTypeNode()
-    val baseType = intType <|> boolType <|> charType <|> stringType
-    val pairBaseType = lexer.keyword("pair") #> PairElemTypePairNode()
+    lazy val intType = lexer.keyword("int") #> IntTypeNode()
+    lazy val boolType =
+        lexer.keyword("bool") #> BoolTypeNode()
+    lazy val charType =
+        lexer.keyword("char") #> CharTypeNode()
+    lazy val stringType =
+        lexer.keyword("string") #> StringTypeNode()
+    lazy val baseType: Parsley[BaseTypeNode] =
+        intType <|> boolType <|> charType <|> stringType
+    val pairBaseType =
+        lexer.keyword("pair") #> PairElemTypePairNode()
 
     object implicits {
         implicit def implicitLexeme(s: String): Parsley[Unit] = {
@@ -165,8 +169,17 @@ object lexer {
 object syntax {
     import lexer.{baseType, pairBaseType, fully, exprAtoms, number, identifier}
     import lexer.implicits.implicitLexeme
-    import parsley.combinator.{eof, many, manyUntil, optional, some, sepBy, sepBy1}
-    import parsley.expr.{precedence, Ops, InfixL, Prefix}
+    import parsley.debug.{DebugCombinators, FullBreak}
+    import parsley.combinator.{
+        eof,
+        many,
+        manyUntil,
+        optional,
+        some,
+        sepBy,
+        sepBy1
+    }
+    import parsley.expr.{precedence, Ops, InfixL, Prefix, Postfix, chain}
 
     /* TODO: change this at the end - currently set to check multiple
        expressions separareted by semicolons */
@@ -199,7 +212,7 @@ object syntax {
     // array-elem := identifier ('[' <expr> ']')+
     lazy val arrayElem =
         ArrayElemNode.lift(identifier, some("[" *> expr <* "]"))
-    
+
     // pair-elem := 'fst' expr <|> 'snd' expr
     lazy val firstPairElem = FirstPairElemNode.lift("fst" *> expr)
     lazy val secondPairElem = SecondPairElemNode.lift("snd" *> expr)
@@ -210,33 +223,47 @@ object syntax {
     lazy val assignLHS = identifier <|> arrayElem <|> pairElem
 
     // arg-list := expr (',' expr )*
-    lazy val exprArgList: Parsley[List[ExprNode]] = sepBy(expr, ",") 
+    lazy val exprArgList: Parsley[List[ExprNode]] = sepBy(expr, ",")
 
     // Variables newPair, arrayLiter and call are for assign-rhs parsing
     // newPair := 'newpair''(' expr ',' expr ')'
-    lazy val newPair = NewPairNode.lift("newpair" *> "(" *> expr <* ",", expr <* ")")
+    lazy val newPair =
+        NewPairNode.lift("newpair" *> "(" *> expr <* ",", expr <* ")")
 
     // call := ‘call’ ⟨ident⟩ ‘(’ ⟨arg-list⟩? ‘)’
-    lazy val call = CallNode.lift("call" *> identifier, "(" *> exprArgList <* ")")
+    lazy val call =
+        CallNode.lift("call" *> identifier, "(" *> exprArgList <* ")")
 
     // array-liter := ‘[’ ( ⟨expr ⟩ (‘,’ ⟨expr ⟩)* )? ‘]’
     // ***Note: difference between option vs. optional?
-    lazy val arrayLiter = ArrayLiterNode.lift("[" *> sepBy1(expr, ",") <* "]")   
+    lazy val arrayLiter = ArrayLiterNode.lift("[" *> sepBy1(expr, ",") <* "]")
 
-    // assign-rhs := expr <|> array-liter <|> 'newpair' '(' expr ',' expr ')' <|> pairElem 
+    // assign-rhs := expr <|> array-liter <|> 'newpair' '(' expr ',' expr ')' <|> pairElem
     //               <|> 'call' ident '(' arg-list? ')'
     lazy val assignRHS = expr <|> arrayLiter <|> newPair <|> pairElem <|> call
-    
+
     /* TYPES */
     // type := <base-type> | <array-type> | <pair-type>
-    lazy val anyType: Parsley[TypeNode] = baseType <|> arrayType <|> pairType
+    lazy val anyType: Parsley[TypeNode] = arrayType <|> pairType <|> baseType
 
     // array-type := <type> '[' ']'
-    lazy val arrayType = ArrayTypeNode.lift(anyType, "[]".foldLeft1[Int](0)((b, _) => b + 1))
+    lazy val arrayType: Parsley[TypeNode] =
+        precedence[TypeNode](pairType <|> baseType)(
+          (Ops(Postfix)("[]" #> ((t: TypeNode) => {
+              t match {
+                  case ArrayTypeNode(child, n) => ArrayTypeNode(child, n + 1)
+                  case _                       => ArrayTypeNode(t, 1)
+              }
+          })))
+        )
 
     // pair-elem-type := <base-type> | <array-type> | 'pair'
-    lazy val pairElemType = baseType <|> arrayType <|> pairBaseType
+    lazy val pairElemType: Parsley[PairElemTypeNode] =
+        attempt(arrayType.cast[ArrayTypeNode]) <|> baseType <|> pairBaseType
 
     // pair-type := 'pair' '(' <pair-elem-type> ',' <pair-elem-type> ')'
-    lazy val pairType = PairTypeNode.lift("pair" *> "(" *> pairElemType <* ",", pairElemType <* ")")
-}   
+    lazy val pairType = PairTypeNode.lift(
+      "pair" *> "(" *> pairElemType <* ",",
+      pairElemType <* ")"
+    )
+}

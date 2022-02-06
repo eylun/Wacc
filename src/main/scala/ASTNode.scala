@@ -66,16 +66,25 @@ case class StringTypeNode() extends BaseTypeNode
  * array is. This is inserted upon parsing to make it less tedious for
  * semantic checking.
  */
-case class ArrayTypeNode(t: TypeNode, dimension: Int)
-    extends TypeNode
-    with PairElemTypeNode
+case class ArrayTypeNode(t: TypeNode, dimension: Int = 1)
+    extends PairElemTypeNode
+    with TypeNode
+
+// object ArrayTypeNode {
+//     // def apply(t: TypeNode, dimension: Int = 1z): ArrayTypeNode =
+//     //     ArrayTypeNode(t, 1)
+//     def apply(t: TypeNode, dimension: Int = 1): ArrayTypeNode =
+//         ArrayTypeNode(t, dimension)
+//     def unapply(a: ArrayTypeNode): Option[(TypeNode, Int)] =
+//         Option(a.t, a.dimension)
+// }
 
 // Pair Type
 case class PairTypeNode(fst: PairElemTypeNode, snd: PairElemTypeNode)
     extends TypeNode
 
 // Pair Elem Type
-sealed trait PairElemTypeNode extends ASTNode
+sealed trait PairElemTypeNode extends TypeNode
 
 // For the case where just 'pair' is parsed
 case class PairElemTypePairNode() extends PairElemTypeNode
