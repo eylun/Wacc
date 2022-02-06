@@ -69,7 +69,7 @@ object utility {
 
 /* Lexer */
 object lexer {
-    import parsley.character.{digit, isWhitespace, alphaNum, noneOf, string}
+    import parsley.character.{digit, isWhitespace, alphaNum, noneOf, string, letter}
     import parsley.token.{LanguageDef, Lexer, Parser, Predicate}
     import parsley.implicits.character.{charLift, stringLift}
     import parsley.combinator.{eof, many, manyUntil, optional, some}
@@ -77,7 +77,7 @@ object lexer {
     val lang = LanguageDef.plain.copy(
       commentLine = "#",
       space = Predicate(isWhitespace),
-      identStart = Predicate(_.isLetterOrDigit),
+      identStart = Parser('_' <|> letter),
       identLetter = Parser("_" <|> alphaNum),
       keywords = utility.keywords,
       operators = utility.operators

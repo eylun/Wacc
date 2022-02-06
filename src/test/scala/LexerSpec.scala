@@ -99,6 +99,7 @@ class LexerSpec extends AnyFlatSpec {
         assertResultEquals(Success(IdentNode("_09")), lexer.identifier.parse("_09"))
         assertResultEquals(Success(IdentNode("snake_case")), lexer.identifier.parse("snake_case"))
         assertResultEquals(Success(IdentNode("combinedIdent_with_Nums_230")), lexer.identifier.parse("combinedIdent_with_Nums_230"))
+        assertResultEquals(Success(IdentNode("_____")), lexer.identifier.parse("_____"))
     }
     it should "fail with a non-alphabetic/underscore first character" in {
         assertResultEquals(Failure(""), lexer.identifier.parse("10_startsWithNumber"))
