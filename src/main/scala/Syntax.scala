@@ -37,6 +37,7 @@ object utility {
       "false",
       "null"
     )
+
     val operators = Set(
       "*",
       "/",
@@ -52,7 +53,19 @@ object utility {
       "&&",
       "||"
     )
-}
+
+    val escapedChars = Map(
+        '0' -> '\u0000',
+        'b' -> '\b',
+        't' -> '\t',
+        'n' -> '\n',
+        'f' -> '\f',
+        'r' -> '\r',
+        '"' -> '\"',
+        '\'' -> '\'',
+        '\\' -> '\\',
+        )
+    }
 
 /* Lexer */
 object lexer {
@@ -82,8 +95,10 @@ object lexer {
     val escapedChar =
         '0' <|> 'b' <|> 't' <|> 'n' <|> 'f' <|> 'r' <|> '\"' <|> '\'' <|> '\\'
 
+    val esc = ((c: Char) => utility.escapedChars.apply(c)) <#> escapedChar
+
     val character: Parsley[Char] =
-        noneOf('"', '\'', '\\') <|> ("\\" ~> escapedChar)
+        noneOf('"', '\'', '\\') <|> ("\\" *> esc)
 
     // int-sign := '+' | '-'
     val intSign = "+" #> identity[Int] _ <|> "-" #> ((x: Int) => -x)
@@ -224,5 +239,4 @@ object syntax {
 
     // pair-type := 'pair' '(' <pair-elem-type> ',' <pair-elem-type> ')'
     lazy val pairType = PairTypeNode.lift("pair" *> "(" *> pairElemType <* ",", pairElemType <* ")")
-
 }   
