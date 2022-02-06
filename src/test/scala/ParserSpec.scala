@@ -5,8 +5,10 @@ import parsley.Parsley, Parsley._
 class ParserSpec extends AnyFlatSpec {
     import parsley.{Success, Failure}
 
-    //behavior of "<expr> parser combinator"
-    // it should "parse integer literals"
+    // behavior of "<expr> parsing"
+    // it should "parse literals (int, bool, char, string, pair)" in {
+        
+    // }
     // it should "parse boolean literals"
     // it should "parse character literals"
     // it should "parse string literals"

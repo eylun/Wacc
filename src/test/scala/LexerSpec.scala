@@ -3,36 +3,8 @@ import org.scalatest.matchers.should.Matchers._
 import parsley.Parsley, Parsley._
 
 class LexerSpec extends AnyFlatSpec {
-    import parsley.{Result, Success, Failure}
-
-    def assertResultEquals[A](
-        expected: Result[String, A],
-        actual: Result[String, A]
-    ) = {
-        expected match {
-            case Success(x) => {
-                actual match {
-                    case Success(y)   => checkTokenMatch(x, y)
-                    case Failure(err) => fail(err)
-                }
-            }
-            case Failure(_) => {
-                actual match {
-                    case Success(s) =>
-                        fail("did not fail as expected, actual: " + s)
-                    case Failure(_) => succeed
-                }
-            }
-        }
-    }
-
-    def checkTokenMatch[A](expected: A, actual: A) = {
-        if (expected == actual) succeed
-        else
-            fail(
-              "matched incorrect token (expected: " + expected + ", actual: " + actual + ")"
-            )
-    }
+    import parsley.{Success, Failure}
+    import testUtils.{assertResultEquals}
 
     behavior of "<bool-liter> lexing"
     it should "parse only the 'true' and 'false' keywords" in {
