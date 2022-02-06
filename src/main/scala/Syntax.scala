@@ -193,7 +193,7 @@ object syntax {
     // 		<|> bin op <|> paren
     // unary-oper
     lazy val expr: Parsley[ExprNode] =
-        precedence[ExprNode]("(" *> expr <* ")" <|> exprAtoms <|> arrayElem)(
+        precedence[ExprNode]("(" *> expr <* ")" <|> attempt(arrayElem) <|> exprAtoms)(
           Ops(Prefix)(
             "!" #> Not,
             attempt("-" <~ notFollowedBy(number)) #> Neg,
