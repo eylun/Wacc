@@ -66,9 +66,7 @@ case class StringTypeNode() extends BaseTypeNode
  * array is. This is inserted upon parsing to make it less tedious for
  * semantic checking.
  */
-case class ArrayTypeNode(t: TypeNode, dimension: Int)
-    extends TypeNode
-    with PairElemTypeNode
+case class ArrayTypeNode(t: TypeNode) extends PairElemTypeNode with TypeNode
 
 // Pair Type
 case class PairTypeNode(fst: PairElemTypeNode, snd: PairElemTypeNode)

@@ -1,13 +1,13 @@
 begin
-int;
-bool;
-char;
-string;
-pair(int, string);
-int[];
-char[][][];
-pair(int[][], bool);
-pair(int[][], bool[][])
+int[]
+#pair(int, string)
+#int
+#bool;
+#char;
+#string;
+#char[][][];
+#pair(int[][], bool);
+#pair(int[][], bool[][])
 #pair(int[][], bool[][])[]
 #pair(pair, pair)
 #pair(pair(int[][], bool[][])[], pair(char, string)[])
