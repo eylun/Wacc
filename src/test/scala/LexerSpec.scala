@@ -34,7 +34,7 @@ class LexerSpec extends AnyFlatSpec {
             )
     }
 
-    behavior of "<bool-liter> parser combinator"
+    behavior of "<bool-liter> lexing"
     it should "parse only the 'true' and 'false' keywords" in {
         assertResultEquals(
           Success(BoolLiterNode(true)),
@@ -49,7 +49,7 @@ class LexerSpec extends AnyFlatSpec {
         assertResultEquals(Failure(""), lexer.boolLiter.parse("fasle"))
     }
 
-    behavior of "<pair-liter> parser combinator"
+    behavior of "<pair-liter> lexing"
     it should "parse only the 'null' keyword" in {
         assertResultEquals(
           Success(PairLiterNode()),
@@ -59,7 +59,7 @@ class LexerSpec extends AnyFlatSpec {
         assertResultEquals(Failure(""), lexer.pairLiter.parse("nulll"))
     }
 
-    behavior of "<int-liter> parser combinator"
+    behavior of "<int-liter> lexing"
     it should "parse a sign followed by a sequence of digits" in {
         assertResultEquals(
           Success(IntLiterNode(12345)),
@@ -84,7 +84,7 @@ class LexerSpec extends AnyFlatSpec {
         )
     }
 
-    behavior of "<char-liter> parser combinator"
+    behavior of "<char-liter> lexing"
     it should "parse a character contained in single quotations" in {
         assertResultEquals(
           Success(CharLiterNode('c')),
@@ -115,7 +115,7 @@ class LexerSpec extends AnyFlatSpec {
         assertResultEquals(Failure(""), lexer.charLiter.parse("''b'"))
     }
 
-    behavior of "<str-liter> parser combinator"
+    behavior of "<str-liter> lexing"
     it should "parse an empty string" in {
         assertResultEquals(
           Success(StringLiterNode("")),
@@ -135,7 +135,7 @@ class LexerSpec extends AnyFlatSpec {
         )
     }
 
-    behavior of "<ident> parser combinator"
+    behavior of "<ident> lexing"
     it should "parse any legal identifier string" in {
         assertResultEquals(
           Success(IdentNode("camelCaseIdent")),
@@ -184,5 +184,28 @@ class LexerSpec extends AnyFlatSpec {
           Failure(""),
           lexer.identifier.parse("!!_starts_with_exclamation")
         )
+    }
+
+    behavior of "<base-type> lexing"
+    it should "parse valid base types (int, bool, char, string)" in {
+        assertResultEquals(Success(IntTypeNode()), lexer.baseType.parse("int"))
+        assertResultEquals(
+            Success(BoolTypeNode()), 
+            lexer.baseType.parse("bool")
+        )
+        assertResultEquals(
+            Success(CharTypeNode()),
+            lexer.baseType.parse("char")
+        )
+        assertResultEquals(
+            Success(StringTypeNode()), 
+            lexer.baseType.parse("string")
+        )
+    }
+    it should "fail with invalid base types" in {
+        assertResultEquals(Failure(""), lexer.baseType.parse("intt"))
+        assertResultEquals(Failure(""), lexer.baseType.parse("str ing"))
+        assertResultEquals(Failure(""), lexer.baseType.parse("boool"))
+        assertResultEquals(Failure(""), lexer.baseType.parse("cchar"))
     }
 }

@@ -1,7 +1,7 @@
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers._
 
-class SemanticCheckerTest extends AnyFlatSpec {
+class SemanticCheckerSpec extends AnyFlatSpec {
   behavior of "Semantic Checker"
 
   it should "check nodes for literals" in {
