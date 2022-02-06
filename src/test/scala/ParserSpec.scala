@@ -181,12 +181,36 @@ class ParserSpec extends AnyFlatSpec {
     }
 
     // behavior of "<assign-rhs> parsing"
+    // it should "parse an expression"
+    // it should "parse an array literal"
+    // it should "parse a newpair construction"
+    // it should "parse a pair-elem"
+    // it should "parse a function call"
 
     // behavior of "<stat> parsing"
 
     // behavior of "<func> parsing"
     
-    // behavior of "<array-type> parsing"
+    behavior of "<array-type> parsing"
+    it should "parse any type followed by square brackets" in {
+        assertResultEquals(
+            Success(ArrayTypeNode(IntTypeNode(), 1)),
+            syntax.arrayType.parse("int[]")
+        )
+        assertResultEquals(
+            Success(ArrayTypeNode(CharTypeNode(), 3)),
+            syntax.arrayType.parse("char[][][]")
+        )
+        assertResultEquals(
+            Success(ArrayTypeNode(PairTypeNode(CharTypeNode(), 
+                                                StringTypeNode()), 
+                                    2)),
+            syntax.arrayType.parse("pair(char, string)[][]")
+        )
+    }
+    it should "fail on invalid type" in {
+        assertResultEquals(Failure(""), syntax.arrayType.parse("pair[]"))
+    }
 
     // behavior of "<pair-type> parsing"
 
