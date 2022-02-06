@@ -104,11 +104,13 @@ class ParserSpec extends AnyFlatSpec {
             syntax.expr.parse("3!= 20")
         )
         assertResultEquals(
-            Success(And(And(BoolLiterNode(true), BoolLiterNode(false)), BoolLiterNode(true))),
+            Success(And(And(BoolLiterNode(true), BoolLiterNode(false)), 
+                        BoolLiterNode(true))),
             syntax.expr.parse("true && false && true")
         )
         assertResultEquals(
-            Success(Or(BoolLiterNode(false), And(BoolLiterNode(false), BoolLiterNode(true)))),
+            Success(Or(BoolLiterNode(false), 
+                        And(BoolLiterNode(false), BoolLiterNode(true)))),
             syntax.expr.parse("false || false && true")
         )
     }
@@ -118,9 +120,33 @@ class ParserSpec extends AnyFlatSpec {
             syntax.expr.parse("(4)")
         )
         assertResultEquals(
-            Success(Mult(Add(IntLiterNode(3), IntLiterNode(-7)), IntLiterNode(10))),
+            Success(Mult(Add(IntLiterNode(3), IntLiterNode(-7)), 
+                            IntLiterNode(10))),
             syntax.expr.parse("(3 + -7) * 10")
         )
     }
-    // TODO test for combined expressions and precedence
+    it should "parse expressions with correct precedence" in {
+        assertResultEquals(
+            Success(And(BoolLiterNode(true), 
+                        Equal(BoolLiterNode(false), BoolLiterNode(false)))),
+            syntax.expr.parse("true && false == false")
+        )
+        assertResultEquals(
+            Success(Sub(IntLiterNode(3), 
+                        Div(Sub(IntLiterNode(3), IntLiterNode(2)), 
+                            IntLiterNode(10)))),
+            syntax.expr.parse("3-(3-2)/10")
+        )
+        assertResultEquals(
+            Success(GTE(Ord(CharLiterNode('a')), 
+                        Sub(IntLiterNode(30), IntLiterNode(10)))),
+            syntax.expr.parse("ord 'a' >= (30 - 10)")
+        )
+        assertResultEquals(
+            Success(NotEqual(LTE(Sub(IntLiterNode(4), IntLiterNode(3)), 
+                                Mult(IntLiterNode(1), IntLiterNode(2))), 
+                            BoolLiterNode(true))),
+            syntax.expr.parse("4 - 3 <= 1 * 2 != true")
+        )
+    }
 }
