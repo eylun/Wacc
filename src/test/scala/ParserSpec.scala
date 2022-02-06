@@ -149,4 +149,46 @@ class ParserSpec extends AnyFlatSpec {
             syntax.expr.parse("4 - 3 <= 1 * 2 != true")
         )
     }
+
+    behavior of "<assign-lhs> parsing"
+    it should "parse an identifier" in {
+        assertResultEquals(
+            Success(IdentNode("identifier01_LHS")),
+            syntax.assignLHS.parse("identifier01_LHS")
+        )
+    }
+    it should "parse an array-elem" in {
+        assertResultEquals(
+            Success(ArrayElemNode(IdentNode("_"), List(IntLiterNode(0)))),
+            syntax.assignLHS.parse("_[0]")
+        )
+        assertResultEquals(
+            Success(ArrayElemNode(IdentNode("arr_3D"), 
+                                List(IntLiterNode(2), IntLiterNode(3), 
+                                    IntLiterNode(20)))),
+            syntax.assignLHS.parse("arr_3D[2][3][20]")
+        )
+    }
+    it should "parse a pair-elem" in {
+        assertResultEquals(
+            Success(FirstPairElemNode(IdentNode("some_pair"))),
+            syntax.assignLHS.parse("fst some_pair")
+        )
+        assertResultEquals(
+            Success(SecondPairElemNode(PairLiterNode())),
+            syntax.assignLHS.parse("snd null")
+        )
+    }
+
+    // behavior of "<assign-rhs> parsing"
+
+    // behavior of "<stat> parsing"
+
+    // behavior of "<func> parsing"
+    
+    // behavior of "<array-type> parsing"
+
+    // behavior of "<pair-type> parsing"
+
+    // behavior of "<type> parsing"
 }
