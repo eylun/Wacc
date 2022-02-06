@@ -37,6 +37,7 @@ object utility {
       "false",
       "null"
     )
+
     val operators = Set(
       "*",
       "/",
@@ -51,6 +52,18 @@ object utility {
       "!=",
       "&&",
       "||"
+    )
+
+    val escapedChars = Map(
+      '0' -> '\u0000',
+      'b' -> '\b',
+      't' -> '\t',
+      'n' -> '\n',
+      'f' -> '\f',
+      'r' -> '\r',
+      '"' -> '\"',
+      '\'' -> '\'',
+      '\\' -> '\\'
     )
 }
 
@@ -82,8 +95,10 @@ object lexer {
     val escapedChar =
         '0' <|> 'b' <|> 't' <|> 'n' <|> 'f' <|> 'r' <|> '\"' <|> '\'' <|> '\\'
 
+    val esc = ((c: Char) => utility.escapedChars.apply(c)) <#> escapedChar
+
     val character: Parsley[Char] =
-        noneOf('"', '\'', '\\') <|> ("\\" ~> escapedChar)
+        noneOf('"', '\'', '\\') <|> ("\\" *> esc)
 
     // int-sign := '+' | '-'
     val intSign = "+" #> identity[Int] _ <|> "-" #> ((x: Int) => -x)
@@ -129,14 +144,14 @@ object lexer {
 
     /* TYPES */
     // base-type := 'int' | 'bool' | 'char' | 'string'
-    val intType = lexer.keyword("int") *> notFollowedBy("[]") #> IntTypeNode()
-    val boolType =
-        lexer.keyword("bool") *> notFollowedBy("[]") #> BoolTypeNode()
-    val charType =
-        lexer.keyword("char") *> notFollowedBy("[]") #> CharTypeNode()
-    val stringType =
-        lexer.keyword("string") *> notFollowedBy("[]") #> StringTypeNode()
-    val baseType: Parsley[BaseTypeNode] =
+    lazy val intType = lexer.keyword("int") #> IntTypeNode()
+    lazy val boolType =
+        lexer.keyword("bool") #> BoolTypeNode()
+    lazy val charType =
+        lexer.keyword("char") #> CharTypeNode()
+    lazy val stringType =
+        lexer.keyword("string") #> StringTypeNode()
+    lazy val baseType: Parsley[BaseTypeNode] =
         intType <|> boolType <|> charType <|> stringType
     val pairBaseType =
         lexer.keyword("pair") #> PairElemTypePairNode()
@@ -145,7 +160,6 @@ object lexer {
         implicit def implicitLexeme(s: String): Parsley[Unit] = {
             if (lang.keywords(s)) lexer.keyword(s)
             else if (lang.operators(s)) lexer.maxOp(s)
-            else if (s.equals("[]")) s
             else void(lexer.symbol_(s))
         }
     }
@@ -155,6 +169,7 @@ object lexer {
 object syntax {
     import lexer.{baseType, pairBaseType, fully, exprAtoms, number, identifier}
     import lexer.implicits.implicitLexeme
+    import parsley.debug.{DebugCombinators, FullBreak}
     import parsley.combinator.{
         eof,
         many,
@@ -232,16 +247,23 @@ object syntax {
     lazy val anyType: Parsley[TypeNode] = arrayType <|> pairType <|> baseType
 
     // array-type := <type> '[' ']'
-    lazy val arrayType: Parsley[ArrayTypeNode] =
-        chain.postfix1(anyType, "[]" #> ArrayTypeNode)
+    lazy val arrayType: Parsley[TypeNode] =
+        precedence[TypeNode](pairType <|> baseType)(
+          (Ops(Postfix)("[]" #> ((t: TypeNode) => {
+              t match {
+                  case ArrayTypeNode(child, n) => ArrayTypeNode(child, n + 1)
+                  case _                       => ArrayTypeNode(t, 1)
+              }
+          })))
+        )
 
     // pair-elem-type := <base-type> | <array-type> | 'pair'
-    lazy val pairElemType = baseType <|> arrayType <|> pairBaseType
+    lazy val pairElemType: Parsley[PairElemTypeNode] =
+        attempt(arrayType.cast[ArrayTypeNode]) <|> baseType <|> pairBaseType
 
     // pair-type := 'pair' '(' <pair-elem-type> ',' <pair-elem-type> ')'
     lazy val pairType = PairTypeNode.lift(
       "pair" *> "(" *> pairElemType <* ",",
       pairElemType <* ")"
     )
-
 }
