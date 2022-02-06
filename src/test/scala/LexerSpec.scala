@@ -8,11 +8,13 @@ class LexerSpec extends AnyFlatSpec {
     behavior of "<bool-liter> parser combinator"
     it should "parse only the 'true' and 'false' keywords" in {
         lexer.boolLiter.parse("true") match {
-            case Success(_)   => succeed
+            case Success(BoolLiterNode(true)) => succeed
+            case Success(x)   => fail("matched on incorrect token (expected: BoolLiterNode(true), was: " + x + ")")
             case Failure(err) => fail(err)
         }
         lexer.boolLiter.parse("false") match {
-            case Success(_)   => succeed
+            case Success(BoolLiterNode(false))   => succeed
+            case Success(x) => fail("matched incorrect token (expected: BoolLiterNode(false), was: " + x + ")")
             case Failure(err) => fail(err)
         }
         lexer.boolLiter.parse("tru") match {
@@ -32,8 +34,8 @@ class LexerSpec extends AnyFlatSpec {
     behavior of "<pair-liter> parser combinator"
     it should "parse only the 'null' keyword" in {
         lexer.pairLiter.parse("null") match {
-            case Success(_)   => succeed
-            case Failure(err) => fail(err)
+            case Success(PairLiterNode()) => succeed
+            case Failure(err)             => fail(err)
         }
         lexer.pairLiter.parse("nul") match {
             case Success(_) => fail("matched on misspelled 'nul'")
@@ -48,11 +50,13 @@ class LexerSpec extends AnyFlatSpec {
     behavior of "<int-liter> parser combinator"
     it should "parse a sign followed by a sequence of digits" in {
         lexer.intLiter.parse("+12345") match {
-            case Success(_)   => succeed
+            case Success(IntLiterNode(12345)) => succeed
+            case Success(x)   => fail("matched incorrect token (expected: IntLiterNode(12345), was: " + x + ")")
             case Failure(err) => fail(err)
         }
         lexer.intLiter.parse("-1232") match {
-            case Success(_)   => succeed
+            case Success(IntLiterNode(-1232)) => succeed
+            case Success(x)   => fail("matched incorrect token (expected: IntLiterNode(-1232), was: " + x + ")")
             case Failure(err) => fail(err)
         }
         lexer.intLiter.parse("-") match {
@@ -70,11 +74,12 @@ class LexerSpec extends AnyFlatSpec {
     }
     it should "parse a sequence of digits" in {
         lexer.intLiter.parse("42") match {
-            case Success(_)   => succeed
+            case Success(IntLiterNode(42)) => succeed
+            case Success(x)   => fail("matched incorrect token (expected: IntLiterNode(42), was: " + x + ")")
             case Failure(err) => fail(err)
         }
         lexer.intLiter.parse("868 34") match {
-            case Success(((), 868)) => succeed
+            case Success(IntLiterNode(868)) => succeed
             case _ => fail("did not match only the first sequence")
         }
     }
@@ -82,15 +87,18 @@ class LexerSpec extends AnyFlatSpec {
     behavior of "<char-liter> parser combinator"
     it should "parse a character contained in single quotations" in {
         lexer.charLiter.parse("'c'") match {
-            case Success(_)   => succeed
+            case Success(CharLiterNode('c')) => succeed
+            case Success(x)   => fail("matched incorrect token (expected: CharLiterNode('c'), was: " + x + ")")
             case Failure(err) => fail(err)
         }
         lexer.charLiter.parse("'\\0'") match {
-            case Success(_)   => succeed
+            case Success(CharLiterNode('\u0000')) => succeed
+            case Success(x)   => fail("matched incorrect token (expected: CharLiterNode('\u0000'), was: " + x + ")")
             case Failure(err) => fail(err)
         }
-        lexer.charLiter.parse("'\\\''") match {
-            case Success(_)   => succeed
+        lexer.charLiter.parse("'\\\\'") match {
+            case Success(CharLiterNode('\\')) => succeed
+            case Success(x)   => fail("matched incorrect token (expected: CharLiterNode('\\'), was: " + x + ")")
             case Failure(err) => fail(err)
         }
     }
@@ -135,13 +143,15 @@ class LexerSpec extends AnyFlatSpec {
     behavior of "<str-liter> parser combinator"
     it should "parse an empty string" in {
         lexer.stringLiter.parse("\"\"") match {
-            case Success(_)   => succeed
+            case Success(StringLiterNode("")) => succeed
+            case Success(x)   => fail("matched incorrect token (expected: StringLiterNode(\"\"), was: " + x + ")") 
             case Failure(err) => fail(err)
         }
     }
     it should "parse a sequence of characters contained in double quotations" in {
         lexer.stringLiter.parse("\"hello world!\\n\"") match {
-            case Success(_)   => succeed
+            case Success(StringLiterNode("hello world!\n")) => succeed
+            case Success(x)   => fail("matched incorrect token (expected: StringLiterNode(\"hello world!\\\n\"), was: " + x + ")")
             case Failure(err) => fail(err)
         }
     }
