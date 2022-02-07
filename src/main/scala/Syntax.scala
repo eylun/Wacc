@@ -69,10 +69,18 @@ object utility {
 
 /* Lexer */
 object lexer {
-    import parsley.character.{digit, isWhitespace, alphaNum, noneOf, string, letter}
+    import parsley.character.{
+        digit,
+        isWhitespace,
+        alphaNum,
+        noneOf,
+        string,
+        letter
+    }
     import parsley.token.{LanguageDef, Lexer, Parser, Predicate}
     import parsley.implicits.character.{charLift, stringLift}
     import parsley.combinator.{eof, many, manyUntil, optional, some}
+    import parsley.errors.combinator.ErrorMethods
 
     val lang = LanguageDef.plain.copy(
       commentLine = "#",
@@ -89,7 +97,7 @@ object lexer {
 
     val identifier = IdentNode.lift(lexer.identifier)
     val number =
-        lexer.lexeme(digit.foldLeft1[Int](0)((n, d) => n * 10 + d.asDigit))
+        lexer.lexeme(digit.foldLeft1[Long](0)((n, d) => n * 10 + d.asDigit))
 
     // escaped-char := '0' | 'b' | 't' | 'n' | 'f' | 'r' | '"' | ''' | '\'
     val escapedChar =
@@ -101,7 +109,7 @@ object lexer {
         noneOf('"', '\'', '\\') <|> ("\\" *> esc)
 
     // int-sign := '+' | '-'
-    val intSign = "+" #> identity[Int] _ <|> "-" #> ((x: Int) => -x)
+    val intSign = "+" #> identity[Long] _ <|> "-" #> ((x: Long) => -x)
 
     /* LITERALS */
 
@@ -113,7 +121,11 @@ object lexer {
 
     // int-liter := <int-sign>? <digit>+
     val intLiter: Parsley[ExprNode] =
-        IntLiterNode.lift(intSign <*> number <|> number)
+        IntLiterNode.lift(
+          (intSign <*> number <|> number).collectMsg("Integer Overflow") {
+              case x if x.toInt == x => x.toInt
+          }
+        )
 
     // TODO: Try to use implicits to not use 'lex.keyword' everytime
     // bool-liter := true | false
@@ -180,20 +192,74 @@ object syntax {
         sepBy1
     }
     import parsley.expr.{precedence, Ops, InfixL, Prefix, Postfix, chain}
+    import parsley.errors.combinator.ErrorMethods
 
     /* TODO: change this at the end - currently set to check multiple
        expressions separareted by semicolons */
 
     // program := 'begin' <func>* <stat> 'end'
-    lazy val program = "begin" ~> sepBy(stat, "nl") <~ "end"
+    lazy val program = ProgramNode.lift(
+      "begin" ~> manyUntil(func, attempt(lookAhead(stat))),
+      stat <~ "end"
+    )
 
     val parse = fully(program)
 
+    /* FUNCTIONS */
+    lazy val func: Parsley[FuncNode] =
+        FuncNode.lift(
+          anyType,
+          identifier,
+          "(" ~> sepBy(param, ",") <~ ")",
+          "is" ~> stat
+              .collectMsg(
+                "Missing return or exit statement on a path"
+              )(verifyFuncExit)
+              .collectMsg(
+                "Return Statement not at end of statement block"
+              )(verifyCleanExit) <~ "end"
+        )
+
+    lazy val param: Parsley[ParamNode] = ParamNode.lift(anyType, identifier)
+    lazy val verifyFuncExit: PartialFunction[StatNode, StatNode] = {
+        case x if canExit(x) => x
+    }
+    lazy val verifyCleanExit: PartialFunction[StatNode, StatNode] = {
+        case x if cleanExit(x) => x
+    }
+    def canExit(base: StatNode): Boolean = {
+        base match {
+            case ReturnNode(_) | ExitNode(_) => true
+            case IfThenElseNode(_, s1, s2)   => canExit(s1) && canExit(s2)
+            case StatListNode(s) => s.foldLeft(false)((x, y) => x || canExit(y))
+            case _               => false
+        }
+    }
+
+    def cleanExit(base: StatNode): Boolean = {
+        base match {
+            case ReturnNode(_) | ExitNode(_) => true
+            case IfThenElseNode(_, s1, s2)   => cleanExit(s1) && cleanExit(s2)
+            case StatListNode(s) =>
+                s.zipWithIndex.foreach {
+                    case (ReturnNode(_) | ExitNode(_), n)
+                        if n == s.length - 1 =>
+                        return true
+                    case (x: IfThenElseNode, _) if cleanExit(x) => return true
+                    case _                                      => ()
+                }
+                false
+            case _ => false
+        }
+    }
+    /* EXPRESSIONS */
     // expr := literal <|> identifier <|> array-elem <|> unary op
     // 		<|> bin op <|> paren
     // unary-oper
     lazy val expr: Parsley[ExprNode] =
-        precedence[ExprNode]("(" *> expr <* ")" <|> attempt(arrayElem) <|> exprAtoms)(
+        precedence[ExprNode](
+          "(" *> expr <* ")" <|> attempt(arrayElem) <|> exprAtoms
+        )(
           Ops(Prefix)(
             "!" #> Not,
             attempt("-" <~ notFollowedBy(number)) #> Neg,
@@ -218,7 +284,7 @@ object syntax {
     lazy val secondPairElem = SecondPairElemNode.lift("snd" *> expr)
 
     lazy val pairElem = firstPairElem <|> secondPairElem
-
+    /* ASSIGNMENTS */
     // assignLHS := ident <|> array-elem <|> pair-elem
     lazy val assignLHS = attempt(arrayElem) <|> identifier <|> pairElem
 
@@ -236,7 +302,7 @@ object syntax {
 
     // array-liter := ‘[’ ( ⟨expr ⟩ (‘,’ ⟨expr ⟩)* )? ‘]’
     // ***Note: difference between option vs. optional?
-    lazy val arrayLiter = ArrayLiterNode.lift("[" *> sepBy1(expr, ",") <* "]")
+    lazy val arrayLiter = ArrayLiterNode.lift("[" *> sepBy(expr, ",") <* "]")
 
     // assign-rhs := expr <|> array-liter <|> 'newpair' '(' expr ',' expr ')' <|> pairElem
     //               <|> 'call' ident '(' arg-list? ')'
@@ -258,25 +324,30 @@ object syntax {
     lazy val ifThenElseStat: Parsley[StatNode] =
         IfThenElseNode.lift(
           "if" *> expr,
-          "then" *> sepBy1(stat, ";"),
-          "else" *> sepBy1(stat, ";") <* "fi"
+          "then" *> stat,
+          "else" *> stat <* "fi"
         )
 
     //while-do-stat := ‘while’ ⟨expr ⟩ ‘do’ ⟨stat ⟩ ‘done’
     lazy val whileDoStat =
-        WhileDoNode.lift("while" *> expr, "do" *> sepBy1(stat, ";") <* "done")
+        WhileDoNode.lift("while" *> expr, "do" *> stat <* "done")
 
     // begin-end-stat := ‘begin’ ⟨stat ⟩ ‘end’
     lazy val beginEndStat =
-        BeginEndNode.lift("begin" *> sepBy1(stat, ";") <* "end")
+        BeginEndNode.lift("begin" *> stat <* "end")
 
+    lazy val statList: Parsley[StatNode] =
+        StatListNode.lift(sepBy1(statAtoms, ";"))
     // stat := 'skip' | ⟨type ⟩ ⟨ident ⟩ ‘=’ ⟨assign-rhs ⟩ | ⟨assign-lhs ⟩ ‘=’ ⟨assign-rhs ⟩ | ‘read’ ⟨assign-lhs ⟩
     //  | ‘free’ ⟨expr ⟩ | ‘return’ ⟨expr ⟩ | ‘exit’ ⟨expr ⟩ | ‘print’ ⟨expr ⟩ | ‘println’ ⟨expr ⟩
     //  | ‘if’ ⟨expr ⟩ ‘then’ ⟨stat ⟩ ‘else’ ⟨stat ⟩ ‘fi’ | ‘while’ ⟨expr ⟩ ‘do’ ⟨stat ⟩ ‘done’
     //  | ‘begin’ ⟨stat ⟩ ‘end’ | ⟨stat ⟩ ‘;’ ⟨stat ⟩
-    lazy val stat: Parsley[StatNode] =
+    lazy val statAtoms: Parsley[StatNode] =
         skipStat <|> newAssignStat <|> lrAssignStat <|> readStat <|> freeStat <|> returnStat <|> exitStat <|> printStat <|> printlnStat <|>
             ifThenElseStat <|> whileDoStat <|> beginEndStat
+
+    lazy val stat: Parsley[StatNode] =
+        statList <|> statAtoms <* notFollowedBy(";")
 
     /* TYPES */
     // type := <base-type> | <array-type> | <pair-type>
