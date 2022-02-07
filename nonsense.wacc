@@ -1,46 +1,20 @@
+# functions cannot access global variables
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
 begin
-# Statements
-<<<<<<< HEAD
-#skip 
-#return x + 5 
-#print +5000 
-#println "hello32"
-=======
-skip;
-return x + 5;
-print +5000;
-println "hello32";
->>>>>>> d01b0772f5802eee75b5a79befb955fe31b1adb1
-
-if true 
-    then print "true" 
-else 
-<<<<<<< HEAD
-    free x && y;
-	println "hello32";
-	int x = "haha";
-	char[][][][][][][][] waccccccc = 55
-fi
-
-#while y > 0
-#    do read z
-#done ;
-
-#begin 
-#print "hello world"
-#end 
-=======
-    free x && y
-fi ;
-
-while y > 0
-    do read z
-done 
-;
-
-begin 
-print "hello world"
-end 
->>>>>>> d01b0772f5802eee75b5a79befb955fe31b1adb1
-
+	int f() is
+    x = -1 ;
+		return 0
+	end
+  int x = 5 ;
+  int y = call f() ;
+  println x
 end
+

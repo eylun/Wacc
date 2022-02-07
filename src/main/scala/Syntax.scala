@@ -180,15 +180,63 @@ object syntax {
         sepBy1
     }
     import parsley.expr.{precedence, Ops, InfixL, Prefix, Postfix, chain}
+    import parsley.errors.combinator.ErrorMethods
 
     /* TODO: change this at the end - currently set to check multiple
        expressions separareted by semicolons */
 
     // program := 'begin' <func>* <stat> 'end'
-    lazy val program = "begin" ~> sepBy(stat, "nl") <~ "end"
+    lazy val program = ProgramNode.lift("begin" ~> some(func), stat <~ "end")
 
     val parse = fully(program)
 
+    /* FUNCTIONS */
+    lazy val func: Parsley[FuncNode] =
+        FuncNode.lift(
+          anyType,
+          identifier,
+          "(" ~> sepBy(param, ",") <~ ")",
+          "is" ~> stat
+              .collectMsg(
+                "Missing return or exit statement on a path"
+              )(verifyFuncExit)
+              .collectMsg(
+                "Return Statement not at end of statement block"
+              )(verifyCleanExit) <~ "end"
+        )
+
+    lazy val param: Parsley[ParamNode] = ParamNode.lift(anyType, identifier)
+    lazy val verifyFuncExit: PartialFunction[StatNode, StatNode] = {
+        case x if canExit(x) => x
+    }
+    lazy val verifyCleanExit: PartialFunction[StatNode, StatNode] = {
+        case x if cleanExit(x) => x
+
+    }
+    def canExit(base: StatNode): Boolean = {
+        base match {
+            case ReturnNode(_) | ExitNode(_) => true
+            case IfThenElseNode(_, s1, s2)   => canExit(s1) && canExit(s2)
+            case StatListNode(s) => s.foldLeft(false)((x, y) => x || canExit(y))
+            case _               => false
+        }
+    }
+
+    def cleanExit(base: StatNode): Boolean = {
+        base match {
+            case ReturnNode(_) | ExitNode(_) => true
+            case IfThenElseNode(_, s1, s2)   => cleanExit(s1) && cleanExit(s2)
+            case StatListNode(s) =>
+                s.zipWithIndex.foreach {
+                    case (ReturnNode(_) | ExitNode(_), n) =>
+                        return n == s.length - 1
+                    case _ => ()
+                }
+                false
+            case _ => false
+        }
+    }
+    /* EXPRESSIONS */
     // expr := literal <|> identifier <|> array-elem <|> unary op
     // 		<|> bin op <|> paren
     // unary-oper
@@ -218,7 +266,7 @@ object syntax {
     lazy val secondPairElem = SecondPairElemNode.lift("snd" *> expr)
 
     lazy val pairElem = firstPairElem <|> secondPairElem
-
+    /* ASSIGNMENTS */
     // assignLHS := ident <|> array-elem <|> pair-elem
     lazy val assignLHS = attempt(arrayElem) <|> identifier <|> pairElem
 
@@ -258,25 +306,30 @@ object syntax {
     lazy val ifThenElseStat: Parsley[StatNode] =
         IfThenElseNode.lift(
           "if" *> expr,
-          "then" *> sepBy1(stat, ";"),
-          "else" *> sepBy1(stat, ";") <* "fi"
+          "then" *> stat,
+          "else" *> stat <* "fi"
         )
 
     //while-do-stat := ‘while’ ⟨expr ⟩ ‘do’ ⟨stat ⟩ ‘done’
     lazy val whileDoStat =
-        WhileDoNode.lift("while" *> expr, "do" *> sepBy1(stat, ";") <* "done")
+        WhileDoNode.lift("while" *> expr, "do" *> stat <* "done")
 
     // begin-end-stat := ‘begin’ ⟨stat ⟩ ‘end’
     lazy val beginEndStat =
-        BeginEndNode.lift("begin" *> sepBy1(stat, ";") <* "end")
+        BeginEndNode.lift("begin" *> stat <* "end")
 
+    lazy val statList: Parsley[StatNode] =
+        StatListNode.lift(sepBy1(statAtoms, ";"))
     // stat := 'skip' | ⟨type ⟩ ⟨ident ⟩ ‘=’ ⟨assign-rhs ⟩ | ⟨assign-lhs ⟩ ‘=’ ⟨assign-rhs ⟩ | ‘read’ ⟨assign-lhs ⟩
     //  | ‘free’ ⟨expr ⟩ | ‘return’ ⟨expr ⟩ | ‘exit’ ⟨expr ⟩ | ‘print’ ⟨expr ⟩ | ‘println’ ⟨expr ⟩
     //  | ‘if’ ⟨expr ⟩ ‘then’ ⟨stat ⟩ ‘else’ ⟨stat ⟩ ‘fi’ | ‘while’ ⟨expr ⟩ ‘do’ ⟨stat ⟩ ‘done’
     //  | ‘begin’ ⟨stat ⟩ ‘end’ | ⟨stat ⟩ ‘;’ ⟨stat ⟩
-    lazy val stat: Parsley[StatNode] =
+    lazy val statAtoms: Parsley[StatNode] =
         skipStat <|> newAssignStat <|> lrAssignStat <|> readStat <|> freeStat <|> returnStat <|> exitStat <|> printStat <|> printlnStat <|>
             ifThenElseStat <|> whileDoStat <|> beginEndStat
+
+    lazy val stat: Parsley[StatNode] =
+        statList <|> statAtoms <* notFollowedBy(";")
 
     /* TYPES */
     // type := <base-type> | <array-type> | <pair-type>

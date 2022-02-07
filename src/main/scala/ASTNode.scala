@@ -1,14 +1,14 @@
 sealed trait ASTNode
 
 // Program
-case class ProgramNode(flist: List[FuncNode], s: List[StatNode]) extends ASTNode
+case class ProgramNode(flist: List[FuncNode], s: StatNode) extends ASTNode
 
 // Function
 case class FuncNode(
     t: TypeNode,
     i: IdentNode,
     plist: List[ParamNode],
-    s: List[StatNode]
+    s: StatNode
 ) extends ASTNode
 
 // Param
@@ -35,12 +35,14 @@ case class ExitNode(e: ExprNode) extends StatNode
 case class PrintNode(e: ExprNode) extends StatNode
 
 case class PrintlnNode(e: ExprNode) extends StatNode
-case class IfThenElseNode(e: ExprNode, s1: List[StatNode], s2: List[StatNode])
+case class IfThenElseNode(e: ExprNode, s1: StatNode, s2: StatNode)
     extends StatNode
 
-case class WhileDoNode(e: ExprNode, s: List[StatNode]) extends StatNode
+case class WhileDoNode(e: ExprNode, s: StatNode) extends StatNode
 
-case class BeginEndNode(s: List[StatNode]) extends StatNode
+case class BeginEndNode(s: StatNode) extends StatNode
+
+case class StatListNode(s: List[StatNode]) extends StatNode
 
 // Assign LHS
 sealed trait AssignLHSNode extends ASTNode
