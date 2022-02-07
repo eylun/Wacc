@@ -226,69 +226,174 @@ case class Mult(x: ExprNode, y: ExprNode) extends BinaryOpNode {
         y.check(st)
         x.typeId.get match {
             case IntType() => {
-            y.typeId.get match {
-                case IntType() => {this.typeId = Some(IntType())}
-                case _         => println( "incompatible type")
-            }
+                y.typeId.get match {
+                    case IntType() => {this.typeId = Some(IntType())}
+                    case _         => println( "incompatible type")
                 }
+            }
             case _        => println( "incompatible type")    
         }
-    
     }
 }
 case class Div(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        y.check(st)
+        x.typeId.get match {
+            case IntType() => {
+                y.typeId.get match {
+                    case IntType() => {this.typeId = Some(IntType())}
+                    case _         => println( "incompatible type")
+                }
+            }
+            case _        => println( "incompatible type")    
+        }
+    }
 }
 case class Mod(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        y.check(st)
+        x.typeId.get match {
+            case IntType() => {
+                y.typeId.get match {
+                    case IntType() => {this.typeId = Some(IntType())}
+                    case _         => println( "incompatible type")
+                }
+            }
+            case _        => println( "incompatible type")    
+        }
+    }
 }
 case class Add(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        y.check(st)
+        x.typeId.get match {
+            case IntType() => {
+                y.typeId.get match {
+                    case IntType() => {this.typeId = Some(IntType())}
+                    case _         => println( "incompatible type")
+                }
+            }
+            case _        => println( "incompatible type")    
+        }
+    }
 }
 case class Sub(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        y.check(st)
+        x.typeId.get match {
+            case IntType() => {
+                y.typeId.get match {
+                    case IntType() => {this.typeId = Some(IntType())}
+                    case _         => println( "incompatible type")
+                }
+            }
+            case _        => println( "incompatible type")    
+        }
+    }
 }
 case class GT(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        y.check(st)
+        if (x.typeId.get == IntType() || x.typeId.get == CharType()) {
+            if (x.typeId.get == y.typeId.get) { 
+                this.typeId = Some(BoolType())
+            }
+        }
+    }
 }
 case class GTE(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        y.check(st)
+        if (x.typeId.get == IntType() || x.typeId.get == CharType()) {
+            if (x.typeId.get == y.typeId.get) { 
+                this.typeId = Some(BoolType())
+            }
+        }
+    }
 }
 case class LT(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        y.check(st)
+        if (x.typeId.get == IntType() || x.typeId.get == CharType()) {
+            if (x.typeId.get == y.typeId.get) { 
+                this.typeId = Some(BoolType())
+            }
+        }
+    }
 }
 case class LTE(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        y.check(st)
+        if (x.typeId.get == IntType() || x.typeId.get == CharType()) {
+            if (x.typeId.get == y.typeId.get) { 
+                this.typeId = Some(BoolType())
+            }
+        }
+    }
 }
 case class Equal(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        y.check(st)
+        if (x.typeId.get == y.typeId.get) { 
+            this.typeId = Some(BoolType())
+        }
+    }
 }
 case class NotEqual(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        y.check(st)
+        if (x.typeId.get == y.typeId.get) { 
+            this.typeId = Some(BoolType())
+        }
+    }
 }
 case class And(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        y.check(st)
+        if (x.typeId.get == BoolType() && y.typeId.get == BoolType()) { 
+            this.typeId = Some(BoolType())
+        }
+    }
 }
 case class Or(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        y.check(st)
+        if (x.typeId.get == BoolType() && y.typeId.get == BoolType()) { 
+            this.typeId = Some(BoolType())
+        }
+    }
 }
 
 // Identifier
 case class IdentNode(s: String) extends ExprNode with AssignLHSNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        this.typeId = st.lookup(s) // TODO: check if this should use lookupAll
+    }
 }
 
 // Array Elem
