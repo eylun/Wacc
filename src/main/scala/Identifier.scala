@@ -9,7 +9,7 @@ case class Variable(t: Type) extends Identifier
 case class Param(t: Type) extends Identifier
 
 /* Basic types */
-case class IntType(min: Int, max: Int) extends Type
+case class IntType() extends Type
 
 case class BoolType() extends Type
 

@@ -135,7 +135,7 @@ sealed trait TypeNode extends ASTNode
 sealed trait BaseTypeNode extends TypeNode with PairElemTypeNode
 
 case class IntTypeNode() extends BaseTypeNode {
-    var typeId: Option[Identifier] = Some(IntType(Math.pow(2, -31).toInt, Math.pow(2,31).toInt))
+    var typeId: Option[Identifier] = Some(IntType())
     def check(st: SymbolTable): Unit = {}
 }
 
@@ -301,7 +301,7 @@ case class SecondPairElemNode(e: ExprNode) extends PairElemNode {
 
 // Literals
 case class IntLiterNode(i: Int) extends ExprNode {
-    var typeId: Option[Identifier] = Some(IntType(Math.pow(2, -31).toInt, Math.pow(2,31).toInt))
+    var typeId: Option[Identifier] = Some(IntType())
     def check(st: SymbolTable): Unit = {}
 }
 
