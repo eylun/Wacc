@@ -1,7 +1,12 @@
-sealed trait ASTNode
-
+sealed trait ASTNode {
+    var typeId: Option[Identifier]
+    def check(st: SymbolTable): Unit
+}
 // Program
-case class ProgramNode(flist: List[FuncNode], s: StatNode) extends ASTNode
+case class ProgramNode(flist: List[FuncNode], s: StatNode) extends ASTNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 // Function
 case class FuncNode(
@@ -9,54 +14,103 @@ case class FuncNode(
     i: IdentNode,
     plist: List[ParamNode],
     s: StatNode
-) extends ASTNode
+) extends ASTNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 // Param
-case class ParamNode(t: TypeNode, i: IdentNode) extends ASTNode
+case class ParamNode(t: TypeNode, i: IdentNode) extends ASTNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 // Statement
 sealed trait StatNode extends ASTNode
 
-case class SkipNode() extends StatNode
+case class SkipNode() extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
+// New variable/array/pair declaration
 case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode) extends StatNode {
+    var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        val varName: String = i.s
-        var varObj: Option[Variable] = None
+        // val varName: String = i.s
 
-        st.lookup(varName) match {
-            case None => {
-                varObj = Some(Variable(t.typeId))
-                st.add(varName, varObj.get)
-            }
-            case Some(id) => {
-                println(varName + " is already declared") // TODO halt semantic checks.
-            }
-        }
+        // st.lookup(varName) match {
+        //     case None => {
+        //         typeId = Some(Variable(t.typeId.get))
+        //         st.add(varName, typeId.get)
+        //     }
+        //     case Some(id) => {
+        //         println(varName + " is already declared") // TODO halt semantic checks.
+        //     }
+        // }
     }
 }
 
-case class LRAssignNode(l: AssignLHSNode, r: AssignRHSNode) extends StatNode
+case class LRAssignNode(l: AssignLHSNode, r: AssignRHSNode) extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        
+        // l.check(st)
+        // r.check(st)
 
-case class ReadNode(l: AssignLHSNode) extends StatNode
+        // l.typeId == r.typeId
+    }
+}
 
-case class FreeNode(e: ExprNode) extends StatNode
+case class ReadNode(l: AssignLHSNode) extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
-case class ReturnNode(e: ExprNode) extends StatNode
+case class FreeNode(e: ExprNode) extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
-case class ExitNode(e: ExprNode) extends StatNode
+case class ReturnNode(e: ExprNode) extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
-case class PrintNode(e: ExprNode) extends StatNode
+case class ExitNode(e: ExprNode) extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
-case class PrintlnNode(e: ExprNode) extends StatNode
+case class PrintNode(e: ExprNode) extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
+
+case class PrintlnNode(e: ExprNode) extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 case class IfThenElseNode(e: ExprNode, s1: StatNode, s2: StatNode)
-    extends StatNode
+    extends StatNode {
+        var typeId: Option[Identifier] = None
+        def check(st: SymbolTable): Unit = {}
+    }
 
-case class WhileDoNode(e: ExprNode, s: StatNode) extends StatNode
+case class WhileDoNode(e: ExprNode, s: StatNode) extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
-case class BeginEndNode(s: StatNode) extends StatNode
+case class BeginEndNode(s: StatNode) extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
-case class StatListNode(s: List[StatNode]) extends StatNode
+case class StatListNode(s: List[StatNode]) extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 // Assign LHS
 sealed trait AssignLHSNode extends ASTNode
@@ -64,32 +118,40 @@ sealed trait AssignLHSNode extends ASTNode
 // Assign RHS
 sealed trait AssignRHSNode extends ASTNode 
 
-case class NewPairNode(e1: ExprNode, e2: ExprNode) extends AssignRHSNode
+case class NewPairNode(e1: ExprNode, e2: ExprNode) extends AssignRHSNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
-case class CallNode(i: IdentNode, args: List[ExprNode]) extends AssignRHSNode
+case class CallNode(i: IdentNode, args: List[ExprNode]) extends AssignRHSNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 // Type
-sealed trait TypeNode extends ASTNode {
-    val typeId: Type
-}
+sealed trait TypeNode extends ASTNode
 
 // Base Type
 sealed trait BaseTypeNode extends TypeNode with PairElemTypeNode
 
 case class IntTypeNode() extends BaseTypeNode {
-    val typeId = IntType(Math.pow(2, -31).toInt, Math.pow(2,31).toInt)
+    var typeId: Option[Identifier] = Some(IntType(Math.pow(2, -31).toInt, Math.pow(2,31).toInt))
+    def check(st: SymbolTable): Unit = {}
 }
 
 case class BoolTypeNode() extends BaseTypeNode {
-    val typeId = BoolType()
+    var typeId: Option[Identifier] = Some(BoolType())
+    def check(st: SymbolTable): Unit = {}
 }
 
 case class CharTypeNode() extends BaseTypeNode {
-    val typeId = CharType()
+    var typeId: Option[Identifier] = Some(CharType())
+    def check(st: SymbolTable): Unit = {}
 }
 
 case class StringTypeNode() extends BaseTypeNode {
-    val typeId = StringType()
+    var typeId: Option[Identifier] = Some(StringType())
+    def check(st: SymbolTable): Unit = {}
 }
 
 // Array Type
@@ -100,7 +162,8 @@ case class StringTypeNode() extends BaseTypeNode {
 case class ArrayTypeNode(t: TypeNode, dimension: Int = 1)
     extends PairElemTypeNode
     with TypeNode {
-        val typeId = ArrayType(t.typeId, 0)
+        var typeId: Option[Identifier] = None
+        def check(st: SymbolTable): Unit = {}
     }
 
 // object ArrayTypeNode {
@@ -115,15 +178,17 @@ case class ArrayTypeNode(t: TypeNode, dimension: Int = 1)
 // Pair Type
 case class PairTypeNode(fst: PairElemTypeNode, snd: PairElemTypeNode)
     extends TypeNode {
-        val typeId = PairType(fst.typeId, snd.typeId)
-}
+        var typeId: Option[Identifier] = None
+        def check(st: SymbolTable): Unit = {}
+    }
 
 // Pair Elem Type
 sealed trait PairElemTypeNode extends TypeNode
 
 // For the case where just 'pair' is parsed
 case class PairElemTypePairNode() extends PairElemTypeNode {
-    val typeId = NestedPairType()
+    var typeId: Option[Identifier] = Some(NestedPairType())
+    def check(st: SymbolTable): Unit = {}
 }
 
 // Expression
@@ -131,62 +196,136 @@ sealed trait ExprNode extends AssignRHSNode
 
 // Unary Operator
 sealed trait UnaryOpNode extends ExprNode
-case class Not(x: ExprNode) extends UnaryOpNode
-case class Neg(x: ExprNode) extends UnaryOpNode
-case class Len(x: ExprNode) extends UnaryOpNode
-case class Ord(x: ExprNode) extends UnaryOpNode
-case class Chr(x: ExprNode) extends UnaryOpNode
+case class Not(x: ExprNode) extends UnaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
+case class Neg(x: ExprNode) extends UnaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
+case class Len(x: ExprNode) extends UnaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
+case class Ord(x: ExprNode) extends UnaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
+case class Chr(x: ExprNode) extends UnaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 // Binary Operator
 sealed trait BinaryOpNode extends ExprNode
-case class Mult(x: ExprNode, y: ExprNode) extends BinaryOpNode
-case class Div(x: ExprNode, y: ExprNode) extends BinaryOpNode
-case class Mod(x: ExprNode, y: ExprNode) extends BinaryOpNode
-case class Add(x: ExprNode, y: ExprNode) extends BinaryOpNode
-case class Sub(x: ExprNode, y: ExprNode) extends BinaryOpNode
-case class GT(x: ExprNode, y: ExprNode) extends BinaryOpNode
-case class GTE(x: ExprNode, y: ExprNode) extends BinaryOpNode
-case class LT(x: ExprNode, y: ExprNode) extends BinaryOpNode
-case class LTE(x: ExprNode, y: ExprNode) extends BinaryOpNode
-case class Equal(x: ExprNode, y: ExprNode) extends BinaryOpNode
-case class NotEqual(x: ExprNode, y: ExprNode) extends BinaryOpNode
-case class And(x: ExprNode, y: ExprNode) extends BinaryOpNode
-case class Or(x: ExprNode, y: ExprNode) extends BinaryOpNode
+case class Mult(x: ExprNode, y: ExprNode) extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
+case class Div(x: ExprNode, y: ExprNode) extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
+case class Mod(x: ExprNode, y: ExprNode) extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
+case class Add(x: ExprNode, y: ExprNode) extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
+case class Sub(x: ExprNode, y: ExprNode) extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
+case class GT(x: ExprNode, y: ExprNode) extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
+case class GTE(x: ExprNode, y: ExprNode) extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
+case class LT(x: ExprNode, y: ExprNode) extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
+case class LTE(x: ExprNode, y: ExprNode) extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
+case class Equal(x: ExprNode, y: ExprNode) extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
+case class NotEqual(x: ExprNode, y: ExprNode) extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
+case class And(x: ExprNode, y: ExprNode) extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
+case class Or(x: ExprNode, y: ExprNode) extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 // Identifier
-case class IdentNode(s: String) extends ExprNode with AssignLHSNode
+case class IdentNode(s: String) extends ExprNode with AssignLHSNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 // Array Elem
 case class ArrayElemNode(i: IdentNode, es: List[ExprNode])
     extends ExprNode
-    with AssignLHSNode
+    with AssignLHSNode {
+        var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+    }
 
 // Pair Elem
 sealed trait PairElemNode extends ExprNode with AssignLHSNode with AssignRHSNode
 
-case class FirstPairElemNode(e: ExprNode) extends PairElemNode
+case class FirstPairElemNode(e: ExprNode) extends PairElemNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
-case class SecondPairElemNode(e: ExprNode) extends PairElemNode
+case class SecondPairElemNode(e: ExprNode) extends PairElemNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 // Literals
 case class IntLiterNode(i: Int) extends ExprNode {
-    var typeId = Some(IntType(Math.pow(2, -31).toInt, Math.pow(2,31).toInt))
+    var typeId: Option[Identifier] = Some(IntType(Math.pow(2, -31).toInt, Math.pow(2,31).toInt))
+    def check(st: SymbolTable): Unit = {}
 }
 
 case class BoolLiterNode(b: Boolean) extends ExprNode {
-    var typeId =Some(BoolType())
+    var typeId: Option[Identifier] =Some(BoolType())
+    def check(st: SymbolTable): Unit = {}
 }
 
 case class CharLiterNode(c: Char) extends ExprNode {
-    var typeId = Some(CharType())
+    var typeId: Option[Identifier] = Some(CharType())
+    def check(st: SymbolTable): Unit = {}
 }
 
 case class StringLiterNode(s: String) extends ExprNode {
-    var typeId = Some(StringType())
+    var typeId: Option[Identifier] = Some(StringType())
+    def check(st: SymbolTable): Unit = {}
 }
 
 case class PairLiterNode() extends ExprNode {
-    var typeId = Some(NullPairType())
+    var typeId: Option[Identifier] = Some(NullPairType())
+    def check(st: SymbolTable): Unit = {}
 }
 
-case class ArrayLiterNode(es: List[ExprNode]) extends AssignRHSNode 
+case class ArrayLiterNode(es: List[ExprNode]) extends AssignRHSNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
