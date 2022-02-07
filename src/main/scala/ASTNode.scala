@@ -19,8 +19,22 @@ sealed trait StatNode extends ASTNode
 
 case class SkipNode() extends StatNode
 
-case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode)
-    extends StatNode
+case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode) extends StatNode {
+    def check(st: SymbolTable): Unit = {
+        val varName: String = i.s
+        var varObj: Option[Variable] = None
+
+        st.lookup(varName) match {
+            case None => {
+                varObj = Some(Variable(t.typeId))
+                st.add(varName, varObj.get)
+            }
+            case Some(id) => {
+                println(varName + " is already declared") // TODO halt semantic checks.
+            }
+        }
+    }
+}
 
 case class LRAssignNode(l: AssignLHSNode, r: AssignRHSNode) extends StatNode
 
@@ -55,18 +69,28 @@ case class NewPairNode(e1: ExprNode, e2: ExprNode) extends AssignRHSNode
 case class CallNode(i: IdentNode, args: List[ExprNode]) extends AssignRHSNode
 
 // Type
-sealed trait TypeNode extends ASTNode
+sealed trait TypeNode extends ASTNode {
+    val typeId: Type
+}
 
 // Base Type
 sealed trait BaseTypeNode extends TypeNode with PairElemTypeNode
 
-case class IntTypeNode() extends BaseTypeNode
+case class IntTypeNode() extends BaseTypeNode {
+    val typeId = IntType(Math.pow(2, -31).toInt, Math.pow(2,31).toInt)
+}
 
-case class BoolTypeNode() extends BaseTypeNode
+case class BoolTypeNode() extends BaseTypeNode {
+    val typeId = BoolType()
+}
 
-case class CharTypeNode() extends BaseTypeNode
+case class CharTypeNode() extends BaseTypeNode {
+    val typeId = CharType()
+}
 
-case class StringTypeNode() extends BaseTypeNode
+case class StringTypeNode() extends BaseTypeNode {
+    val typeId = StringType()
+}
 
 // Array Type
 /* Special Representation: dimension tracks how many dimensions the identifier's
@@ -75,7 +99,9 @@ case class StringTypeNode() extends BaseTypeNode
  */
 case class ArrayTypeNode(t: TypeNode, dimension: Int = 1)
     extends PairElemTypeNode
-    with TypeNode
+    with TypeNode {
+        val typeId = ArrayType(t.typeId, 0)
+    }
 
 // object ArrayTypeNode {
 //     // def apply(t: TypeNode, dimension: Int = 1z): ArrayTypeNode =
@@ -88,13 +114,17 @@ case class ArrayTypeNode(t: TypeNode, dimension: Int = 1)
 
 // Pair Type
 case class PairTypeNode(fst: PairElemTypeNode, snd: PairElemTypeNode)
-    extends TypeNode
+    extends TypeNode {
+        val typeId = PairType(fst.typeId, snd.typeId)
+}
 
 // Pair Elem Type
 sealed trait PairElemTypeNode extends TypeNode
 
 // For the case where just 'pair' is parsed
-case class PairElemTypePairNode() extends PairElemTypeNode
+case class PairElemTypePairNode() extends PairElemTypeNode {
+    val typeId = NestedPairType()
+}
 
 // Expression
 sealed trait ExprNode extends AssignRHSNode

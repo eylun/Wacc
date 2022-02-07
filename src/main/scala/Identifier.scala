@@ -19,7 +19,7 @@ case class StringType() extends Type
 
 case class NestedPairType() extends Type
 
-case class ArrayType(elemType: Type, elements: Int) extends Type
+case class ArrayType(elemType: Type, var elements: Int) extends Type
 
 case class PairType(fstType: Type, sndType: Type) extends Type
 
