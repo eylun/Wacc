@@ -185,7 +185,7 @@ object syntax {
        expressions separareted by semicolons */
 
     // program := 'begin' <func>* <stat> 'end'
-    lazy val program = "begin" ~> sepBy(anyType, ";") <~ "end"
+    lazy val program = "begin" ~> sepBy(stat, "nl") <~ "end"
 
     val parse = fully(program)
 
@@ -241,6 +241,42 @@ object syntax {
     // assign-rhs := expr <|> array-liter <|> 'newpair' '(' expr ',' expr ')' <|> pairElem
     //               <|> 'call' ident '(' arg-list? ')'
     lazy val assignRHS = expr <|> arrayLiter <|> newPair <|> pairElem <|> call
+
+    /* STATEMENTS */
+    lazy val skipStat = "skip" #> SkipNode()
+    lazy val newAssignStat =
+        NewAssignNode.lift(anyType, identifier, "=" *> assignRHS)
+    lazy val lrAssignStat = LRAssignNode.lift(assignLHS, "=" *> assignRHS)
+    lazy val readStat = ReadNode.lift("read" *> assignLHS)
+    lazy val freeStat = FreeNode.lift("free" *> expr)
+    lazy val returnStat = ReturnNode.lift("return" *> expr)
+    lazy val exitStat = ExitNode.lift("exit" *> expr)
+    lazy val printStat = PrintNode.lift("print" *> expr)
+    lazy val printlnStat = PrintlnNode.lift("println" *> expr)
+
+    //if-else-stat := ‘if’ ⟨expr ⟩ ‘then’ ⟨stat ⟩ ‘else’ ⟨stat ⟩ ‘fi’
+    lazy val ifThenElseStat: Parsley[StatNode] =
+        IfThenElseNode.lift(
+          "if" *> expr,
+          "then" *> sepBy1(stat, ";"),
+          "else" *> sepBy1(stat, ";") <* "fi"
+        )
+
+    //while-do-stat := ‘while’ ⟨expr ⟩ ‘do’ ⟨stat ⟩ ‘done’
+    lazy val whileDoStat =
+        WhileDoNode.lift("while" *> expr, "do" *> sepBy1(stat, ";") <* "done")
+
+    // begin-end-stat := ‘begin’ ⟨stat ⟩ ‘end’
+    lazy val beginEndStat =
+        BeginEndNode.lift("begin" *> sepBy1(stat, ";") <* "end")
+
+    // stat := 'skip' | ⟨type ⟩ ⟨ident ⟩ ‘=’ ⟨assign-rhs ⟩ | ⟨assign-lhs ⟩ ‘=’ ⟨assign-rhs ⟩ | ‘read’ ⟨assign-lhs ⟩
+    //  | ‘free’ ⟨expr ⟩ | ‘return’ ⟨expr ⟩ | ‘exit’ ⟨expr ⟩ | ‘print’ ⟨expr ⟩ | ‘println’ ⟨expr ⟩
+    //  | ‘if’ ⟨expr ⟩ ‘then’ ⟨stat ⟩ ‘else’ ⟨stat ⟩ ‘fi’ | ‘while’ ⟨expr ⟩ ‘do’ ⟨stat ⟩ ‘done’
+    //  | ‘begin’ ⟨stat ⟩ ‘end’ | ⟨stat ⟩ ‘;’ ⟨stat ⟩
+    lazy val stat: Parsley[StatNode] =
+        skipStat <|> newAssignStat <|> lrAssignStat <|> readStat <|> freeStat <|> returnStat <|> exitStat <|> printStat <|> printlnStat <|>
+            ifThenElseStat <|> whileDoStat <|> beginEndStat
 
     /* TYPES */
     // type := <base-type> | <array-type> | <pair-type>

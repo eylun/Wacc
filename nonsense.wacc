@@ -1,14 +1,46 @@
 begin
-pair(int, string);
-int;
-bool;
-char;
-string;
-int[];
-char[][][];
-pair(int[][], bool);
-pair(int[][], bool[][]);
-pair(int[][], bool[][])[];
-pair(pair, pair);
-pair(pair(int[][], bool[][])[], pair(char, string)[])
+# Statements
+<<<<<<< HEAD
+#skip 
+#return x + 5 
+#print +5000 
+#println "hello32"
+=======
+skip;
+return x + 5;
+print +5000;
+println "hello32";
+>>>>>>> d01b0772f5802eee75b5a79befb955fe31b1adb1
+
+if true 
+    then print "true" 
+else 
+<<<<<<< HEAD
+    free x && y;
+	println "hello32";
+	int x = "haha";
+	char[][][][][][][][] waccccccc = 55
+fi
+
+#while y > 0
+#    do read z
+#done ;
+
+#begin 
+#print "hello world"
+#end 
+=======
+    free x && y
+fi ;
+
+while y > 0
+    do read z
+done 
+;
+
+begin 
+print "hello world"
+end 
+>>>>>>> d01b0772f5802eee75b5a79befb955fe31b1adb1
+
 end
