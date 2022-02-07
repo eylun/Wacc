@@ -1,10 +1,20 @@
 sealed trait ASTNode {
     val pos: (Int, Int)
+    import parsley.Parsley.pos
+    import parsley.implicits.zipped.LazyZipped2
 }
 
 // Program
 case class ProgramNode(flist: List[FuncNode], s: StatNode)(val pos: (Int, Int))
     extends ASTNode
+
+object ProgramNode {
+    def apply(
+        flist: => Parsley[List[FuncNode]],
+        s: => Parsley[StatNode]
+    ): Parsley[ProgramNode] =
+        pos <**> (flist, s).lazyZipped(ProgramNode(_, _) _)
+}
 
 // Function
 case class FuncNode(
@@ -15,14 +25,36 @@ case class FuncNode(
 )(val pos: (Int, Int))
     extends ASTNode
 
+object FuncNode {
+    def apply(
+        t: => Parsley[TypeNode],
+        i: => Parsley[IdentNode],
+        plist: => Parsley[List[ParamNode]],
+        s: => Parsley[StatNode]
+    ): Parsley[FuncNode] =
+        pos <**> (t, i, plist, s).zipped(FuncNode(_, _, _, _) _)
+}
+
 // Param
 case class ParamNode(t: TypeNode, i: IdentNode)(val pos: (Int, Int))
     extends ASTNode
+
+object ParamNode {
+    def apply(
+        t: => Parsley[TypeNode],
+        i: => Parsley[IdentNode]
+    ): Parsley[ParamNode] =
+        pos <**> (t, i).lazyZipped(ParamNode(_, _) _)
+}
 
 // Statement
 sealed trait StatNode extends ASTNode
 
 case class SkipNode()(val pos: (Int, Int)) extends StatNode
+
+object SkipNode {
+    def apply(): Parsley[SkipNode] = pos <**> pure(SkipNode())
+}
 
 case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode)(
     val pos: (Int, Int)
@@ -45,13 +77,38 @@ case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode)(
     }
 }
 
+object NewAssignNode {
+    def apply(
+        t: => Parsley[TypeNode],
+        i: => Parsley[IdentNode],
+        r: => Parsley[AssignRHSNode]
+    ): Parsley[NewAssignNode] =
+        pos <**> (t, i, r).lazyZipped3(NewAssignNode(_, _, _) _)
+}
+
 case class LRAssignNode(l: AssignLHSNode, r: AssignRHSNode)(val pos: (Int, Int))
     extends StatNode
 
+object LRAssignNode {
+    def apply(
+        l: => Parsley[AssignLHSNode],
+        r: => Parsley[AssignRHSNode]
+    ): Parsley[LRAssignNode] =
+        pos <**> (l, r).lazyZipped2(LRAssignNode(_, _) _)
+}
+
 case class ReadNode(l: AssignLHSNode)(val pos: (Int, Int)) extends StatNode
 
+object ReadNode {
+    def apply(l: => Parsley[AssignLHSNode]): Parsley[ReadNode] =
+        pos <**> l.map(ReadNode(_) _)
+}
 case class FreeNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode
 
+object FreeNode {
+    def apply(e: => Parsley[ExprNode]): Parsley[FreeNode] =
+        pos <**> e.map(FreeNode(_), _)
+}
 case class ReturnNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode
 
 case class ExitNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode
@@ -95,16 +152,32 @@ case class IntTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
     val typeId = IntType(Math.pow(2, -31).toInt, Math.pow(2, 31).toInt)
 }
 
+object IntTypeNode {
+    def apply(): Parsley[IntTypeNode] = pos <**> pure(IntTypeNode())
+}
+
 case class BoolTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
     val typeId = BoolType()
+}
+
+object BoolTypeNode {
+    def apply(): Parsley[BoolTypeNode] = pos <**> pure(BoolTypeNode())
 }
 
 case class CharTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
     val typeId = CharType()
 }
 
+object CharTypeNode {
+    def apply(): Parsley[CharTypeNode] = pos <**> pure(CharTypeNode())
+}
+
 case class StringTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
     val typeId = StringType()
+}
+
+object StringTypeNode {
+    def apply(): Parsley[StringTypeNode] = pos <**> pure(StringTypeNode())
 }
 
 // Array Type
@@ -118,20 +191,28 @@ case class ArrayTypeNode(t: TypeNode, dimension: Int = 1)(val pos: (Int, Int))
     val typeId = ArrayType(t.typeId, 0)
 }
 
-// object ArrayTypeNode {
-//     // def apply(t: TypeNode, dimension: Int = 1z): ArrayTypeNode =
-//     //     ArrayTypeNode(t, 1)
-//     def apply(t: TypeNode, dimension: Int = 1): ArrayTypeNode =
-//         ArrayTypeNode(t, dimension)
-//     def unapply(a: ArrayTypeNode): Option[(TypeNode, Int)] =
-//         Option(a.t, a.dimension)
-// }
+object ArrayTypeNode {
+    def apply(
+        t: Parsley[TypeNode],
+        dimension: Parsley[Int]
+    ): Parsley[ArrayTypeNode] =
+        pos <**> (t, dimension).lazyZipped(ArrayTypeNode(_, _) _)
+
+}
 
 // Pair Type
 case class PairTypeNode(fst: PairElemTypeNode, snd: PairElemTypeNode)(
     val pos: (Int, Int)
 ) extends TypeNode {
     val typeId = PairType(fst.typeId, snd.typeId)
+}
+
+object PairTypeNode {
+    def apply(
+        fst: => Parsley[PairElemTypeNode],
+        snd: Parsley[PairElemTypeNode]
+    ): Parsley[PairTypeNode] =
+        pos <**> (fst, snd).lazyZipped(PairTypeNode(_, _) _)
 }
 
 // Pair Elem Type
@@ -141,6 +222,11 @@ sealed trait PairElemTypeNode extends TypeNode
 case class PairElemTypePairNode()(val pos: (Int, Int))
     extends PairElemTypeNode {
     val typeId = NestedPairType()
+}
+
+object PairElemTypePairNode {
+    def apply(): Parsley[PairElemTypePairNode] =
+        pos <**> pure(PairElemTypeNode())
 }
 
 // Expression
