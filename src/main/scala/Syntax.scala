@@ -69,7 +69,14 @@ object utility {
 
 /* Lexer */
 object lexer {
-    import parsley.character.{digit, isWhitespace, alphaNum, noneOf, string, letter}
+    import parsley.character.{
+        digit,
+        isWhitespace,
+        alphaNum,
+        noneOf,
+        string,
+        letter
+    }
     import parsley.token.{LanguageDef, Lexer, Parser, Predicate}
     import parsley.implicits.character.{charLift, stringLift}
     import parsley.combinator.{eof, many, manyUntil, optional, some}
@@ -186,7 +193,10 @@ object syntax {
        expressions separareted by semicolons */
 
     // program := 'begin' <func>* <stat> 'end'
-    lazy val program = ProgramNode.lift("begin" ~> some(func), stat <~ "end")
+    lazy val program = ProgramNode.lift(
+      "begin" ~> manyUntil(func, lookAhead(stat)),
+      stat <~ "end"
+    )
 
     val parse = fully(program)
 
@@ -241,7 +251,9 @@ object syntax {
     // 		<|> bin op <|> paren
     // unary-oper
     lazy val expr: Parsley[ExprNode] =
-        precedence[ExprNode]("(" *> expr <* ")" <|> attempt(arrayElem) <|> exprAtoms)(
+        precedence[ExprNode](
+          "(" *> expr <* ")" <|> attempt(arrayElem) <|> exprAtoms
+        )(
           Ops(Prefix)(
             "!" #> Not,
             attempt("-" <~ notFollowedBy(number)) #> Neg,
