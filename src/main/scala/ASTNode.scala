@@ -62,7 +62,7 @@ case class StatListNode(s: List[StatNode]) extends StatNode
 sealed trait AssignLHSNode extends ASTNode
 
 // Assign RHS
-sealed trait AssignRHSNode extends ASTNode
+sealed trait AssignRHSNode extends ASTNode 
 
 case class NewPairNode(e1: ExprNode, e2: ExprNode) extends AssignRHSNode
 
@@ -169,14 +169,24 @@ case class FirstPairElemNode(e: ExprNode) extends PairElemNode
 case class SecondPairElemNode(e: ExprNode) extends PairElemNode
 
 // Literals
-case class IntLiterNode(i: Int) extends ExprNode
+case class IntLiterNode(i: Int) extends ExprNode {
+    var typeId = Some(IntType(Math.pow(2, -31).toInt, Math.pow(2,31).toInt))
+}
 
-case class BoolLiterNode(b: Boolean) extends ExprNode
+case class BoolLiterNode(b: Boolean) extends ExprNode {
+    var typeId =Some(BoolType())
+}
 
-case class CharLiterNode(c: Char) extends ExprNode
+case class CharLiterNode(c: Char) extends ExprNode {
+    var typeId = Some(CharType())
+}
 
-case class StringLiterNode(s: String) extends ExprNode
+case class StringLiterNode(s: String) extends ExprNode {
+    var typeId = Some(StringType())
+}
 
-case class PairLiterNode() extends ExprNode
+case class PairLiterNode() extends ExprNode {
+    var typeId = Some(NullPairType())
+}
 
-case class ArrayLiterNode(es: List[ExprNode]) extends AssignRHSNode
+case class ArrayLiterNode(es: List[ExprNode]) extends AssignRHSNode 

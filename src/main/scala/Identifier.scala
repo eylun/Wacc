@@ -23,5 +23,7 @@ case class ArrayType(elemType: Type, var elements: Int) extends Type
 
 case class PairType(fstType: Type, sndType: Type) extends Type
 
+case class NullPairType() extends Type
+
 case class FunctionId(returnType: Type, params: Array[Param], 
                       symbolTable: SymbolTable) extends Identifier
