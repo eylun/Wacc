@@ -221,7 +221,20 @@ case class Chr(x: ExprNode) extends UnaryOpNode {
 sealed trait BinaryOpNode extends ExprNode
 case class Mult(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        y.check(st)
+        x.typeId.get match {
+            case IntType() => {
+            y.typeId.get match {
+                case IntType() => {this.typeId = Some(IntType())}
+                case _         => println( "incompatible type")
+            }
+                }
+            case _        => println( "incompatible type")    
+        }
+    
+    }
 }
 case class Div(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
