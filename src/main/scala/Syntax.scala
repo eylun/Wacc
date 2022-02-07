@@ -80,6 +80,7 @@ object lexer {
     import parsley.token.{LanguageDef, Lexer, Parser, Predicate}
     import parsley.implicits.character.{charLift, stringLift}
     import parsley.combinator.{eof, many, manyUntil, optional, some}
+    import parsley.errors.combinator.ErrorMethods
 
     val lang = LanguageDef.plain.copy(
       commentLine = "#",
@@ -96,7 +97,7 @@ object lexer {
 
     val identifier = IdentNode.lift(lexer.identifier)
     val number =
-        lexer.lexeme(digit.foldLeft1[Int](0)((n, d) => n * 10 + d.asDigit))
+        lexer.lexeme(digit.foldLeft1[Long](0)((n, d) => n * 10 + d.asDigit))
 
     // escaped-char := '0' | 'b' | 't' | 'n' | 'f' | 'r' | '"' | ''' | '\'
     val escapedChar =
@@ -108,7 +109,7 @@ object lexer {
         noneOf('"', '\'', '\\') <|> ("\\" *> esc)
 
     // int-sign := '+' | '-'
-    val intSign = "+" #> identity[Int] _ <|> "-" #> ((x: Int) => -x)
+    val intSign = "+" #> identity[Long] _ <|> "-" #> ((x: Long) => -x)
 
     /* LITERALS */
 
@@ -120,7 +121,11 @@ object lexer {
 
     // int-liter := <int-sign>? <digit>+
     val intLiter: Parsley[ExprNode] =
-        IntLiterNode.lift(intSign <*> number <|> number)
+        IntLiterNode.lift(
+          (intSign <*> number <|> number).collectMsg("Integer Overflow") {
+              case x if x.toInt == x => x.toInt
+          }
+        )
 
     // TODO: Try to use implicits to not use 'lex.keyword' everytime
     // bool-liter := true | false
@@ -194,7 +199,7 @@ object syntax {
 
     // program := 'begin' <func>* <stat> 'end'
     lazy val program = ProgramNode.lift(
-      "begin" ~> manyUntil(func, lookAhead(stat)),
+      "begin" ~> manyUntil(func, attempt(lookAhead(stat))),
       stat <~ "end"
     )
 
@@ -221,7 +226,6 @@ object syntax {
     }
     lazy val verifyCleanExit: PartialFunction[StatNode, StatNode] = {
         case x if cleanExit(x) => x
-
     }
     def canExit(base: StatNode): Boolean = {
         base match {
@@ -238,9 +242,11 @@ object syntax {
             case IfThenElseNode(_, s1, s2)   => cleanExit(s1) && cleanExit(s2)
             case StatListNode(s) =>
                 s.zipWithIndex.foreach {
-                    case (ReturnNode(_) | ExitNode(_), n) =>
-                        return n == s.length - 1
-                    case _ => ()
+                    case (ReturnNode(_) | ExitNode(_), n)
+                        if n == s.length - 1 =>
+                        return true
+                    case (x: IfThenElseNode, _) if cleanExit(x) => return true
+                    case _                                      => ()
                 }
                 false
             case _ => false
@@ -296,7 +302,7 @@ object syntax {
 
     // array-liter := ‘[’ ( ⟨expr ⟩ (‘,’ ⟨expr ⟩)* )? ‘]’
     // ***Note: difference between option vs. optional?
-    lazy val arrayLiter = ArrayLiterNode.lift("[" *> sepBy1(expr, ",") <* "]")
+    lazy val arrayLiter = ArrayLiterNode.lift("[" *> sepBy(expr, ",") <* "]")
 
     // assign-rhs := expr <|> array-liter <|> 'newpair' '(' expr ',' expr ')' <|> pairElem
     //               <|> 'call' ident '(' arg-list? ')'

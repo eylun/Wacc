@@ -27,7 +27,7 @@ class FrontendSpec extends AnyFlatSpec {
         invalid.foreach { case x: File =>
             syntax.parse.parseFromFile(x).get match {
                 case Success(s) => {
-                    println(s)
+                    println(x)
                     fail("Invalid program somehow passed")
                 }
                 case Failure(err) => {
