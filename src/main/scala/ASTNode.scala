@@ -1,3 +1,6 @@
+import semantics.{typeCheckArithmeticBinOp, typeCheckOrderingBinOp, 
+                typeCheckEqualityBinOp, typeCheckLogicalBinOp}
+
 sealed trait ASTNode {
     var typeId: Option[Identifier]
     def check(st: SymbolTable): Unit
@@ -237,193 +240,79 @@ sealed trait BinaryOpNode extends ExprNode
 case class Mult(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        x.check(st)
-        y.check(st)
-        x.typeId.get match {
-            case IntType() => {
-                y.typeId.get match {
-                    case IntType() => {this.typeId = Some(IntType())}
-                    case _         => println("incompatible argument type for operator '*'")
-                }
-            }
-            case _        => println("incompatible argument type for operator '*'")    
-        }
+        typeCheckArithmeticBinOp(st, this, x, y)
     }
 }
 case class Div(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        x.check(st)
-        y.check(st)
-        x.typeId.get match {
-            case IntType() => {
-                y.typeId.get match {
-                    case IntType() => {this.typeId = Some(IntType())}
-                    case _         => println("incompatible argument type for operator '/'")
-                }
-            }
-            case _        => println("incompatible argument type for operator '/'")    
-        }
+        typeCheckArithmeticBinOp(st, this, x, y)
     }
 }
 case class Mod(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        x.check(st)
-        y.check(st)
-        x.typeId.get match {
-            case IntType() => {
-                y.typeId.get match {
-                    case IntType() => {this.typeId = Some(IntType())}
-                    case _         => println("incompatible argument type for operator '%'")
-                }
-            }
-            case _        => println("incompatible argument type for operator '%'")    
-        }
+        typeCheckArithmeticBinOp(st, this, x, y)
     }
 }
 case class Add(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        x.check(st)
-        y.check(st)
-        x.typeId.get match {
-            case IntType() => {
-                y.typeId.get match {
-                    case IntType() => {this.typeId = Some(IntType())}
-                    case _         => println("incompatible argument type for operator '+'")
-                }
-            }
-            case _        => println("incompatible argument type for operator '+'")    
-        }
+        typeCheckArithmeticBinOp(st, this, x, y)
     }
 }
 case class Sub(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        x.check(st)
-        y.check(st)
-        x.typeId.get match {
-            case IntType() => {
-                y.typeId.get match {
-                    case IntType() => {this.typeId = Some(IntType())}
-                    case _         => println("incompatible argument type for operator '-'")
-                }
-            }
-            case _        => println("incompatible argument type for operator '-'")   
-        }
+        typeCheckArithmeticBinOp(st, this, x, y)
     }
 }
 case class GT(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        x.check(st)
-        y.check(st)
-        if (x.typeId.get == IntType() || x.typeId.get == CharType()) {
-            if (x.typeId.get == y.typeId.get) { 
-                this.typeId = Some(BoolType())
-            } else {
-                println("incompatible or non-matching argument types for operator '>'")
-            }
-        } else {
-            println("incompatible argument type for operator '>'")
-        }
+        typeCheckOrderingBinOp(st, this, x, y)
     }
 }
 case class GTE(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        x.check(st)
-        y.check(st)
-        if (x.typeId.get == IntType() || x.typeId.get == CharType()) {
-            if (x.typeId.get == y.typeId.get) { 
-                this.typeId = Some(BoolType())
-            } else {
-                println("incompatible or non-matching argument types for operator '>'")
-            }
-        } else {
-            println("incompatible argument type for operator '>'")
-        }
+        typeCheckOrderingBinOp(st, this, x, y)
     }
 }
 case class LT(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        x.check(st)
-        y.check(st)
-        if (x.typeId.get == IntType() || x.typeId.get == CharType()) {
-            if (x.typeId.get == y.typeId.get) { 
-                this.typeId = Some(BoolType())
-            } else {
-                println("incompatible or non-matching argument types for operator '>'")
-            }
-        } else {
-            println("incompatible argument type for operator '>'")
-        }
+        typeCheckOrderingBinOp(st, this, x, y)
     }
 }
 case class LTE(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        x.check(st)
-        y.check(st)
-        if (x.typeId.get == IntType() || x.typeId.get == CharType()) {
-            if (x.typeId.get == y.typeId.get) { 
-                this.typeId = Some(BoolType())
-            } else {
-                println("incompatible or non-matching argument types for operator '>'")
-            }
-        } else {
-            println("incompatible argument type for operator '>'")
-        }
+        typeCheckOrderingBinOp(st, this, x, y)
     }
 }
 case class Equal(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        x.check(st)
-        y.check(st)
-        if (x.typeId.get == y.typeId.get) { 
-            this.typeId = Some(BoolType())
-        } else {
-            println("non-matching argument types for operator '='")
-        }
+        typeCheckEqualityBinOp(st, this, x, y)
     }
 }
 case class NotEqual(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        x.check(st)
-        y.check(st)
-        if (x.typeId.get == y.typeId.get) { 
-            this.typeId = Some(BoolType())
-        } else {
-            println("non-matching argument types for operator '='")
-        }
+        typeCheckEqualityBinOp(st, this, x, y)
     }
 }
 case class And(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        x.check(st)
-        y.check(st)
-        if (x.typeId.get == BoolType() && y.typeId.get == BoolType()) { 
-            this.typeId = Some(BoolType())
-        } else {
-            println("incompatible argument type for operator '&&'")
-        }
+        typeCheckLogicalBinOp(st, this, x, y)
     }
 }
 case class Or(x: ExprNode, y: ExprNode) extends BinaryOpNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        x.check(st)
-        y.check(st)
-        if (x.typeId.get == BoolType() && y.typeId.get == BoolType()) { 
-            this.typeId = Some(BoolType())
-        } else {
-            println("incompatible argument type for operator '&&'")
-        }
+        typeCheckLogicalBinOp(st, this, x, y)
     }
 }
 
@@ -434,8 +323,7 @@ case class IdentNode(s: String) extends ExprNode with AssignLHSNode {
     def check(st: SymbolTable): Unit = {
         st.lookup(s) match {
             case None => println("identifier does not exist in scope")
-            case Some(Variable(t)) => this.typeId = Some(t)
-            case _ => println("identifier not a variable in scope")
+            case Some(t) => this.typeId = Some(t)
         }
     }
 }
