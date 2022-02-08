@@ -7,8 +7,10 @@ object SyntaxParser {
     def main(args: Array[String]): Unit = {
         assert(args.length == 1, "Usage: ./compile <wacc filename>")
         println("Parsing file: " + args(0))
+        // implicit val eb = new WaccErrorBuilder
         val waccFile = new File(args(0))
-        val parseResult = syntax.parse.parseFromFile(waccFile)
+        val parseResult =
+            syntax.parse.parseFromFile(waccFile)
         parseResult.get match {
             case Success(x) =>
                 println(x)

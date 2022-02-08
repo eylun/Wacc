@@ -85,8 +85,8 @@ object lexer {
     val lang = LanguageDef.plain.copy(
       commentLine = "#",
       space = Predicate(isWhitespace),
-      identStart = Parser('_' <|> letter),
-      identLetter = Parser("_" <|> alphaNum),
+      identStart = Predicate(c => (c == '_' || c.isLetter)),
+      identLetter = Predicate(c => (c == '_' || c.isLetterOrDigit)),
       keywords = utility.keywords,
       operators = utility.operators
     )
@@ -95,7 +95,7 @@ object lexer {
 
     def fully[A](p: => Parsley[A]): Parsley[A] = lexer.whiteSpace ~> p <~ eof
 
-    val identifier = IdentNode(lexer.identifier)
+    val ident = IdentNode(lexer.identifier)
     val number =
         lexer.lexeme(digit.foldLeft1[Long](0)((n, d) => n * 10 + d.asDigit))
 
@@ -152,21 +152,17 @@ object lexer {
     // expression atoms
     val exprAtoms: Parsley[ExprNode] =
         intLiter <|> boolLiter <|> charLiter <|> stringLiter <|> pairLiter <|>
-            identifier
+            ident
 
     /* TYPES */
     // base-type := 'int' | 'bool' | 'char' | 'string'
-    lazy val intType = lexer.keyword("int") *> IntTypeNode()
-    lazy val boolType =
-        lexer.keyword("bool") *> BoolTypeNode()
-    lazy val charType =
-        lexer.keyword("char") *> CharTypeNode()
-    lazy val stringType =
-        lexer.keyword("string") *> StringTypeNode()
+    lazy val intType = IntTypeNode <# lexer.keyword("int")
+    lazy val boolType = BoolTypeNode <# lexer.keyword("bool")
+    lazy val charType = CharTypeNode <# lexer.keyword("char")
+    lazy val stringType = StringTypeNode <# lexer.keyword("string")
     lazy val baseType: Parsley[BaseTypeNode] =
         intType <|> boolType <|> charType <|> stringType
-    val pairBaseType =
-        lexer.keyword("pair") *> PairElemTypePairNode()
+    val pairBaseType = PairElemTypePairNode <# lexer.keyword("pair")
 
     object implicits {
         implicit def implicitLexeme(s: String): Parsley[Unit] = {
@@ -179,7 +175,7 @@ object lexer {
 
 /* Syntax Parser */
 object syntax {
-    import lexer.{baseType, pairBaseType, fully, exprAtoms, number, identifier}
+    import lexer.{baseType, pairBaseType, fully, exprAtoms, number, ident}
     import lexer.implicits.implicitLexeme
     import parsley.debug.{DebugCombinators, FullBreak}
     import parsley.combinator.{
@@ -199,7 +195,7 @@ object syntax {
 
     // program := 'begin' <func>* <stat> 'end'
     lazy val program = ProgramNode(
-      "begin" ~> manyUntil(func, attempt(lookAhead(stat))),
+      "begin" ~> many(func).label("function declarations"),
       stat <~ "end"
     )
 
@@ -207,20 +203,22 @@ object syntax {
 
     /* FUNCTIONS */
     lazy val func: Parsley[FuncNode] =
-        FuncNode(
-          anyType,
-          identifier,
-          "(" ~> sepBy(param, ",") <~ ")",
-          "is" ~> stat
-              .collectMsg(
-                "Missing return or exit statement on a path"
-              )(verifyFuncExit)
-              .collectMsg(
-                "Return Statement not at end of statement block"
-              )(verifyCleanExit) <~ "end"
-        )
+        attempt {
+            FuncNode(
+              anyType,
+              ident,
+              "(" ~> sepBy(param, ",") <~ ")",
+              "is" ~> stat
+                  .collectMsg(
+                    "Missing return or exit statement on a path"
+                  )(verifyFuncExit)
+                  .collectMsg(
+                    "Return Statement not at end of statement block"
+                  )(verifyCleanExit) <~ "end"
+            )
+        }
 
-    lazy val param: Parsley[ParamNode] = ParamNode(anyType, identifier)
+    lazy val param: Parsley[ParamNode] = ParamNode(anyType, ident)
     lazy val verifyFuncExit: PartialFunction[StatNode, StatNode] = {
         case x if canExit(x) => x
     }
@@ -231,8 +229,8 @@ object syntax {
         base match {
             case ReturnNode(_) | ExitNode(_) => true
             case IfThenElseNode(_, s1, s2)   => canExit(s1) && canExit(s2)
-            case StatListNode(s) => s.foldLeft(false)((x, y) => x || canExit(y))
-            case _               => false
+            case StatListNode(s)             => s.exists(canExit)
+            case _                           => false
         }
     }
 
@@ -277,7 +275,7 @@ object syntax {
 
     // array-elem := identifier ('[' <expr> ']')+
     lazy val arrayElem =
-        ArrayElemNode(identifier, some("[" *> expr <* "]"))
+        ArrayElemNode(ident, some("[" *> expr <* "]"))
 
     // pair-elem := 'fst' expr <|> 'snd' expr
     lazy val firstPairElem = FirstPairElemNode("fst" *> expr)
@@ -286,7 +284,7 @@ object syntax {
     lazy val pairElem = firstPairElem <|> secondPairElem
     /* ASSIGNMENTS */
     // assignLHS := ident <|> array-elem <|> pair-elem
-    lazy val assignLHS = attempt(arrayElem) <|> identifier <|> pairElem
+    lazy val assignLHS = attempt(arrayElem) <|> ident <|> pairElem
 
     // arg-list := expr (',' expr )*
     lazy val exprArgList: Parsley[List[ExprNode]] = sepBy(expr, ",")
@@ -298,7 +296,7 @@ object syntax {
 
     // call := ‘call’ ⟨ident⟩ ‘(’ ⟨arg-list⟩? ‘)’
     lazy val call =
-        CallNode("call" *> identifier, "(" *> exprArgList <* ")")
+        CallNode("call" *> ident, "(" *> exprArgList <* ")")
 
     // array-liter := ‘[’ ( ⟨expr ⟩ (‘,’ ⟨expr ⟩)* )? ‘]’
     // ***Note: difference between option vs. optional?
@@ -309,9 +307,9 @@ object syntax {
     lazy val assignRHS = expr <|> arrayLiter <|> newPair <|> pairElem <|> call
 
     /* STATEMENTS */
-    lazy val skipStat = "skip" *> SkipNode()
+    lazy val skipStat = SkipNode <# "skip"
     lazy val newAssignStat =
-        NewAssignNode(anyType, identifier, "=" *> assignRHS)
+        NewAssignNode(anyType, ident, "=" *> assignRHS)
     lazy val lrAssignStat = LRAssignNode(assignLHS, "=" *> assignRHS)
     lazy val readStat = ReadNode("read" *> assignLHS)
     lazy val freeStat = FreeNode("free" *> expr)
@@ -351,23 +349,30 @@ object syntax {
 
     /* TYPES */
     // type := <base-type> | <array-type> | <pair-type>
-    lazy val anyType: Parsley[TypeNode] = arrayType <|> pairType <|> baseType
+    lazy val anyType: Parsley[TypeNode] =
+        attempt(arrayType) <|> pairType <|> baseType
 
     // array-type := <type> '[' ']'
-    lazy val arrayType: Parsley[TypeNode] =
-        precedence[TypeNode](pairType <|> baseType)(
-          (Ops(Postfix)("[]" #> ((t: TypeNode) => {
-              t match {
-                  case ArrayTypeNode(child, n) =>
-                      ArrayTypeNode(child, n + 1)
-                  case _ => ArrayTypeNode(t, 1)
-              }
-          })))
+    lazy val arrayType: Parsley[ArrayTypeNode] =
+        chain.postfix1(
+          ArrayTypeNode(pairType <|> baseType, 0),
+          ArrayTypeNode("[]")
         )
+
+    // lazy val arrayType: Parsley[TypeNode] =
+    //     precedence[TypeNode](pairType <|> baseType)(
+    //       (Ops(Postfix)("[]" #> ((t: TypeNode) => {
+    //           t match {
+    //               case ArrayTypeNode(child, n) =>
+    //                   ArrayTypeNode(child, n + 1)
+    //               case _ => ArrayTypeNode(t, 1)
+    //           }
+    //       })))
+    //     )
 
     // pair-elem-type := <base-type> | <array-type> | 'pair'
     lazy val pairElemType: Parsley[PairElemTypeNode] =
-        attempt(arrayType.cast[ArrayTypeNode]) <|> baseType <|> pairBaseType
+        attempt(arrayType) <|> baseType <|> pairBaseType
 
     // pair-type := 'pair' '(' <pair-elem-type> ',' <pair-elem-type> ')'
     lazy val pairType: Parsley[PairTypeNode] = PairTypeNode(
