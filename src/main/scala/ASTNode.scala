@@ -237,6 +237,12 @@ case class ExitNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
         e.check(st)
+        e.typeId.get match {
+            case IntType() | Variable(IntType()) | FunctionId(IntType(), _, _) => {
+                this.typeId = Some(IntType())
+            }
+            case _ => println("incompatible type: 'exit' takes an expression of type 'int'")
+        }
     }
 }
 
@@ -272,7 +278,16 @@ case class IfThenElseNode(e: ExprNode, s1: StatNode, s2: StatNode)(
     val pos: (Int, Int)
 ) extends StatNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        e.check(st)
+        e.typeId.get match {
+            case BoolType() | Variable(BoolType()) | FunctionId(BoolType(), _, _) => {
+                s1.check(st)
+                s2.check(st)
+            }
+            case _ => println("incompatible type for conditional: 'if' condition must be a boolean")
+        }
+    }
 }
 
 object IfThenElseNode {
@@ -286,7 +301,15 @@ object IfThenElseNode {
 case class WhileDoNode(e: ExprNode, s: StatNode)(val pos: (Int, Int))
     extends StatNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        e.check(st)
+        e.typeId.get match {
+            case BoolType() | Variable(BoolType()) | FunctionId(BoolType(), _, _) => {
+                s.check(st)
+            }
+            case _ => println("incompatible type for while loop: 'while' condition must be a boolean")
+        }
+    }
 }
 
 object WhileDoNode {
@@ -299,7 +322,11 @@ object WhileDoNode {
 
 case class BeginEndNode(s: StatNode)(val pos: (Int, Int)) extends StatNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        // Create new symbol table and link with outer scope
+        val newScopeST = new SymbolTable(Some(st), Map[String, Identifier]())
+        s.check(newScopeST)
+    }
 }
 
 object BeginEndNode {
@@ -310,7 +337,9 @@ object BeginEndNode {
 case class StatListNode(s: List[StatNode])(val pos: (Int, Int))
     extends StatNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        s.foreach { stat => stat.check(st) }
+    }
 }
 object StatListNode {
     def apply(s: => Parsley[List[StatNode]]): Parsley[StatListNode] =
@@ -326,7 +355,12 @@ sealed trait AssignRHSNode extends ASTNode
 case class NewPairNode(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
     extends AssignRHSNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        e1.check(st)
+        e2.check(st)
+        this.typeId = Some(PairType(e1.typeId.get.asInstanceOf[Type],
+                                e2.typeId.get.asInstanceOf[Type]))
+    }
 }
 
 object NewPairNode {
