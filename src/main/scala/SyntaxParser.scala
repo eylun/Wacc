@@ -9,8 +9,6 @@ object SyntaxParser {
         println("Parsing file: " + args(0))
         // implicit val eb = new WaccErrorBuilder
         val waccFile = new File(args(0))
-        // val parseResult =
-        //     syntax.parse.parseFromFile[WaccError](waccFile)
         val parseResult =
             syntax.parse.parseFromFile(waccFile)
         parseResult.get match {

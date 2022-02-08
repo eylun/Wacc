@@ -7,9 +7,10 @@ import semantics.{
     typeCheckEqualityBinOp,
     typeCheckLogicalBinOp
 }
+import parsley.errors.combinator.ErrorMethods
+import java.util.function.UnaryOperator
 
 sealed trait ASTNode {
-    val pos: (Int, Int)
     var typeId: Option[Identifier]
     def check(st: SymbolTable): Unit
 }
@@ -25,7 +26,8 @@ object ProgramNode {
         flist: => Parsley[List[FuncNode]],
         s: => Parsley[StatNode]
     ): Parsley[ProgramNode] =
-        pos <**> (flist, s).lazyZipped(ProgramNode(_, _) _)
+        pos <**> (flist, s.label("program statements"))
+            .lazyZipped(ProgramNode(_, _) _)
 }
 // Function
 case class FuncNode(
@@ -67,14 +69,12 @@ object ParamNode {
 // Statement
 sealed trait StatNode extends ASTNode
 
-class SkipNode()(val pos: (Int, Int)) extends StatNode {
+case class SkipNode()(val pos: (Int, Int)) extends StatNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {}
 }
 
-object SkipNode {
-    def apply(): Parsley[SkipNode] = pos.map(p => new SkipNode()(p))
-}
+object SkipNode extends ParserBuilderPos0[SkipNode]
 
 case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode)(
     val pos: (Int, Int)
@@ -270,53 +270,32 @@ sealed trait TypeNode extends ASTNode
 // Base Type
 sealed trait BaseTypeNode extends TypeNode with PairElemTypeNode
 
-class IntTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
+case class IntTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
     var typeId: Option[Identifier] = Some(IntType())
     def check(st: SymbolTable): Unit = {}
 }
 
-object IntTypeNode {
-    def apply(): Parsley[IntTypeNode] = pos.map(p => new IntTypeNode()(p))
-}
+object IntTypeNode extends ParserBuilderPos0[IntTypeNode]
 
-class BoolTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
+case class BoolTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
     var typeId: Option[Identifier] = Some(BoolType())
     def check(st: SymbolTable): Unit = {}
 }
 
-object BoolTypeNode {
-    def apply(): Parsley[BoolTypeNode] = pos.map(p => new BoolTypeNode()(p))
-}
+object BoolTypeNode extends ParserBuilderPos0[BoolTypeNode]
 
-class CharTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
+case class CharTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
     var typeId: Option[Identifier] = Some(CharType())
     def check(st: SymbolTable): Unit = {}
 }
-object CharTypeNode {
-    def apply(): Parsley[CharTypeNode] = pos.map(p => new CharTypeNode()(p))
-}
+object CharTypeNode extends ParserBuilderPos0[CharTypeNode]
 
-class StringTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
+case class StringTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
     var typeId: Option[Identifier] = Some(StringType())
     def check(st: SymbolTable): Unit = {}
 }
 
-object StringTypeNode {
-    def apply(): Parsley[StringTypeNode] = pos.map(p => new StringTypeNode()(p))
-}
-
-// Array Type
-/* Special Representation: dimension tracks how many dimensions the identifier's
- * array is. This is inserted upon parsing to make it less tedious for
- * semantic checking.
- */
-case class ArrayTypeNode(t: TypeNode, dimension: Int = 1)
-    extends PairElemTypeNode
-    with TypeNode {
-    val pos: (Int, Int) = t.pos
-    var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
-}
+object StringTypeNode extends ParserBuilderPos0[StringTypeNode]
 
 // Pair Type
 case class PairTypeNode(fst: PairElemTypeNode, snd: PairElemTypeNode)(
@@ -338,15 +317,13 @@ object PairTypeNode {
 sealed trait PairElemTypeNode extends TypeNode
 
 // For the case where just 'pair' is parsed
-class PairElemTypePairNode()(val pos: (Int, Int)) extends PairElemTypeNode {
+case class PairElemTypePairNode()(val pos: (Int, Int))
+    extends PairElemTypeNode {
     var typeId: Option[Identifier] = Some(NestedPairType())
     def check(st: SymbolTable): Unit = {}
 }
 
-object PairElemTypePairNode {
-    def apply(): Parsley[PairElemTypePairNode] =
-        pos.map(p => new PairElemTypePairNode()(p))
-}
+object PairElemTypePairNode extends ParserBuilderPos0[PairElemTypePairNode]
 
 // Expression
 sealed trait ExprNode extends AssignRHSNode
@@ -358,6 +335,11 @@ trait ParserBuilder[T] {
     final def <#(p: Parsley[_]): Parsley[T] = parser <* p
 }
 
+trait ParserBuilderPos0[R] extends ParserBuilder[R] {
+    def apply()(pos: (Int, Int)): R
+    val parser = pos.map(p => apply()(p))
+}
+
 trait ParserBuilderPos1[T1, R] extends ParserBuilder[T1 => R] {
     def apply(x: T1)(pos: (Int, Int)): R
     val parser = pos.map(p => apply(_)(p))
@@ -365,6 +347,34 @@ trait ParserBuilderPos1[T1, R] extends ParserBuilder[T1 => R] {
 
 // Unary Operator
 sealed trait UnaryOpNode extends ExprNode
+
+// Array Type
+/* Special Representation: dimension tracks how many dimensions the identifier's
+ * array is. This is inserted upon parsing to make it less tedious for
+ * semantic checking.
+ */
+case class ArrayTypeNode(t: TypeNode, dimension: Int)(pos: (Int, Int))
+    extends PairElemTypeNode
+    with UnaryOpNode
+    with TypeNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
+object ArrayTypeNode {
+    // Apply function for chain operation
+    def apply(op: => Parsley[Unit]): Parsley[ArrayTypeNode => ArrayTypeNode] =
+        pos.map[ArrayTypeNode => ArrayTypeNode](p =>
+            ((at: ArrayTypeNode) => at.copy(dimension = at.dimension + 1)(p))
+        ) <* op
+
+    // Apply function for first creation
+    def apply(
+        t: => Parsley[TypeNode],
+        dimension: => Int
+    ): Parsley[ArrayTypeNode] =
+        pos <**> t.map(ArrayTypeNode(_, dimension) _)
+}
+
 case class Not(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {}
