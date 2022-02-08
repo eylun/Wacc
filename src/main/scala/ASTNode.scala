@@ -401,7 +401,7 @@ case class ArrayElemNode(i: IdentNode, es: List[ExprNode])
     extends ExprNode
     with AssignLHSNode {
         var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+        def check(st: SymbolTable): Unit = {}
     }
 
 // Pair Elem
@@ -409,12 +409,18 @@ sealed trait PairElemNode extends ExprNode with AssignLHSNode with AssignRHSNode
 
 case class FirstPairElemNode(e: ExprNode) extends PairElemNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        e.check(st)
+        this.typeId = e.typeId
+    }
 }
 
 case class SecondPairElemNode(e: ExprNode) extends PairElemNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        e.check(st)
+        this.typeId = e.typeId
+    }
 }
 
 // Literals
@@ -424,7 +430,7 @@ case class IntLiterNode(i: Int) extends ExprNode {
 }
 
 case class BoolLiterNode(b: Boolean) extends ExprNode {
-    var typeId: Option[Identifier] =Some(BoolType())
+    var typeId: Option[Identifier] = Some(BoolType())
     def check(st: SymbolTable): Unit = {}
 }
 
@@ -444,6 +450,14 @@ case class PairLiterNode() extends ExprNode {
 }
 
 case class ArrayLiterNode(es: List[ExprNode]) extends AssignRHSNode {
+    // Note: if es is empty, calling check() leaves typeId as None, and it is
+    // the declaration node's responsibility to update it.
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        es.foreach { e => e.check(st) }
+        if (!es.isEmpty) {
+            this.typeId = es(0).typeId
+            es.forall(e => { e.typeId.get == this.typeId.get })
+        }
+    }
 }
