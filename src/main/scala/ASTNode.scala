@@ -1,13 +1,24 @@
 import parsley.Parsley
 import parsley.Parsley._
 import parsley.implicits.zipped.{LazyZipped2, LazyZipped3, Zipped4}
-sealed trait ASTNode {
-    val pos: (Int, Int)
+import semantics.{
+    typeCheckArithmeticBinOp,
+    typeCheckOrderingBinOp,
+    typeCheckEqualityBinOp,
+    typeCheckLogicalBinOp
 }
 
+sealed trait ASTNode {
+    val pos: (Int, Int)
+    var typeId: Option[Identifier]
+    def check(st: SymbolTable): Unit
+}
 // Program
 case class ProgramNode(flist: List[FuncNode], s: StatNode)(val pos: (Int, Int))
-    extends ASTNode
+    extends ASTNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 object ProgramNode {
     def apply(
@@ -16,7 +27,6 @@ object ProgramNode {
     ): Parsley[ProgramNode] =
         pos <**> (flist, s).lazyZipped(ProgramNode(_, _) _)
 }
-
 // Function
 case class FuncNode(
     t: TypeNode,
@@ -24,7 +34,10 @@ case class FuncNode(
     plist: List[ParamNode],
     s: StatNode
 )(val pos: (Int, Int))
-    extends ASTNode
+    extends ASTNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 object FuncNode {
     def apply(
@@ -38,7 +51,10 @@ object FuncNode {
 
 // Param
 case class ParamNode(t: TypeNode, i: IdentNode)(val pos: (Int, Int))
-    extends ASTNode
+    extends ASTNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 object ParamNode {
     def apply(
@@ -51,7 +67,10 @@ object ParamNode {
 // Statement
 sealed trait StatNode extends ASTNode
 
-class SkipNode()(val pos: (Int, Int)) extends StatNode
+class SkipNode()(val pos: (Int, Int)) extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 object SkipNode {
     def apply(): Parsley[SkipNode] = pos.map(p => new SkipNode()(p))
@@ -60,21 +79,19 @@ object SkipNode {
 case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode)(
     val pos: (Int, Int)
 ) extends StatNode {
+    var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        val varName: String = i.s
-        var varObj: Option[Variable] = None
+        // val varName: String = i.s
 
-        st.lookup(varName) match {
-            case None => {
-                varObj = Some(Variable(t.typeId))
-                st.add(varName, varObj.get)
-            }
-            case Some(id) => {
-                println(
-                  varName + " is already declared"
-                ) // TODO halt semantic checks.
-            }
-        }
+        // st.lookup(varName) match {
+        //     case None => {
+        //         typeId = Some(Variable(t.typeId.get))
+        //         st.add(varName, typeId.get)
+        //     }
+        //     case Some(id) => {
+        //         println(varName + " is already declared") // TODO halt semantic checks.
+        //     }
+        // }
     }
 }
 
@@ -88,7 +105,16 @@ object NewAssignNode {
 }
 
 case class LRAssignNode(l: AssignLHSNode, r: AssignRHSNode)(val pos: (Int, Int))
-    extends StatNode
+    extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+
+        // l.check(st)
+        // r.check(st)
+
+        // l.typeId == r.typeId
+    }
+}
 
 object LRAssignNode {
     def apply(
@@ -98,40 +124,58 @@ object LRAssignNode {
         pos <**> (l, r).lazyZipped(LRAssignNode(_, _) _)
 }
 
-case class ReadNode(l: AssignLHSNode)(val pos: (Int, Int)) extends StatNode
+case class ReadNode(l: AssignLHSNode)(val pos: (Int, Int)) extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 object ReadNode {
     def apply(l: => Parsley[AssignLHSNode]): Parsley[ReadNode] =
         pos <**> l.map(ReadNode(_) _)
 }
-case class FreeNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode
+case class FreeNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 object FreeNode {
     def apply(e: => Parsley[ExprNode]): Parsley[FreeNode] =
         pos <**> e.map(FreeNode(_) _)
 }
-case class ReturnNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode
+case class ReturnNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 object ReturnNode {
     def apply(e: => Parsley[ExprNode]): Parsley[ReturnNode] =
         pos <**> e.map(ReturnNode(_) _)
 }
 
-case class ExitNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode
+case class ExitNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 object ExitNode {
     def apply(e: => Parsley[ExprNode]): Parsley[ExitNode] =
         pos <**> e.map(ExitNode(_) _)
 }
 
-case class PrintNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode
+case class PrintNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 object PrintNode {
     def apply(e: => Parsley[ExprNode]): Parsley[PrintNode] =
         pos <**> e.map(PrintNode(_) _)
 }
 
-case class PrintlnNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode
+case class PrintlnNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 object PrintlnNode {
     def apply(e: => Parsley[ExprNode]): Parsley[PrintlnNode] =
@@ -139,7 +183,10 @@ object PrintlnNode {
 }
 case class IfThenElseNode(e: ExprNode, s1: StatNode, s2: StatNode)(
     val pos: (Int, Int)
-) extends StatNode
+) extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 object IfThenElseNode {
     def apply(
@@ -150,7 +197,10 @@ object IfThenElseNode {
         pos <**> (e, s1, s2).lazyZipped(IfThenElseNode(_, _, _) _)
 }
 case class WhileDoNode(e: ExprNode, s: StatNode)(val pos: (Int, Int))
-    extends StatNode
+    extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 object WhileDoNode {
     def apply(
@@ -160,15 +210,21 @@ object WhileDoNode {
         pos <**> (e, s).lazyZipped(WhileDoNode(_, _) _)
 }
 
-case class BeginEndNode(s: StatNode)(val pos: (Int, Int)) extends StatNode
+case class BeginEndNode(s: StatNode)(val pos: (Int, Int)) extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 object BeginEndNode {
     def apply(s: => Parsley[StatNode]): Parsley[BeginEndNode] =
         pos <**> s.map(BeginEndNode(_) _)
 }
 
-case class StatListNode(s: List[StatNode])(val pos: (Int, Int)) extends StatNode
-
+case class StatListNode(s: List[StatNode])(val pos: (Int, Int))
+    extends StatNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 object StatListNode {
     def apply(s: => Parsley[List[StatNode]]): Parsley[StatListNode] =
         pos <**> s.map(StatListNode(_) _)
@@ -181,7 +237,10 @@ sealed trait AssignLHSNode extends ASTNode
 sealed trait AssignRHSNode extends ASTNode
 
 case class NewPairNode(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
-    extends AssignRHSNode
+    extends AssignRHSNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 object NewPairNode {
     def apply(
@@ -192,7 +251,10 @@ object NewPairNode {
 }
 
 case class CallNode(i: IdentNode, args: List[ExprNode])(val pos: (Int, Int))
-    extends AssignRHSNode
+    extends AssignRHSNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 object CallNode {
     def apply(
@@ -203,15 +265,14 @@ object CallNode {
 }
 
 // Type
-sealed trait TypeNode extends ASTNode {
-    val typeId: Type
-}
+sealed trait TypeNode extends ASTNode
 
 // Base Type
 sealed trait BaseTypeNode extends TypeNode with PairElemTypeNode
 
 class IntTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
-    val typeId = IntType(Math.pow(2, -31).toInt, Math.pow(2, 31).toInt)
+    var typeId: Option[Identifier] = Some(IntType())
+    def check(st: SymbolTable): Unit = {}
 }
 
 object IntTypeNode {
@@ -219,7 +280,8 @@ object IntTypeNode {
 }
 
 class BoolTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
-    val typeId = BoolType()
+    var typeId: Option[Identifier] = Some(BoolType())
+    def check(st: SymbolTable): Unit = {}
 }
 
 object BoolTypeNode {
@@ -227,15 +289,16 @@ object BoolTypeNode {
 }
 
 class CharTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
-    val typeId = CharType()
+    var typeId: Option[Identifier] = Some(CharType())
+    def check(st: SymbolTable): Unit = {}
 }
-
 object CharTypeNode {
     def apply(): Parsley[CharTypeNode] = pos.map(p => new CharTypeNode()(p))
 }
 
 class StringTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
-    val typeId = StringType()
+    var typeId: Option[Identifier] = Some(StringType())
+    def check(st: SymbolTable): Unit = {}
 }
 
 object StringTypeNode {
@@ -251,14 +314,16 @@ case class ArrayTypeNode(t: TypeNode, dimension: Int = 1)
     extends PairElemTypeNode
     with TypeNode {
     val pos: (Int, Int) = t.pos
-    val typeId = ArrayType(t.typeId, 0)
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
 }
 
 // Pair Type
 case class PairTypeNode(fst: PairElemTypeNode, snd: PairElemTypeNode)(
     val pos: (Int, Int)
 ) extends TypeNode {
-    val typeId = PairType(fst.typeId, snd.typeId)
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
 }
 
 object PairTypeNode {
@@ -274,7 +339,8 @@ sealed trait PairElemTypeNode extends TypeNode
 
 // For the case where just 'pair' is parsed
 class PairElemTypePairNode()(val pos: (Int, Int)) extends PairElemTypeNode {
-    val typeId = NestedPairType()
+    var typeId: Option[Identifier] = Some(NestedPairType())
+    def check(st: SymbolTable): Unit = {}
 }
 
 object PairElemTypePairNode {
@@ -299,24 +365,54 @@ trait ParserBuilderPos1[T1, R] extends ParserBuilder[T1 => R] {
 
 // Unary Operator
 sealed trait UnaryOpNode extends ExprNode
-case class Not(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode
+case class Not(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 // Ops(Prefix)(Not <# 'not') ----> returns Parser of type Not
 object Not extends ParserBuilderPos1[ExprNode, Not]
 
-case class Neg(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode
+case class Neg(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 object Neg extends ParserBuilderPos1[ExprNode, Neg]
 
-case class Len(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode
+case class Len(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        //x.check(st)
+
+    }
+}
 
 object Len extends ParserBuilderPos1[ExprNode, Len]
 
-case class Ord(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode
+case class Ord(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        x.typeId.get match {
+            case CharType() => this.typeId = Some(IntType())
+            case _ => println("incompatible argument type for operator 'ord'")
+        }
+    }
+}
 
 object Ord extends ParserBuilderPos1[ExprNode, Ord]
 
-case class Chr(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode
+case class Chr(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        x.typeId.get match {
+            case IntType() => this.typeId = Some(CharType())
+            case _ => println("incompatible argument type for operator 'chr'")
+        }
+    }
+}
 
 object Chr extends ParserBuilderPos1[ExprNode, Chr]
 
@@ -327,72 +423,146 @@ trait ParserBuilderPos2[T1, T2, R] extends ParserBuilder[(T1, T2) => R] {
 // Binary Operator
 sealed trait BinaryOpNode extends ExprNode
 case class Mult(x: ExprNode, y: ExprNode)(val pos: (Int, Int))
-    extends BinaryOpNode
+    extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        typeCheckArithmeticBinOp(st, this, x, y)
+    }
+}
 
 object Mult extends ParserBuilderPos2[ExprNode, ExprNode, Mult]
 
 case class Div(x: ExprNode, y: ExprNode)(val pos: (Int, Int))
-    extends BinaryOpNode
+    extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        typeCheckArithmeticBinOp(st, this, x, y)
+    }
+}
 
 object Div extends ParserBuilderPos2[ExprNode, ExprNode, Div]
 case class Mod(x: ExprNode, y: ExprNode)(val pos: (Int, Int))
-    extends BinaryOpNode
+    extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        typeCheckArithmeticBinOp(st, this, x, y)
+    }
+}
 
 object Mod extends ParserBuilderPos2[ExprNode, ExprNode, Mod]
 case class Add(x: ExprNode, y: ExprNode)(val pos: (Int, Int))
-    extends BinaryOpNode
+    extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        typeCheckArithmeticBinOp(st, this, x, y)
+    }
+}
 
 object Add extends ParserBuilderPos2[ExprNode, ExprNode, Add]
 
 case class Sub(x: ExprNode, y: ExprNode)(val pos: (Int, Int))
-    extends BinaryOpNode
+    extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        typeCheckArithmeticBinOp(st, this, x, y)
+    }
+}
 
 object Sub extends ParserBuilderPos2[ExprNode, ExprNode, Sub]
 
 case class GT(x: ExprNode, y: ExprNode)(val pos: (Int, Int))
-    extends BinaryOpNode
+    extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        typeCheckOrderingBinOp(st, this, x, y)
+    }
+}
 
 object GT extends ParserBuilderPos2[ExprNode, ExprNode, GT]
 
 case class GTE(x: ExprNode, y: ExprNode)(val pos: (Int, Int))
-    extends BinaryOpNode
+    extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        typeCheckOrderingBinOp(st, this, x, y)
+    }
+}
 
 object GTE extends ParserBuilderPos2[ExprNode, ExprNode, GTE]
 
 case class LT(x: ExprNode, y: ExprNode)(val pos: (Int, Int))
-    extends BinaryOpNode
+    extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        typeCheckOrderingBinOp(st, this, x, y)
+    }
+}
 
 object LT extends ParserBuilderPos2[ExprNode, ExprNode, LT]
 
 case class LTE(x: ExprNode, y: ExprNode)(val pos: (Int, Int))
-    extends BinaryOpNode
+    extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        typeCheckOrderingBinOp(st, this, x, y)
+    }
+}
 
 object LTE extends ParserBuilderPos2[ExprNode, ExprNode, LTE]
 
 case class Equal(x: ExprNode, y: ExprNode)(val pos: (Int, Int))
-    extends BinaryOpNode
+    extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        typeCheckEqualityBinOp(st, this, x, y)
+    }
+}
 
 object Equal extends ParserBuilderPos2[ExprNode, ExprNode, Equal]
 
 case class NotEqual(x: ExprNode, y: ExprNode)(val pos: (Int, Int))
-    extends BinaryOpNode
+    extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        typeCheckEqualityBinOp(st, this, x, y)
+    }
+}
 
 object NotEqual extends ParserBuilderPos2[ExprNode, ExprNode, NotEqual]
 
 case class And(x: ExprNode, y: ExprNode)(val pos: (Int, Int))
-    extends BinaryOpNode
+    extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        typeCheckLogicalBinOp(st, this, x, y)
+    }
+}
 
 object And extends ParserBuilderPos2[ExprNode, ExprNode, And]
 
 case class Or(x: ExprNode, y: ExprNode)(val pos: (Int, Int))
-    extends BinaryOpNode
+    extends BinaryOpNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        typeCheckLogicalBinOp(st, this, x, y)
+    }
+}
 
 object Or extends ParserBuilderPos2[ExprNode, ExprNode, Or]
 
 // Identifier
 case class IdentNode(s: String)(val pos: (Int, Int))
     extends ExprNode
-    with AssignLHSNode
+    with AssignLHSNode {
+    // TODO: confirm if this typeId stores Some(Variable(t: Type)) or Some(t: Type)
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        st.lookup(s) match {
+            case None    => println("identifier does not exist in scope")
+            case Some(t) => this.typeId = Some(t)
+        }
+    }
+}
 
 object IdentNode {
     def apply(s: => Parsley[String]): Parsley[IdentNode] =
@@ -402,7 +572,10 @@ object IdentNode {
 // Array Elem
 case class ArrayElemNode(i: IdentNode, es: List[ExprNode])(val pos: (Int, Int))
     extends ExprNode
-    with AssignLHSNode
+    with AssignLHSNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {}
+}
 
 object ArrayElemNode {
     def apply(
@@ -416,7 +589,13 @@ object ArrayElemNode {
 sealed trait PairElemNode extends ExprNode with AssignLHSNode with AssignRHSNode
 
 case class FirstPairElemNode(e: ExprNode)(val pos: (Int, Int))
-    extends PairElemNode
+    extends PairElemNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        e.check(st)
+        this.typeId = e.typeId
+    }
+}
 
 object FirstPairElemNode {
     def apply(e: => Parsley[ExprNode]): Parsley[FirstPairElemNode] =
@@ -424,7 +603,13 @@ object FirstPairElemNode {
 }
 
 case class SecondPairElemNode(e: ExprNode)(val pos: (Int, Int))
-    extends PairElemNode
+    extends PairElemNode {
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        e.check(st)
+        this.typeId = e.typeId
+    }
+}
 
 object SecondPairElemNode {
     def apply(e: => Parsley[ExprNode]): Parsley[SecondPairElemNode] =
@@ -432,42 +617,71 @@ object SecondPairElemNode {
 }
 
 // Literals
-case class IntLiterNode(i: Int)(val pos: (Int, Int)) extends ExprNode
+case class IntLiterNode(i: Int)(val pos: (Int, Int)) extends ExprNode {
+    var typeId: Option[Identifier] = Some(IntType())
+    def check(st: SymbolTable): Unit = {}
+}
 
 object IntLiterNode {
     def apply(i: => Parsley[Int]): Parsley[IntLiterNode] =
         pos <**> i.map(IntLiterNode(_) _)
 }
 
-case class BoolLiterNode(b: Boolean)(val pos: (Int, Int)) extends ExprNode
+case class BoolLiterNode(b: Boolean)(val pos: (Int, Int)) extends ExprNode {
+    var typeId: Option[Identifier] = Some(BoolType())
+    def check(st: SymbolTable): Unit = {}
+}
 
 object BoolLiterNode {
     def apply(b: => Parsley[Boolean]): Parsley[BoolLiterNode] =
         pos <**> b.map(BoolLiterNode(_) _)
 }
 
-case class CharLiterNode(c: Char)(val pos: (Int, Int)) extends ExprNode
+case class CharLiterNode(c: Char)(val pos: (Int, Int)) extends ExprNode {
+    var typeId: Option[Identifier] = Some(CharType())
+    def check(st: SymbolTable): Unit = {}
+}
 
 object CharLiterNode {
     def apply(c: => Parsley[Char]): Parsley[CharLiterNode] =
         pos <**> c.map(CharLiterNode(_) _)
 }
 
-case class StringLiterNode(s: String)(val pos: (Int, Int)) extends ExprNode
+case class StringLiterNode(s: String)(val pos: (Int, Int)) extends ExprNode {
+    var typeId: Option[Identifier] = Some(StringType())
+    def check(st: SymbolTable): Unit = {}
+}
 
 object StringLiterNode {
     def apply(s: => Parsley[String]): Parsley[StringLiterNode] =
         pos <**> s.map(StringLiterNode(_) _)
 }
 
-class PairLiterNode()(val pos: (Int, Int)) extends ExprNode
+class PairLiterNode()(val pos: (Int, Int)) extends ExprNode {
+    var typeId: Option[Identifier] = Some(NullPairType())
+    def check(st: SymbolTable): Unit = {}
+}
 
 object PairLiterNode {
     def apply(): Parsley[PairLiterNode] = pos.map(p => new PairLiterNode()(p))
 }
 
 case class ArrayLiterNode(es: List[ExprNode])(val pos: (Int, Int))
-    extends AssignRHSNode
+    extends AssignRHSNode {
+    // Note: if es is empty, calling check() leaves typeId as None, and it is
+    // the declaration node's responsibility to update it.
+    var typeId: Option[Identifier] = None
+    def check(st: SymbolTable): Unit = {
+        // es.foreach { e => e.check(st) }
+        // if (!es.isEmpty) {
+        //     this.typeId = es(0).typeId
+        //     val typesMatch = es.forall(e => { e.typeId.get == this.typeId.get })
+        //     if (!typesMatch) {
+        //         println("array elements have different types")
+        //     }
+        // }
+    }
+}
 
 object ArrayLiterNode {
     def apply(es: => Parsley[List[ExprNode]]): Parsley[ArrayLiterNode] =
