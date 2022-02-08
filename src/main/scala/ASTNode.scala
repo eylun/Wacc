@@ -457,7 +457,10 @@ case class ArrayLiterNode(es: List[ExprNode]) extends AssignRHSNode {
         es.foreach { e => e.check(st) }
         if (!es.isEmpty) {
             this.typeId = es(0).typeId
-            es.forall(e => { e.typeId.get == this.typeId.get })
+            val typesMatch = es.forall(e => { e.typeId.get == this.typeId.get })
+            if (!typesMatch) {
+                println("array elements have different types")
+            }
         }
     }
 }
