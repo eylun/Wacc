@@ -1,6 +1,7 @@
 import parsley.Parsley
 import parsley.Parsley._
 import parsley.implicits.zipped.{LazyZipped2, LazyZipped3, Zipped4}
+import scala.collection.mutable.Map
 import semantics.{
     typeCheckArithmeticBinOp,
     typeCheckOrderingBinOp,
@@ -17,7 +18,10 @@ sealed trait ASTNode {
 case class ProgramNode(flist: List[FuncNode], s: StatNode)(val pos: (Int, Int))
     extends ASTNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        flist.foreach{ f => f.check(st) }
+        s.check(st)
+    }
 }
 
 object ProgramNode {
@@ -36,7 +40,30 @@ case class FuncNode(
 )(val pos: (Int, Int))
     extends ASTNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        // Check function name does not already exist
+        st.lookup(i.s) match {
+            case Some(id) => println(i.s + " is already declared")
+            case None => {
+                t.check(st)
+            
+                // Create new symbol table and link with outer scope
+                val funcST = new SymbolTable(Some(st), Map[String, Identifier]())
+
+                // Check list of params (using new symbol table funcST)
+                plist.foreach{ p => p.check(funcST) }
+
+                // Set type id as FunctionId
+                this.typeId = Some(FunctionId(t.typeId.get.asInstanceOf[Type], 
+                                plist.map(p => p.typeId.get.asInstanceOf[Param])
+                                                .toArray,
+                                funcST))
+                
+                // Add function name to outer symbol table
+                st.add(i.s, this.typeId.get)
+            }
+        }
+    }
 }
 
 object FuncNode {
@@ -382,10 +409,7 @@ object Neg extends ParserBuilderPos1[ExprNode, Neg]
 
 case class Len(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {
-        //x.check(st)
-
-    }
+    def check(st: SymbolTable): Unit = {}
 }
 
 object Len extends ParserBuilderPos1[ExprNode, Len]
