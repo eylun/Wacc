@@ -51,6 +51,8 @@ case class FuncNode(
             
                 // Create new symbol table and link with outer scope
                 val funcST = new SymbolTable(Some(st), Map[String, Identifier]())
+
+                funcST.add("return", t.typeId.get.asInstanceOf[Type])
                 
                 // Check list of params (using new symbol table funcST)
                 plist.foreach{ p => p.check(funcST) }
@@ -117,24 +119,19 @@ case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode)(
 ) extends StatNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        // val varName: String = i.s
-        
-        // t.check(st)
-        // r.check(st)
-        
-        // r.typeId.get match {
-        //     case t.typeId.get | Variable(t.typeId.get) | FunctionId(t.typeId.get, _, _)
-        //         => st.lookup(varName) match {
-        //                 case None => {
-        //                 st.add(varName, Variable(t.typeId.get))
-        //             }
-        //                 case Some(id) => {
-        //                 println(varName + " is already declared") 
-        //             }
-        //         }
-        //     case _ 
-        //         => println("incompatible argument type for operator 'not'")
-        // }
+        st.lookup(i.s) match {
+            case Some(id) => println(i.s + " is already declared")
+            case None => {
+                t.check(st)
+                r.check(st)
+
+                if (r.typeId.get != t.typeId.get) {
+                    println("variable assignment has incompatible type")
+                } else {
+                    st.add(i.s, Variable(t.typeId.get.asInstanceOf[Type]))
+                }
+            }
+        }
     }
 }
 
@@ -151,11 +148,30 @@ case class LRAssignNode(l: AssignLHSNode, r: AssignRHSNode)(val pos: (Int, Int))
     extends StatNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
+        // TODO: double check if AssignLHSNode contains its own typeId..
+        l match {
+            case IdentNode(s) => {
+                st.lookupAll(s) match {
+                    case None => println("variable is not defined")
+                    case Some(id) => {
+                        id match {
+                            case Variable(t) => {   
+                                r.check(st)
+                                if (t != r.typeId.get) {
+                                    println("lhs and rhs are not type compatible")
+                                } else {
+                                    this.typeId = r.typeId
+                                }
+                            }
+                            case _ => println(s + " is not a variable")
+                        }
 
-        // l.check(st)
-        // r.check(st)
-
-        // l.typeId == r.typeId
+                    }
+                }
+            }
+            // TODO: implement array-elem and pair-elem cases
+            case _ => println("lhs has an invalid type for assignment")
+        }
     }
 }
 
@@ -171,6 +187,7 @@ case class ReadNode(l: AssignLHSNode)(val pos: (Int, Int)) extends StatNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
         l.check(st)
+        this.typeId = l.typeId
     }
 }
 
@@ -181,6 +198,12 @@ object ReadNode {
 case class FreeNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
+        e.check(st)
+        e.typeId.get match {
+            case ArrayType(_, _) | PairType(_, _) => { // TODO: do we need to look up st? 
+            }
+            case _ => println("expression is not a valid reference to a pair or array, could not be freed.")
+        }
     }
 }
 
@@ -192,6 +215,16 @@ case class ReturnNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
         e.check(st)
+        this.typeId = e.typeId
+
+        st.lookup("return") match {
+            case Some(id) => {
+                if (this.typeId.get != id) {
+                    println("return value incompatible with function's return type")
+                }
+            }
+            case None => {}
+        }
     }
 }
 
