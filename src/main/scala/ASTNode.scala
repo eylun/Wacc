@@ -206,15 +206,30 @@ case class Neg(x: ExprNode) extends UnaryOpNode {
 }
 case class Len(x: ExprNode) extends UnaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        //x.check(st)
+
+    }
 }
 case class Ord(x: ExprNode) extends UnaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        x.typeId.get match {
+            case CharType() => this.typeId = Some(IntType())
+            case _          => println("incompatible argument type for operator 'ord'")
+        }
+    }
 }
 case class Chr(x: ExprNode) extends UnaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        x.typeId.get match {
+            case IntType() => this.typeId = Some(CharType())
+            case _         => println("incompatible argument type for operator 'chr'")
+        }
+    }
 }
 
 // Binary Operator
@@ -228,10 +243,10 @@ case class Mult(x: ExprNode, y: ExprNode) extends BinaryOpNode {
             case IntType() => {
                 y.typeId.get match {
                     case IntType() => {this.typeId = Some(IntType())}
-                    case _         => println( "incompatible type")
+                    case _         => println("incompatible argument type for operator '*'")
                 }
             }
-            case _        => println( "incompatible type")    
+            case _        => println("incompatible argument type for operator '*'")    
         }
     }
 }
@@ -244,10 +259,10 @@ case class Div(x: ExprNode, y: ExprNode) extends BinaryOpNode {
             case IntType() => {
                 y.typeId.get match {
                     case IntType() => {this.typeId = Some(IntType())}
-                    case _         => println( "incompatible type")
+                    case _         => println("incompatible argument type for operator '/'")
                 }
             }
-            case _        => println( "incompatible type")    
+            case _        => println("incompatible argument type for operator '/'")    
         }
     }
 }
@@ -260,10 +275,10 @@ case class Mod(x: ExprNode, y: ExprNode) extends BinaryOpNode {
             case IntType() => {
                 y.typeId.get match {
                     case IntType() => {this.typeId = Some(IntType())}
-                    case _         => println( "incompatible type")
+                    case _         => println("incompatible argument type for operator '%'")
                 }
             }
-            case _        => println( "incompatible type")    
+            case _        => println("incompatible argument type for operator '%'")    
         }
     }
 }
@@ -276,10 +291,10 @@ case class Add(x: ExprNode, y: ExprNode) extends BinaryOpNode {
             case IntType() => {
                 y.typeId.get match {
                     case IntType() => {this.typeId = Some(IntType())}
-                    case _         => println( "incompatible type")
+                    case _         => println("incompatible argument type for operator '+'")
                 }
             }
-            case _        => println( "incompatible type")    
+            case _        => println("incompatible argument type for operator '+'")    
         }
     }
 }
@@ -292,10 +307,10 @@ case class Sub(x: ExprNode, y: ExprNode) extends BinaryOpNode {
             case IntType() => {
                 y.typeId.get match {
                     case IntType() => {this.typeId = Some(IntType())}
-                    case _         => println( "incompatible type")
+                    case _         => println("incompatible argument type for operator '-'")
                 }
             }
-            case _        => println( "incompatible type")    
+            case _        => println("incompatible argument type for operator '-'")   
         }
     }
 }
@@ -307,7 +322,11 @@ case class GT(x: ExprNode, y: ExprNode) extends BinaryOpNode {
         if (x.typeId.get == IntType() || x.typeId.get == CharType()) {
             if (x.typeId.get == y.typeId.get) { 
                 this.typeId = Some(BoolType())
+            } else {
+                println("incompatible or non-matching argument types for operator '>'")
             }
+        } else {
+            println("incompatible argument type for operator '>'")
         }
     }
 }
@@ -319,7 +338,11 @@ case class GTE(x: ExprNode, y: ExprNode) extends BinaryOpNode {
         if (x.typeId.get == IntType() || x.typeId.get == CharType()) {
             if (x.typeId.get == y.typeId.get) { 
                 this.typeId = Some(BoolType())
+            } else {
+                println("incompatible or non-matching argument types for operator '>'")
             }
+        } else {
+            println("incompatible argument type for operator '>'")
         }
     }
 }
@@ -331,7 +354,11 @@ case class LT(x: ExprNode, y: ExprNode) extends BinaryOpNode {
         if (x.typeId.get == IntType() || x.typeId.get == CharType()) {
             if (x.typeId.get == y.typeId.get) { 
                 this.typeId = Some(BoolType())
+            } else {
+                println("incompatible or non-matching argument types for operator '>'")
             }
+        } else {
+            println("incompatible argument type for operator '>'")
         }
     }
 }
@@ -343,7 +370,11 @@ case class LTE(x: ExprNode, y: ExprNode) extends BinaryOpNode {
         if (x.typeId.get == IntType() || x.typeId.get == CharType()) {
             if (x.typeId.get == y.typeId.get) { 
                 this.typeId = Some(BoolType())
+            } else {
+                println("incompatible or non-matching argument types for operator '>'")
             }
+        } else {
+            println("incompatible argument type for operator '>'")
         }
     }
 }
@@ -354,6 +385,8 @@ case class Equal(x: ExprNode, y: ExprNode) extends BinaryOpNode {
         y.check(st)
         if (x.typeId.get == y.typeId.get) { 
             this.typeId = Some(BoolType())
+        } else {
+            println("non-matching argument types for operator '='")
         }
     }
 }
@@ -364,6 +397,8 @@ case class NotEqual(x: ExprNode, y: ExprNode) extends BinaryOpNode {
         y.check(st)
         if (x.typeId.get == y.typeId.get) { 
             this.typeId = Some(BoolType())
+        } else {
+            println("non-matching argument types for operator '='")
         }
     }
 }
@@ -374,6 +409,8 @@ case class And(x: ExprNode, y: ExprNode) extends BinaryOpNode {
         y.check(st)
         if (x.typeId.get == BoolType() && y.typeId.get == BoolType()) { 
             this.typeId = Some(BoolType())
+        } else {
+            println("incompatible argument type for operator '&&'")
         }
     }
 }
@@ -384,15 +421,22 @@ case class Or(x: ExprNode, y: ExprNode) extends BinaryOpNode {
         y.check(st)
         if (x.typeId.get == BoolType() && y.typeId.get == BoolType()) { 
             this.typeId = Some(BoolType())
+        } else {
+            println("incompatible argument type for operator '&&'")
         }
     }
 }
 
 // Identifier
 case class IdentNode(s: String) extends ExprNode with AssignLHSNode {
+    // TODO: confirm if this typeId stores Some(Variable(t: Type)) or Some(t: Type)
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        this.typeId = st.lookup(s) // TODO: check if this should use lookupAll
+        st.lookup(s) match {
+            case None => println("identifier does not exist in scope")
+            case Some(Variable(t)) => this.typeId = Some(t)
+            case _ => println("identifier not a variable in scope")
+        }
     }
 }
 
@@ -454,13 +498,13 @@ case class ArrayLiterNode(es: List[ExprNode]) extends AssignRHSNode {
     // the declaration node's responsibility to update it.
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        es.foreach { e => e.check(st) }
-        if (!es.isEmpty) {
-            this.typeId = es(0).typeId
-            val typesMatch = es.forall(e => { e.typeId.get == this.typeId.get })
-            if (!typesMatch) {
-                println("array elements have different types")
-            }
-        }
+        // es.foreach { e => e.check(st) }
+        // if (!es.isEmpty) {
+        //     this.typeId = es(0).typeId
+        //     val typesMatch = es.forall(e => { e.typeId.get == this.typeId.get })
+        //     if (!typesMatch) {
+        //         println("array elements have different types")
+        //     }
+        // }
     }
 }
