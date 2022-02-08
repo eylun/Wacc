@@ -52,7 +52,6 @@ case class FuncNode(
                 // Create new symbol table and link with outer scope
                 val funcST = new SymbolTable(Some(st), Map[String, Identifier]())
                 
-                //TODO: double-check if correct
                 // Check list of params (using new symbol table funcST)
                 plist.foreach{ p => p.check(funcST) }
 
@@ -83,7 +82,16 @@ object FuncNode {
 case class ParamNode(t: TypeNode, i: IdentNode)(val pos: (Int, Int))
     extends ASTNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        st.lookup(i.s) match {
+            case Some(id) => println(i.s + " is already declared")
+            case None => {
+                t.check(st)
+                st.add(i.s, Param(t.typeId.get.asInstanceOf[Type]))
+                this.typeId = t.typeId
+            }
+        }
+    }
 }
 
 object ParamNode {
