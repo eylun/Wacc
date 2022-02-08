@@ -51,7 +51,8 @@ case class FuncNode(
             
                 // Create new symbol table and link with outer scope
                 val funcST = new SymbolTable(Some(st), Map[String, Identifier]())
-
+                
+                //TODO: double-check if correct
                 // Check list of params (using new symbol table funcST)
                 plist.foreach{ p => p.check(funcST) }
 
@@ -109,15 +110,22 @@ case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode)(
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
         // val varName: String = i.s
-
-        // st.lookup(varName) match {
-        //     case None => {
-        //         typeId = Some(Variable(t.typeId.get))
-        //         st.add(varName, typeId.get)
-        //     }
-        //     case Some(id) => {
-        //         println(varName + " is already declared") // TODO halt semantic checks.
-        //     }
+        
+        // t.check(st)
+        // r.check(st)
+        
+        // r.typeId.get match {
+        //     case t.typeId.get | Variable(t.typeId.get) | FunctionId(t.typeId.get, _, _)
+        //         => st.lookup(varName) match {
+        //                 case None => {
+        //                 st.add(varName, Variable(t.typeId.get))
+        //             }
+        //                 case Some(id) => {
+        //                 println(varName + " is already declared") 
+        //             }
+        //         }
+        //     case _ 
+        //         => println("incompatible argument type for operator 'not'")
         // }
     }
 }
@@ -153,7 +161,9 @@ object LRAssignNode {
 
 case class ReadNode(l: AssignLHSNode)(val pos: (Int, Int)) extends StatNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        l.check(st)
+    }
 }
 
 object ReadNode {
@@ -162,7 +172,8 @@ object ReadNode {
 }
 case class FreeNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+    }
 }
 
 object FreeNode {
@@ -171,7 +182,9 @@ object FreeNode {
 }
 case class ReturnNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        e.check(st)
+    }
 }
 
 object ReturnNode {
@@ -181,7 +194,9 @@ object ReturnNode {
 
 case class ExitNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        e.check(st)
+    }
 }
 
 object ExitNode {
@@ -191,7 +206,9 @@ object ExitNode {
 
 case class PrintNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        e.check(st)
+    }
 }
 
 object PrintNode {
@@ -201,7 +218,9 @@ object PrintNode {
 
 case class PrintlnNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        e.check(st)
+    }
 }
 
 object PrintlnNode {
@@ -385,7 +404,10 @@ case class ArrayTypeNode(t: TypeNode, dimension: Int)(pos: (Int, Int))
     with UnaryOpNode
     with TypeNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        t.check(st)
+        this.typeId = Some(ArrayType(t.typeId.get.asInstanceOf[Type], dimension))
+    }
 }
 object ArrayTypeNode {
     // Apply function for chain operation
@@ -404,7 +426,15 @@ object ArrayTypeNode {
 
 case class Not(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        x.typeId.get match {
+            case BoolType() | Variable(BoolType()) | FunctionId(BoolType(), _, _)
+                => this.typeId = Some(BoolType())
+            case _ 
+                => println("incompatible argument type for operator 'not'")
+        }
+    }
 }
 
 // Ops(Prefix)(Not <# 'not') ----> returns Parser of type Not
@@ -412,25 +442,44 @@ object Not extends ParserBuilderPos1[ExprNode, Not]
 
 case class Neg(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        x.typeId.get match {
+            case IntType() | Variable(IntType()) | FunctionId(IntType(), _, _)
+                => this.typeId = Some(IntType())
+            case _ 
+                => println("incompatible argument type for operator 'neg'")
+        }
+    }
 }
 
 object Neg extends ParserBuilderPos1[ExprNode, Neg]
 
 case class Len(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        x.check(st)
+        x.typeId.get match {
+            case ArrayType(_,_) | Variable(ArrayType(_,_)) | FunctionId(ArrayType(_,_), _, _)
+                => this.typeId = Some(IntType())
+            case _ 
+                => println("incompatible argument type for operator 'len'")
+        }
+    }
 }
 
 object Len extends ParserBuilderPos1[ExprNode, Len]
 
 case class Ord(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     var typeId: Option[Identifier] = None
+    // add list of wacc errors as parameter later
     def check(st: SymbolTable): Unit = {
         x.check(st)
         x.typeId.get match {
-            case CharType() => this.typeId = Some(IntType())
-            case _ => println("incompatible argument type for operator 'ord'")
+            case CharType() | Variable(CharType()) | FunctionId(CharType(), _, _)
+                => this.typeId = Some(IntType())
+            case _ 
+                => println("incompatible argument type for operator 'ord'")
         }
     }
 }
