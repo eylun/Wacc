@@ -20,7 +20,7 @@ case class ProgramNode(flist: List[FuncNode], s: StatNode)(val pos: (Int, Int))
     extends ASTNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        flist.foreach{ f => f.check(st) }
+        flist.foreach { f => f.check(st) }
         s.check(st)
     }
 }
@@ -48,19 +48,23 @@ case class FuncNode(
             case Some(id) => println(i.s + " is already declared")
             case None => {
                 t.check(st)
-            
+
                 // Create new symbol table and link with outer scope
-                val funcST = new SymbolTable(Some(st), Map[String, Identifier]())
+                val funcST =
+                    new SymbolTable(Some(st), Map[String, Identifier]())
 
                 // Check list of params (using new symbol table funcST)
-                plist.foreach{ p => p.check(funcST) }
+                plist.foreach { p => p.check(funcST) }
 
                 // Set type id as FunctionId
-                this.typeId = Some(FunctionId(t.typeId.get.asInstanceOf[Type], 
-                                plist.map(p => p.typeId.get.asInstanceOf[Param])
-                                                .toArray,
-                                funcST))
-                
+                this.typeId = Some(
+                  FunctionId(
+                    t.typeId.get.asInstanceOf[Type],
+                    plist.map(p => p.typeId.get.asInstanceOf[Param]).toArray,
+                    funcST
+                  )
+                )
+
                 // Add function name to outer symbol table
                 st.add(i.s, this.typeId.get)
             }
@@ -359,7 +363,7 @@ sealed trait ExprNode extends AssignRHSNode
 // implementors of ParserBuilder can serve as a builder of parsers of type T
 trait ParserBuilder[T] {
     val parser: Parsley[T]
-    final def <#(p: Parsley[_]): Parsley[T] = parser <* p
+    final def <#(p: Parsley[_]): Parsley[T] = parser <* p.label("operator")
 }
 
 trait ParserBuilderPos0[R] extends ParserBuilder[R] {
@@ -369,7 +373,7 @@ trait ParserBuilderPos0[R] extends ParserBuilder[R] {
 
 trait ParserBuilderPos1[T1, R] extends ParserBuilder[T1 => R] {
     def apply(x: T1)(pos: (Int, Int)): R
-    val parser = pos.map(p => apply(_)(p))
+    val parser = pos.map(p => (apply(_)(p)))
 }
 
 // Unary Operator

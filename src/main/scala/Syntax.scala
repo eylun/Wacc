@@ -97,13 +97,26 @@ object lexer {
 
     val ident = IdentNode(lexer.identifier)
     val number =
-        lexer.lexeme(digit.foldLeft1[Long](0)((n, d) => n * 10 + d.asDigit))
+        lexer
+            .lexeme(
+              digit
+                  .label("end of number")
+                  .foldLeft1[Long](0)((n, d) => n * 10 + d.asDigit)
+            )
+            .label("number")
 
     // escaped-char := '0' | 'b' | 't' | 'n' | 'f' | 'r' | '"' | ''' | '\'
     val escapedChar =
         '0' <|> 'b' <|> 't' <|> 'n' <|> 'f' <|> 'r' <|> '\"' <|> '\'' <|> '\\'
 
-    val esc = ((c: Char) => utility.escapedChars.apply(c)) <#> escapedChar
+    val esc =
+        ((c: Char) => utility.escapedChars.apply(c)) <#> escapedChar
+            .label(
+              "end of escape sequence"
+            )
+            .explain(
+              "valid escape sequences include \\0, \\b, \\t, \\n, \\f, \\r, \\\", \\\', \\\\"
+            )
 
     val character: Parsley[Char] =
         noneOf('"', '\'', '\\') <|> ("\\" *> esc)
@@ -116,15 +129,17 @@ object lexer {
     // char-liter := ''' <character> '''
     val charLiter: Parsley[ExprNode] =
         CharLiterNode(
-          lexer.lexeme("'" ~> character <~ "'")
+          lexer.lexeme("'" ~> character.label("character") <~ "'")
         )
 
     // int-liter := <int-sign>? <digit>+
     val intLiter: Parsley[ExprNode] =
         IntLiterNode(
-          (intSign <*> number <|> number).collectMsg("Integer Overflow") {
-              case x if x.toInt == x => x.toInt
-          }
+          (intSign <*> number <|> number)
+              .collectMsg("Integer Overflow") {
+                  case x if x.toInt == x => x.toInt
+              }
+              .label("integer literal")
         )
 
     // TODO: Try to use implicits to not use 'lex.keyword' everytime
@@ -151,8 +166,12 @@ object lexer {
 
     // expression atoms
     val exprAtoms: Parsley[ExprNode] =
-        intLiter <|> boolLiter <|> charLiter <|> stringLiter <|> pairLiter <|>
-            ident
+        (intLiter <|> boolLiter <|> charLiter <|> stringLiter <|> pairLiter <|>
+            ident)
+            .label("expression atom")
+            .explain(
+              "an expression atom is an identifier, integer, boolean, character, string or a pair literal"
+            )
 
     /* TYPES */
     // base-type := 'int' | 'bool' | 'char' | 'string'
@@ -195,8 +214,10 @@ object syntax {
 
     // program := 'begin' <func>* <stat> 'end'
     lazy val program = ProgramNode(
-      "begin" ~> many(func).label("function declarations"),
-      stat <~ "end"
+      "begin".label("beginning of program") ~> many(func).label(
+        "function declarations"
+      ),
+      stat <~ "end".label("end of program")
     )
 
     val parse = fully(program)
@@ -256,7 +277,9 @@ object syntax {
     // unary-oper
     lazy val expr: Parsley[ExprNode] =
         precedence[ExprNode](
-          "(" *> expr <* ")" <|> attempt(arrayElem) <|> exprAtoms
+          ("(" *> expr <* ")").label("bracketed expression")
+              <|> attempt(arrayElem)
+              <|> exprAtoms
         )(
           Ops(Prefix)(
             Not <# "!",
@@ -272,10 +295,13 @@ object syntax {
           Ops(InfixL)(And <# "&&"),
           Ops(InfixL)(Or <# "||")
         )
-
     // array-elem := identifier ('[' <expr> ']')+
     lazy val arrayElem =
         ArrayElemNode(ident, some("[" *> expr <* "]"))
+            .label("array element")
+            .explain(
+              "array elements are structured as <identifier> [<expression>]"
+            )
 
     // pair-elem := 'fst' expr <|> 'snd' expr
     lazy val firstPairElem = FirstPairElemNode("fst" *> expr)
@@ -302,8 +328,8 @@ object syntax {
     // ***Note: difference between option vs. optional?
     lazy val arrayLiter = ArrayLiterNode("[" *> sepBy(expr, ",") <* "]")
 
-    // assign-rhs := expr <|> array-liter <|> 'newpair' '(' expr ',' expr ')' <|> pairElem
-    //               <|> 'call' ident '(' arg-list? ')'
+    // assign-rhs := expr <|> array-liter <|> 'newpair' '(' expr ',' expr ')'
+    // <|> pairElem <|> 'call' ident '(' arg-list? ')'
     lazy val assignRHS = expr <|> arrayLiter <|> newPair <|> pairElem <|> call
 
     /* STATEMENTS */
@@ -336,13 +362,17 @@ object syntax {
 
     lazy val statList: Parsley[StatNode] =
         StatListNode(sepBy1(statAtoms, ";"))
-    // stat := 'skip' | ⟨type ⟩ ⟨ident ⟩ ‘=’ ⟨assign-rhs ⟩ | ⟨assign-lhs ⟩ ‘=’ ⟨assign-rhs ⟩ | ‘read’ ⟨assign-lhs ⟩
-    //  | ‘free’ ⟨expr ⟩ | ‘return’ ⟨expr ⟩ | ‘exit’ ⟨expr ⟩ | ‘print’ ⟨expr ⟩ | ‘println’ ⟨expr ⟩
-    //  | ‘if’ ⟨expr ⟩ ‘then’ ⟨stat ⟩ ‘else’ ⟨stat ⟩ ‘fi’ | ‘while’ ⟨expr ⟩ ‘do’ ⟨stat ⟩ ‘done’
+    // stat := 'skip' | ⟨type ⟩ ⟨ident ⟩ ‘=’ ⟨assign-rhs ⟩
+    // 	| ⟨assign-lhs ⟩ ‘=’ ⟨assign-rhs ⟩ | ‘read’ ⟨assign-lhs ⟩
+    //  | ‘free’ ⟨expr ⟩ | ‘return’ ⟨expr ⟩ | ‘exit’ ⟨expr ⟩
+    //  | ‘print’ ⟨expr ⟩ | ‘println’ ⟨expr ⟩
+    //  | ‘if’ ⟨expr ⟩ ‘then’ ⟨stat ⟩ ‘else’ ⟨stat ⟩ ‘fi’
+    //  | ‘while’ ⟨expr ⟩ ‘do’ ⟨stat ⟩ ‘done’
     //  | ‘begin’ ⟨stat ⟩ ‘end’ | ⟨stat ⟩ ‘;’ ⟨stat ⟩
     lazy val statAtoms: Parsley[StatNode] =
-        skipStat <|> newAssignStat <|> lrAssignStat <|> readStat <|> freeStat <|> returnStat <|> exitStat <|> printStat <|> printlnStat <|>
-            ifThenElseStat <|> whileDoStat <|> beginEndStat
+        skipStat <|> newAssignStat <|> lrAssignStat <|> readStat <|>
+            freeStat <|> returnStat <|> exitStat <|> printStat <|>
+            printlnStat <|> ifThenElseStat <|> whileDoStat <|> beginEndStat
 
     lazy val stat: Parsley[StatNode] =
         statList <|> statAtoms <* notFollowedBy(";")
@@ -358,17 +388,6 @@ object syntax {
           ArrayTypeNode(pairType <|> baseType, 0),
           ArrayTypeNode("[]")
         )
-
-    // lazy val arrayType: Parsley[TypeNode] =
-    //     precedence[TypeNode](pairType <|> baseType)(
-    //       (Ops(Postfix)("[]" #> ((t: TypeNode) => {
-    //           t match {
-    //               case ArrayTypeNode(child, n) =>
-    //                   ArrayTypeNode(child, n + 1)
-    //               case _ => ArrayTypeNode(t, 1)
-    //           }
-    //       })))
-    //     )
 
     // pair-elem-type := <base-type> | <array-type> | 'pair'
     lazy val pairElemType: Parsley[PairElemTypeNode] =

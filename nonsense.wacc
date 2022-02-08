@@ -5,5 +5,5 @@
 
 # Program:
 begin
-int x = 5 + 5
+x = (
 end
