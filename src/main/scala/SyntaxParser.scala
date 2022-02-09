@@ -1,6 +1,7 @@
 import java.io.File
 import scala.util.Try
 import parsley.io.{ParseFromIO}
+import scala.collection.mutable.ListBuffer
 
 object SyntaxParser {
     import parsley.{Success, Failure}
@@ -16,7 +17,7 @@ object SyntaxParser {
                 println(x)
                 println(s"${args(0)} is synctactically valid.")
                 val topLevelST = SymbolTable()
-                val errorLog = List()
+                val errorLog = ListBuffer[String]()
                 x.check(topLevelST, errorLog)
                 if (errorLog.length == 0) {
                     System.exit(0)

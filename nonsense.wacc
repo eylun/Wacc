@@ -1,11 +1,17 @@
-# Simple conditional statement with int comparison test
+# read into pair type
 
 # Output:
-# correct
+# #semantic_error#
+
+# Exit:
+# 200
 
 # Program:
 
 begin
-    int[] arr = 5;
-    int[] val = arr[1]
+intx () is
+return 5
 end
+skip
+end
+

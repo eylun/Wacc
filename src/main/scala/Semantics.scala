@@ -1,3 +1,4 @@
+import scala.collection.mutable.ListBuffer
 object semantics {
     /* Check types of arithmetic binary operations (Mult, Div, Mod, Add, Sub)
         Arguments can be literals, variables, array elements. */
@@ -6,7 +7,7 @@ object semantics {
         op: BinaryOpNode,
         x: ExprNode,
         y: ExprNode,
-        errors: List[String]
+        errors: ListBuffer[String]
     ): Unit = {
         x.check(st, errors)
         y.check(st, errors)
@@ -19,12 +20,12 @@ object semantics {
                         op.typeId = Some(IntType())
                     }
                     case _ =>
-                        errors :+
+                        errors +=
                             "incompatible argument type for arithmetic operator"
                 }
             }
             case _ =>
-                errors :+ "incompatible argument type for arithmetic operator"
+                errors += "incompatible argument type for arithmetic operator"
         }
     }
 
@@ -34,7 +35,7 @@ object semantics {
         op: BinaryOpNode,
         x: ExprNode,
         y: ExprNode,
-        errors: List[String]
+        errors: ListBuffer[String]
     ): Unit = {
         x.check(st, errors)
         y.check(st, errors)
@@ -45,7 +46,7 @@ object semantics {
                 y.typeId.get match {
                     case IntType() | Variable(IntType()) => {}
                     case _ =>
-                        errors :+
+                        errors +=
                             "non-matching argument types for ordering operator"
                 }
             }
@@ -53,13 +54,13 @@ object semantics {
                 y.typeId.get match {
                     case CharType() | Variable(CharType()) => {}
                     case _ =>
-                        errors :+
+                        errors +=
                             "non-matching argument types for ordering operator"
 
                 }
             }
             case _ => {
-                errors :+ "incompatible argument type for ordering operator"
+                errors += "incompatible argument type for ordering operator"
             }
         }
         op.typeId = Some(BoolType())
@@ -71,7 +72,7 @@ object semantics {
         op: BinaryOpNode,
         x: ExprNode,
         y: ExprNode,
-        errors: List[String]
+        errors: ListBuffer[String]
     ): Unit = {
         x.check(st, errors)
         y.check(st, errors)
@@ -82,12 +83,12 @@ object semantics {
                 y.typeId.get match {
                     case Variable(ty) => {
                         if (tx != ty)
-                            errors :+
+                            errors +=
                                 "non-matching argument types for equality operator"
                     }
                     case _ => {
                         if (tx != y.typeId.get)
-                            errors :+
+                            errors +=
                                 "non-matching argument types for equality operator"
 
                     }
@@ -97,12 +98,12 @@ object semantics {
                 y.typeId.get match {
                     case Variable(ty) => {
                         if (x.typeId.get != ty)
-                            errors :+
+                            errors +=
                                 "non-matching argument types for equality operator"
                     }
                     case _ => {
                         if (x.typeId.get != y.typeId.get)
-                            errors :+
+                            errors +=
                                 "non-matching argument types for equality operator"
                     }
                 }
@@ -117,7 +118,7 @@ object semantics {
         op: BinaryOpNode,
         x: ExprNode,
         y: ExprNode,
-        errors: List[String]
+        errors: ListBuffer[String]
     ): Unit = {
         x.check(st, errors)
         y.check(st, errors)
@@ -130,12 +131,12 @@ object semantics {
                         op.typeId = Some(BoolType())
                     }
                     case _ =>
-                        errors :+
+                        errors +=
                             "incompatible argument type for arithmetic operator"
                 }
             }
             case _ =>
-                errors :+ "incompatible argument type for arithmetic operator"
+                errors += "incompatible argument type for arithmetic operator"
         }
     }
 }
