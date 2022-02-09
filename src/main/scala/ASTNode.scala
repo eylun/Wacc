@@ -20,7 +20,7 @@ case class ProgramNode(flist: List[FuncNode], s: StatNode)(val pos: (Int, Int))
     extends ASTNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        flist.foreach{ f => f.check(st) }
+        flist.foreach { f => f.check(st) }
         s.check(st)
     }
 }
@@ -48,21 +48,25 @@ case class FuncNode(
             case Some(id) => println(i.s + " is already declared")
             case None => {
                 t.check(st)
-            
-                // Create new symbol table and link with outer scope
-                val funcST = new SymbolTable(Some(st), Map[String, Identifier]())
 
-                funcST.add("return", t.typeId.get.asInstanceOf[Type])
-                
+                // Create new symbol table and link with outer scope
+                val funcST =
+                    new SymbolTable(Some(st), Map[String, Identifier]())
+
+                funcST.add("return", t.typeId.get.getType())
+
                 // Check list of params (using new symbol table funcST)
-                plist.foreach{ p => p.check(funcST) }
+                plist.foreach { p => p.check(funcST) }
 
                 // Set type id as FunctionId
-                this.typeId = Some(FunctionId(t.typeId.get.asInstanceOf[Type], 
-                                plist.map(p => p.typeId.get.asInstanceOf[Param])
-                                                .toArray,
-                                funcST))
-                
+                this.typeId = Some(
+                  FunctionId(
+                    t.typeId.get.getType(),
+                    plist.map(p => p.typeId.get.asInstanceOf[Param]).toArray,
+                    funcST
+                  )
+                )
+
                 // Add function name to outer symbol table
                 st.add(i.s, this.typeId.get)
             }
@@ -89,7 +93,7 @@ case class ParamNode(t: TypeNode, i: IdentNode)(val pos: (Int, Int))
             case Some(id) => println(i.s + " is already declared")
             case None => {
                 t.check(st)
-                st.add(i.s, Param(t.typeId.get.asInstanceOf[Type]))
+                st.add(i.s, Param(t.typeId.get.getType()))
                 this.typeId = t.typeId
             }
         }
@@ -119,18 +123,28 @@ case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode)(
 ) extends StatNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
+        t.check(st)
         st.lookup(i.s) match {
-            case Some(id) => println(i.s + " is already declared")
             case None => {
-                t.check(st)
                 r.check(st)
-
-                if (r.typeId.get != t.typeId.get) {
+                if (r.typeId.get.getType() != t.typeId.get.getType()) {
                     println("variable assignment has incompatible type")
                 } else {
-                    st.add(i.s, Variable(t.typeId.get.asInstanceOf[Type]))
+                    st.add(i.s, Variable(t.typeId.get.getType()))
                 }
             }
+            case Some(FunctionId(_, _, _)) => {
+                /* When a function node already exists, manually rename the
+                 * identifer in the AST node and insert into the symbol table */
+                i.s = i.s + "$"
+                r.check(st)
+                if (r.typeId.get.getType() != t.typeId.get.getType()) {
+                    println("variable assignment has incompatible type")
+                } else {
+                    st.add(i.s, Variable(t.typeId.get.getType()))
+                }
+            }
+            case _ => println(i.s + " is already declared within the scope")
         }
     }
 }
@@ -148,30 +162,12 @@ case class LRAssignNode(l: AssignLHSNode, r: AssignRHSNode)(val pos: (Int, Int))
     extends StatNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
-        // TODO: double check if AssignLHSNode contains its own typeId..
-        l match {
-            case IdentNode(s) => {
-                st.lookupAll(s) match {
-                    case None => println("variable is not defined")
-                    case Some(id) => {
-                        id match {
-                            case Variable(t) => {   
-                                r.check(st)
-                                if (t != r.typeId.get) {
-                                    println("lhs and rhs are not type compatible")
-                                } else {
-                                    this.typeId = r.typeId
-                                }
-                            }
-                            case _ => println(s + " is not a variable")
-                        }
-
-                    }
-                }
-            }
-            // TODO: implement array-elem and pair-elem cases
-            case _ => println("lhs has an invalid type for assignment")
-        }
+        l.check(st)
+        r.check(st)
+        if (l.typeId.get.getType() != r.typeId.get.getType())
+            println(
+              s"lhs is type ${l.typeId.get.getType()}, rhs is type ${r.typeId.get.getType()}"
+            )
     }
 }
 
@@ -200,9 +196,12 @@ case class FreeNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
     def check(st: SymbolTable): Unit = {
         e.check(st)
         e.typeId.get match {
-            case ArrayType(_, _) | PairType(_, _) => { // TODO: do we need to look up st? 
-            }
-            case _ => println("expression is not a valid reference to a pair or array, could not be freed.")
+            case ArrayType(_, _) | PairType(_, _) =>
+                typeId = Some(e.typeId.get.getType())
+            case _ =>
+                println(
+                  "expression is not a valid reference to a pair or array, could not be freed."
+                )
         }
     }
 }
@@ -216,11 +215,13 @@ case class ReturnNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
     def check(st: SymbolTable): Unit = {
         e.check(st)
         this.typeId = e.typeId
-
+        // Only callable from inside functions
         st.lookup("return") match {
             case Some(id) => {
                 if (this.typeId.get != id) {
-                    println("return value incompatible with function's return type")
+                    println(
+                      "return value incompatible with function's return type"
+                    )
                 }
             }
             case None => {}
@@ -238,10 +239,14 @@ case class ExitNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
     def check(st: SymbolTable): Unit = {
         e.check(st)
         e.typeId.get match {
-            case IntType() | Variable(IntType()) | FunctionId(IntType(), _, _) => {
+            case IntType() | Variable(IntType()) |
+                FunctionId(IntType(), _, _) => {
                 this.typeId = Some(IntType())
             }
-            case _ => println("incompatible type: 'exit' takes an expression of type 'int'")
+            case _ =>
+                println(
+                  "incompatible type: 'exit' takes an expression of type 'int'"
+                )
         }
     }
 }
@@ -281,11 +286,15 @@ case class IfThenElseNode(e: ExprNode, s1: StatNode, s2: StatNode)(
     def check(st: SymbolTable): Unit = {
         e.check(st)
         e.typeId.get match {
-            case BoolType() | Variable(BoolType()) | FunctionId(BoolType(), _, _) => {
+            case BoolType() | Variable(BoolType()) |
+                FunctionId(BoolType(), _, _) => {
                 s1.check(st)
                 s2.check(st)
             }
-            case _ => println("incompatible type for conditional: 'if' condition must be a boolean")
+            case _ =>
+                println(
+                  "incompatible type for conditional: 'if' condition must be a boolean"
+                )
         }
     }
 }
@@ -304,10 +313,14 @@ case class WhileDoNode(e: ExprNode, s: StatNode)(val pos: (Int, Int))
     def check(st: SymbolTable): Unit = {
         e.check(st)
         e.typeId.get match {
-            case BoolType() | Variable(BoolType()) | FunctionId(BoolType(), _, _) => {
+            case BoolType() | Variable(BoolType()) |
+                FunctionId(BoolType(), _, _) => {
                 s.check(st)
             }
-            case _ => println("incompatible type for while loop: 'while' condition must be a boolean")
+            case _ =>
+                println(
+                  "incompatible type for while loop: 'while' condition must be a boolean"
+                )
         }
     }
 }
@@ -358,8 +371,12 @@ case class NewPairNode(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
     def check(st: SymbolTable): Unit = {
         e1.check(st)
         e2.check(st)
-        this.typeId = Some(PairType(e1.typeId.get.asInstanceOf[Type],
-                                e2.typeId.get.asInstanceOf[Type]))
+        this.typeId = Some(
+          PairType(
+            e1.typeId.get.getType(),
+            e2.typeId.get.getType()
+          )
+        )
     }
 }
 
@@ -377,31 +394,39 @@ case class CallNode(i: IdentNode, args: List[ExprNode])(val pos: (Int, Int))
     def check(st: SymbolTable): Unit = {
         st.lookupAll(i.s) match {
             case Some(FunctionId(returnType, params, funcST)) => {
-                args.foreach{ arg => arg.check(st) }
-                val paramTypes = params.map{ p => p match {
-                    case Param(t) => t
-                }}
+                args.foreach { arg => arg.check(st) }
+                val paramTypes = params.map { p =>
+                    p match {
+                        case Param(t) => t
+                    }
+                }
 
-                if (args.length < paramTypes.length) 
+                if (args.length < paramTypes.length)
                     println("insufficient arguments provided")
-                
+
                 // Compare arg types against param list
                 for ((arg, index) <- args.zipWithIndex) {
                     if (index < paramTypes.length) {
                         arg.typeId.get match {
                             case Variable(t) => {
-                               if (t != paramTypes(index)) {
-                                   println("argument type does not match that of the parameter")
-                               }
+                                if (t != paramTypes(index)) {
+                                    println(
+                                      "argument type does not match that of the parameter"
+                                    )
+                                }
                             }
                             case FunctionId(t, _, _) => {
                                 if (t != paramTypes(index)) {
-                                   println("argument type does not match that of the parameter")
+                                    println(
+                                      "argument type does not match that of the parameter"
+                                    )
                                 }
                             }
                             case _ => {
                                 if (arg.typeId.get != paramTypes(index)) {
-                                   println("argument type does not match that of the parameter")
+                                    println(
+                                      "argument type does not match that of the parameter"
+                                    )
                                 }
                             }
                         }
@@ -465,8 +490,12 @@ case class PairTypeNode(fst: PairElemTypeNode, snd: PairElemTypeNode)(
     def check(st: SymbolTable): Unit = {
         fst.check(st)
         snd.check(st)
-        this.typeId = Some(PairType(fst.typeId.get.asInstanceOf[Type],
-                                snd.typeId.get.asInstanceOf[Type]))
+        this.typeId = Some(
+          PairType(
+            fst.typeId.get.getType(),
+            snd.typeId.get.getType()
+          )
+        )
     }
 }
 
@@ -525,7 +554,9 @@ case class ArrayTypeNode(t: TypeNode, dimension: Int)(pos: (Int, Int))
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
         t.check(st)
-        this.typeId = Some(ArrayType(t.typeId.get.asInstanceOf[Type], dimension))
+        this.typeId = Some(
+          ArrayType(t.typeId.get.getType(), dimension)
+        )
     }
 }
 object ArrayTypeNode {
@@ -548,10 +579,10 @@ case class Not(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     def check(st: SymbolTable): Unit = {
         x.check(st)
         x.typeId.get match {
-            case BoolType() | Variable(BoolType()) | FunctionId(BoolType(), _, _)
-                => this.typeId = Some(BoolType())
-            case _ 
-                => println("incompatible argument type for operator 'not'")
+            case BoolType() | Variable(BoolType()) |
+                FunctionId(BoolType(), _, _) =>
+                this.typeId = Some(BoolType())
+            case _ => println("incompatible argument type for operator 'not'")
         }
     }
 }
@@ -564,10 +595,10 @@ case class Neg(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     def check(st: SymbolTable): Unit = {
         x.check(st)
         x.typeId.get match {
-            case IntType() | Variable(IntType()) | FunctionId(IntType(), _, _)
-                => this.typeId = Some(IntType())
-            case _ 
-                => println("incompatible argument type for operator 'neg'")
+            case IntType() | Variable(IntType()) |
+                FunctionId(IntType(), _, _) =>
+                this.typeId = Some(IntType())
+            case _ => println("incompatible argument type for operator 'neg'")
         }
     }
 }
@@ -579,10 +610,10 @@ case class Len(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     def check(st: SymbolTable): Unit = {
         x.check(st)
         x.typeId.get match {
-            case ArrayType(_,_) | Variable(ArrayType(_,_)) | FunctionId(ArrayType(_,_), _, _)
-                => this.typeId = Some(IntType())
-            case _ 
-                => println("incompatible argument type for operator 'len'")
+            case ArrayType(_, _) | Variable(ArrayType(_, _)) |
+                FunctionId(ArrayType(_, _), _, _) =>
+                this.typeId = Some(IntType())
+            case _ => println("incompatible argument type for operator 'len'")
         }
     }
 }
@@ -595,10 +626,10 @@ case class Ord(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     def check(st: SymbolTable): Unit = {
         x.check(st)
         x.typeId.get match {
-            case CharType() | Variable(CharType()) | FunctionId(CharType(), _, _)
-                => this.typeId = Some(IntType())
-            case _ 
-                => println("incompatible argument type for operator 'ord'")
+            case CharType() | Variable(CharType()) |
+                FunctionId(CharType(), _, _) =>
+                this.typeId = Some(IntType())
+            case _ => println("incompatible argument type for operator 'ord'")
         }
     }
 }
@@ -610,8 +641,9 @@ case class Chr(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     def check(st: SymbolTable): Unit = {
         x.check(st)
         x.typeId.get match {
-            case IntType() | Variable(IntType()) | FunctionId(IntType(), _, _) 
-                => this.typeId = Some(CharType())
+            case IntType() | Variable(IntType()) |
+                FunctionId(IntType(), _, _) =>
+                this.typeId = Some(CharType())
             case _ => println("incompatible argument type for operator 'chr'")
         }
     }
@@ -754,14 +786,14 @@ case class Or(x: ExprNode, y: ExprNode)(val pos: (Int, Int))
 object Or extends ParserBuilderPos2[ExprNode, ExprNode, Or]
 
 // Identifier
-case class IdentNode(s: String)(val pos: (Int, Int))
+case class IdentNode(var s: String)(val pos: (Int, Int))
     extends ExprNode
     with AssignLHSNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
         st.lookup(s) match {
             case None    => println("identifier does not exist in scope")
-            case Some(t) => this.typeId = Some(Variable(t.asInstanceOf[Type]))
+            case Some(t) => this.typeId = Some(Variable(t.getType()))
         }
     }
 }
@@ -776,8 +808,7 @@ case class ArrayElemNode(i: IdentNode, es: List[ExprNode])(val pos: (Int, Int))
     extends ExprNode
     with AssignLHSNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {
-    }
+    def check(st: SymbolTable): Unit = {}
 }
 
 object ArrayElemNode {
