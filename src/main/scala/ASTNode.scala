@@ -546,7 +546,7 @@ case class Not(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     def check(st: SymbolTable): Unit = {
         x.check(st)
         x.typeId.get match {
-            case BoolType() | Variable(BoolType()) | FunctionId(BoolType(), _, _)
+            case BoolType() | Variable(BoolType())
                 => this.typeId = Some(BoolType())
             case _ 
                 => println("incompatible argument type for operator 'not'")
@@ -562,7 +562,7 @@ case class Neg(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     def check(st: SymbolTable): Unit = {
         x.check(st)
         x.typeId.get match {
-            case IntType() | Variable(IntType()) | FunctionId(IntType(), _, _)
+            case IntType() | Variable(IntType())
                 => this.typeId = Some(IntType())
             case _ 
                 => println("incompatible argument type for operator 'neg'")
@@ -577,7 +577,7 @@ case class Len(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     def check(st: SymbolTable): Unit = {
         x.check(st)
         x.typeId.get match {
-            case ArrayType(_,_) | Variable(ArrayType(_,_)) | FunctionId(ArrayType(_,_), _, _)
+            case ArrayType(_,_) | Variable(ArrayType(_,_))
                 => this.typeId = Some(IntType())
             case _ 
                 => println("incompatible argument type for operator 'len'")
@@ -593,7 +593,7 @@ case class Ord(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     def check(st: SymbolTable): Unit = {
         x.check(st)
         x.typeId.get match {
-            case CharType() | Variable(CharType()) | FunctionId(CharType(), _, _)
+            case CharType() | Variable(CharType())
                 => this.typeId = Some(IntType())
             case _ 
                 => println("incompatible argument type for operator 'ord'")
@@ -608,7 +608,7 @@ case class Chr(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     def check(st: SymbolTable): Unit = {
         x.check(st)
         x.typeId.get match {
-            case IntType() | Variable(IntType()) | FunctionId(IntType(), _, _) 
+            case IntType() | Variable(IntType())
                 => this.typeId = Some(CharType())
             case _ => println("incompatible argument type for operator 'chr'")
         }
