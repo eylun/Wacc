@@ -16,8 +16,13 @@ object SyntaxParser {
                 println(x)
                 println(s"${args(0)} is synctactically valid.")
                 val topLevelST = SymbolTable()
-                x.check(topLevelST)
-                System.exit(0)
+                val errorLog = List()
+                x.check(topLevelST, errorLog)
+                if (errorLog.length == 0) {
+                    System.exit(0)
+                }
+                println(errorLog)
+                System.exit(100)
             case Failure(err) =>
                 println("Syntax Error")
                 println(err)

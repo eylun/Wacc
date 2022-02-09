@@ -127,28 +127,28 @@ case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode)(
         r.check(st, errors)
         if (r.typeId.get.getType() != t.typeId.get.getType()) {
             errors :+ "variable assignment has incompatible type"
-        } else {
-            st.lookup(i.s) match {
-                case None => {
-                    st.add(i.s, Variable(t.typeId.get.getType()))
-
-                }
-                case Some(FunctionId(_, _, _)) => {
-                    /* When a function node already exists, manually rename the
-                     * identifer in the AST node and insert into the symbol table */
-                    st.lookup(i.s + "$") match {
-                        case None => {
-                            i.s += "$"
-                            st.add(i.s, Variable(t.typeId.get.getType()))
-                        }
-                        case Some(_) =>
-                            errors :+ s" ${i.s} is already declared within the scope"
-                    }
-                }
-                case _ =>
-                    errors :+ s" ${i.s} is already declared within the scope"
-            }
         }
+        st.lookup(i.s) match {
+            case None => {
+                st.add(i.s, Variable(t.typeId.get.getType()))
+
+            }
+            case Some(FunctionId(_, _, _)) => {
+                /* When a function node already exists, manually rename the
+                 * identifer in the AST node and insert into the symbol table */
+                st.lookup(i.s + "$") match {
+                    case None => {
+                        i.s += "$"
+                        st.add(i.s, Variable(t.typeId.get.getType()))
+                    }
+                    case Some(_) =>
+                        errors :+ s" ${i.s} is already declared within the scope"
+                }
+            }
+            case _ =>
+                errors :+ s" ${i.s} is already declared within the scope"
+        }
+
     }
 }
 
@@ -217,12 +217,13 @@ case class ReturnNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
 
         st.lookup("return") match {
             case Some(id) => {
-                if (this.typeId.get != id) {
+                if (e.typeId.get.getType() != id.getType()) {
                     errors :+
-                        "return value incompatible with function's return type"
+                        s"function is of type ${id.getType()} but tries to return type ${e.typeId.get.getType()} "
                 }
             }
-            case None => {}
+            case None =>
+                errors :+ "return statement called outside of a function scope"
         }
     }
 }
