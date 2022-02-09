@@ -798,7 +798,12 @@ case class ArrayElemNode(i: IdentNode, es: List[ExprNode])(val pos: (Int, Int))
     extends ExprNode
     with AssignLHSNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable, errors: List[String]): Unit = {}
+    def check(st: SymbolTable, errors: List[String]): Unit = {
+        // i.check(st, errors)
+        // i.typeId.get match {
+        //     case ArrayType(t, d) => 
+        // }
+    }
 }
 
 object ArrayElemNode {
@@ -904,14 +909,23 @@ case class ArrayLiterNode(es: List[ExprNode])(val pos: (Int, Int))
     // the declaration node's responsibility to update it.
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable, errors: List[String]): Unit = {
-        // es.foreach { e => e.check(st) }
-        // if (!es.isEmpty) {
-        //     this.typeId = es(0).typeId
-        //     val typesMatch = es.forall(e => { e.typeId.get == this.typeId.get })
-        //     if (!typesMatch) {
-        //         println("array elements have different types")
-        //     }
-        // }
+        es.foreach { e => {
+                    e.check(st, errors)
+                    if (e.typeId == None) {
+                        return ()
+                    }
+        } }
+        val typeToCheck = es(0).typeId.get
+        val typesMatch = es.forall(e => { e.typeId.get == typeToCheck })
+        if (!typesMatch) {
+            errors :+ "expression is not of type pair"
+            return ()
+        }
+        typeToCheck match {
+            case ArrayType(t, d) => this.typeId = Some(ArrayType(t, d + 1))
+            case _               => this.typeId = Some(ArrayType(typeToCheck.getType(), 1))
+        }
+        
     }
 }
 

@@ -5,7 +5,5 @@
 
 # Program:
 begin
-    pair(int, char) p = newpair(10, 'a') ;
-    int x = 0 ;
-    int t = fst x
+    return 5
 end
