@@ -126,7 +126,13 @@ case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode)(
         t.check(st, errors)
         r.check(st, errors)
         if (r.typeId.get.getType() != t.typeId.get.getType()) {
-            errors :+ "variable assignment has incompatible type"
+            r.typeId.get.getType() match {
+                case AnyType() => ()
+                case _ => {
+                    errors :+ "variable assignment has incompatible type"
+                    return ()
+                }
+            }
         }
         st.lookup(i.s) match {
             case None => {
@@ -167,9 +173,16 @@ case class LRAssignNode(l: AssignLHSNode, r: AssignRHSNode)(val pos: (Int, Int))
     def check(st: SymbolTable, errors: List[String]): Unit = {
         l.check(st, errors)
         r.check(st, errors)
-        if (l.typeId.get.getType() != r.typeId.get.getType())
-            errors :+
+        if (l.typeId.get.getType() != r.typeId.get.getType()){
+            r.typeId.get.getType() match {
+                case AnyType() => ()
+                case _ => {
+                errors :+
                 s"lhs is type ${l.typeId.get.getType()}, rhs is type ${r.typeId.get.getType()}"
+                    return ()
+                }
+            }
+            }
     }
 }
 
@@ -799,10 +812,37 @@ case class ArrayElemNode(i: IdentNode, es: List[ExprNode])(val pos: (Int, Int))
     with AssignLHSNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable, errors: List[String]): Unit = {
-        // i.check(st, errors)
-        // i.typeId.get match {
-        //     case ArrayType(t, d) => 
-        // }
+        i.check(st, errors)
+        es.foreach { e => {
+            e.check(st, errors)
+            e.typeId match {
+                case None => return ()
+                case Some(IntType()) | Some(Variable(IntType())) => ()
+                case _ => {
+                    errors :+ "expression is not an integer, cannot be used to evaluate an array"
+                    return ()
+                }
+            }
+        } }
+
+        i.typeId match {
+            case None => return ()
+            case Some(ArrayType(t,d)) => {
+
+                d.compare(es.length) match {
+                    case -1 => errors :+ "too many expected dimensions for array"
+                    case 0 => this.typeId = Some(t)
+                    case 1 => this.typeId = Some(ArrayType(t, d - es.length))
+                }
+            }
+            case Some(t) => {
+                // this.typeId = t
+                errors :+ "expression "
+            }
+
+        }
+ 
+    
     }
 }
 
@@ -909,21 +949,25 @@ case class ArrayLiterNode(es: List[ExprNode])(val pos: (Int, Int))
     // the declaration node's responsibility to update it.
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable, errors: List[String]): Unit = {
-        es.foreach { e => {
-                    e.check(st, errors)
-                    if (e.typeId == None) {
-                        return ()
-                    }
-        } }
-        val typeToCheck = es(0).typeId.get
-        val typesMatch = es.forall(e => { e.typeId.get == typeToCheck })
-        if (!typesMatch) {
-            errors :+ "expression is not of type pair"
-            return ()
-        }
-        typeToCheck match {
-            case ArrayType(t, d) => this.typeId = Some(ArrayType(t, d + 1))
-            case _               => this.typeId = Some(ArrayType(typeToCheck.getType(), 1))
+        if (!es.isEmpty) {
+            es.foreach { e => {
+                        e.check(st, errors)
+                        if (e.typeId == None) {
+                            return ()
+                        }
+            } }
+            val typeToCheck = es(0).typeId.get
+            val typesMatch = es.forall(e => { e.typeId.get == typeToCheck })
+            if (!typesMatch) {
+                errors :+ "array contains different types"
+                return ()
+            }
+            typeToCheck match {
+                case ArrayType(t, d) => this.typeId = Some(ArrayType(t, d + 1))
+                case _               => this.typeId = Some(ArrayType(typeToCheck.getType(), 1))
+            }
+        } else {
+            this.typeId = Some(AnyType())
         }
         
     }
