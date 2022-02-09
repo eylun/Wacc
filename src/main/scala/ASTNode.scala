@@ -374,7 +374,46 @@ object NewPairNode {
 case class CallNode(i: IdentNode, args: List[ExprNode])(val pos: (Int, Int))
     extends AssignRHSNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        st.lookupAll(i.s) match {
+            case Some(FunctionId(returnType, params, funcST)) => {
+                args.foreach{ arg => arg.check(st) }
+                val paramTypes = params.map{ p => p match {
+                    case Param(t) => t
+                }}
+
+                if (args.length < paramTypes.length) 
+                    println("insufficient arguments provided")
+                
+                // Compare arg types against param list
+                for ((arg, index) <- args.zipWithIndex) {
+                    if (index < paramTypes.length) {
+                        arg.typeId.get match {
+                            case Variable(t) => {
+                               if (t != paramTypes(index)) {
+                                   println("argument type does not match that of the parameter")
+                               }
+                            }
+                            case FunctionId(t, _, _) => {
+                                if (t != paramTypes(index)) {
+                                   println("argument type does not match that of the parameter")
+                                }
+                            }
+                            case _ => {
+                                if (arg.typeId.get != paramTypes(index)) {
+                                   println("argument type does not match that of the parameter")
+                                }
+                            }
+                        }
+                    } else {
+                        println("too many arguments provided")
+                    }
+                }
+                this.typeId = Some(returnType)
+            }
+            case _ => println("function not defined")
+        }
+    }
 }
 
 object CallNode {
