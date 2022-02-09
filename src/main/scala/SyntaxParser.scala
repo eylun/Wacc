@@ -14,9 +14,12 @@ object SyntaxParser {
         parseResult.get match {
             case Success(x) =>
                 println(x)
-                println(s"${args(0)} is valid!")
+                println(s"${args(0)} is synctactically valid.")
+                val topLevelST = SymbolTable()
+                x.check(topLevelST)
                 System.exit(0)
             case Failure(err) =>
+                println("Syntax Error")
                 println(err)
                 System.exit(200)
         }
