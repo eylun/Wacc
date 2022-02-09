@@ -22,7 +22,7 @@ class FrontendSpec extends AnyFlatSpec {
         syntaxValid.foreach { case x: File =>
             syntax.parse.parseFromFile(x).get match {
                 case Success(ast) => {
-                    ast.check(SymbolTable())
+                    ast.check(SymbolTable(), List())
                 }
                 case Failure(err) => fail(err)
             }

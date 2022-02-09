@@ -296,9 +296,7 @@ case class IfThenElseNode(e: ExprNode, s1: StatNode, s2: StatNode)(
                 s2.check(st, errors)
             }
             case _ =>
-                println(
-                  "incompatible type for conditional: 'if' condition must be a boolean"
-                )
+                errors :+ "incompatible type for conditional: 'if' condition must be a boolean"
         }
     }
 }
@@ -321,9 +319,7 @@ case class WhileDoNode(e: ExprNode, s: StatNode)(val pos: (Int, Int))
                 s.check(st, errors)
             }
             case _ =>
-                println(
-                  "incompatible type for while loop: 'while' condition must be a boolean"
-                )
+                errors :+ "incompatible type for while loop: 'while' condition must be a boolean"
         }
     }
 }
@@ -405,7 +401,7 @@ case class CallNode(i: IdentNode, args: List[ExprNode])(val pos: (Int, Int))
                 }
 
                 if (args.length < paramTypes.length)
-                    println("insufficient arguments provided")
+                    errors :+ "insufficient arguments provided"
 
                 // Compare arg types against param list
                 for ((arg, index) <- args.zipWithIndex) {
@@ -413,26 +409,22 @@ case class CallNode(i: IdentNode, args: List[ExprNode])(val pos: (Int, Int))
                         arg.typeId.get match {
                             case Variable(t) => {
                                 if (t != paramTypes(index)) {
-                                    println(
-                                      "argument type does not match that of the parameter"
-                                    )
+                                    errors :+ "argument type does not match that of the parameter"
                                 }
                             }
                             case _ => {
                                 if (arg.typeId.get != paramTypes(index)) {
-                                    println(
-                                      "argument type does not match that of the parameter"
-                                    )
+                                    errors :+ "argument type does not match that of the parameter"
                                 }
                             }
                         }
                     } else {
-                        println("too many arguments provided")
+                        errors :+ "too many arguments provided"
                     }
                 }
                 this.typeId = Some(returnType)
             }
-            case _ => println("function not defined")
+            case _ => errors :+ "function not defined"
         }
     }
 }
@@ -577,7 +569,7 @@ case class Not(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
         x.typeId.get match {
             case BoolType() | Variable(BoolType()) =>
                 this.typeId = Some(BoolType())
-            case _ => println("incompatible argument type for operator 'not'")
+            case _ => errors :+ "incompatible argument type for operator 'not'"
         }
     }
 }
@@ -592,7 +584,7 @@ case class Neg(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
         x.typeId.get match {
             case IntType() | Variable(IntType()) =>
                 this.typeId = Some(IntType())
-            case _ => println("incompatible argument type for operator 'neg'")
+            case _ => errors :+ "incompatible argument type for operator 'neg'"
         }
     }
 }
@@ -606,7 +598,7 @@ case class Len(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
         x.typeId.get match {
             case ArrayType(_, _) | Variable(ArrayType(_, _)) =>
                 this.typeId = Some(IntType())
-            case _ => println("incompatible argument type for operator 'len'")
+            case _ => errors :+ "incompatible argument type for operator 'len'"
         }
     }
 }
@@ -621,7 +613,7 @@ case class Ord(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
         x.typeId.get match {
             case CharType() | Variable(CharType()) =>
                 this.typeId = Some(IntType())
-            case _ => println("incompatible argument type for operator 'ord'")
+            case _ => errors :+ "incompatible argument type for operator 'ord'"
         }
     }
 }
@@ -635,7 +627,7 @@ case class Chr(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
         x.typeId.get match {
             case IntType() | Variable(IntType()) =>
                 this.typeId = Some(CharType())
-            case _ => println("incompatible argument type for operator 'chr'")
+            case _ => errors :+ "incompatible argument type for operator 'chr'"
         }
     }
 }
@@ -783,7 +775,7 @@ case class IdentNode(var s: String)(val pos: (Int, Int))
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable, errors: List[String]): Unit = {
         st.lookup(s) match {
-            case None        => println("identifier does not exist in scope")
+            case None        => errors :+ "identifier does not exist in scope"
             case i @ Some(_) => this.typeId = i
         }
     }
