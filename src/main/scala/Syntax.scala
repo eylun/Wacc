@@ -361,12 +361,10 @@ object syntax {
 
   /* STATEMENTS */
   lazy val skipStat = SkipNode <# "skip".label("skip statement")
-
   lazy val newAssignStat =
     NewAssignNode(anyType, ident, "=".label("\"= <RHS assignment>\"") *> assignRHS)
       .label("new assignment statement: <anyType> <identifier> '=' <assign-rhs> ")
       //.explain("- New Assignment Statement: <anyType> <identifier> '=' <assign-rhs> ")
-
   lazy val lrAssignStat = 
     LRAssignNode(assignLHS, "=" *> assignRHS)
       .label("assignment statement: <assign-lhs> '=' <assign-rhs>")
@@ -415,7 +413,7 @@ object syntax {
       )
 
   lazy val stat: Parsley[StatNode] =
-    statList <|> statAtoms <* notFollowedBy(";")
+    (statList <|> statAtoms <* notFollowedBy(";")).label("statement")
 
   /* TYPES */
   // type := <base-type> | <array-type> | <pair-type>
@@ -427,15 +425,15 @@ object syntax {
     chain.postfix1(
       ArrayTypeNode(pairType <|> baseType, 0),
       ArrayTypeNode("[]").label("brackets for Array Type \"[]\"")
-    )
+    ).label("Array Type")
 
   // pair-elem-type := <base-type> | <array-type> | 'pair'
   lazy val pairElemType: Parsley[PairElemTypeNode] =
-    attempt(arrayType) <|> baseType <|> pairBaseType
+    (attempt(arrayType) <|> baseType <|> pairBaseType).label("Pair Element Type: any valid type")
 
   // pair-type := 'pair' '(' <pair-elem-type> ',' <pair-elem-type> ')'
   lazy val pairType: Parsley[PairTypeNode] = PairTypeNode(
-    "pair" *> "(" *> pairElemType <* ",",
+    "pair" *> "(".label(" \"(\" <Any Type> , <Any Type> \")\" ") *> pairElemType <* ",",
     pairElemType <* ")"
   ).label("Pair Type")
 }
