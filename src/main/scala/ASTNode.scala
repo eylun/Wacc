@@ -215,7 +215,10 @@ case class ReturnNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
         e.check(st)
-        this.typeId = e.typeId
+        e.typeId.get match {
+            case Variable(t) => this.typeId = Some(t)
+            case _ => this.typeId = e.typeId
+        }
 
         st.lookup("return") match {
             case Some(id) => {
@@ -238,7 +241,7 @@ case class ExitNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
     def check(st: SymbolTable): Unit = {
         e.check(st)
         e.typeId.get match {
-            case IntType() | Variable(IntType()) | FunctionId(IntType(), _, _) => {
+            case IntType() | Variable(IntType()) => {
                 this.typeId = Some(IntType())
             }
             case _ => println("incompatible type: 'exit' takes an expression of type 'int'")
@@ -281,7 +284,7 @@ case class IfThenElseNode(e: ExprNode, s1: StatNode, s2: StatNode)(
     def check(st: SymbolTable): Unit = {
         e.check(st)
         e.typeId.get match {
-            case BoolType() | Variable(BoolType()) | FunctionId(BoolType(), _, _) => {
+            case BoolType() | Variable(BoolType()) => {
                 s1.check(st)
                 s2.check(st)
             }
@@ -304,7 +307,7 @@ case class WhileDoNode(e: ExprNode, s: StatNode)(val pos: (Int, Int))
     def check(st: SymbolTable): Unit = {
         e.check(st)
         e.typeId.get match {
-            case BoolType() | Variable(BoolType()) | FunctionId(BoolType(), _, _) => {
+            case BoolType() | Variable(BoolType()) => {
                 s.check(st)
             }
             case _ => println("incompatible type for while loop: 'while' condition must be a boolean")
@@ -393,11 +396,6 @@ case class CallNode(i: IdentNode, args: List[ExprNode])(val pos: (Int, Int))
                                if (t != paramTypes(index)) {
                                    println("argument type does not match that of the parameter")
                                }
-                            }
-                            case FunctionId(t, _, _) => {
-                                if (t != paramTypes(index)) {
-                                   println("argument type does not match that of the parameter")
-                                }
                             }
                             case _ => {
                                 if (arg.typeId.get != paramTypes(index)) {
@@ -796,7 +794,10 @@ case class FirstPairElemNode(e: ExprNode)(val pos: (Int, Int))
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
         e.check(st)
-        this.typeId = e.typeId
+        e.typeId.get match {
+            case Variable(t) => this.typeId = Some(t)
+            case _ => this.typeId = e.typeId
+        }
     }
 }
 
@@ -810,7 +811,10 @@ case class SecondPairElemNode(e: ExprNode)(val pos: (Int, Int))
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
         e.check(st)
-        this.typeId = e.typeId
+        e.typeId.get match {
+            case Variable(t) => this.typeId = Some(t)
+            case _ => this.typeId = e.typeId
+        }
     }
 }
 
