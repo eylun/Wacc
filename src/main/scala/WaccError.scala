@@ -13,14 +13,20 @@ case class WaccError(
         }
         val src = "In file \'" + source.get + "\' "
         val position = "(line " + pos._1 + " , column " + pos._2 + ")"
-        var errorMsg = "error message here"
+        var errorMsg = "Error message here"
 
         if(lines.isInstanceOf[VanillaError]){
             val vanillaError = lines.asInstanceOf[VanillaError]
             val unexpected = "unexpected: \"" + vanillaError.getUnexpecteds() + "\""
             val expected = "expected: " + vanillaError.getExpecteds()
-            val explanation = "explanation: " + vanillaError.getReasons()
-            errorMsg = errorType + src + position + "\n" + unexpected + "\n" + expected + "\n" + explanation
+            
+            if(vanillaError.getReasons().size == 0){
+                errorMsg = errorType + src + position + "\n" + unexpected + "\n" + expected
+            } else {
+                val explanation = "explanation: " + vanillaError.getReasons()
+                errorMsg = errorType + src + position + "\n" + unexpected + "\n" + expected + "\n" + explanation
+            }
+            
         }
 
         if(lines.isInstanceOf[SpecialisedError]){
@@ -93,7 +99,7 @@ case class WaccNamed(item: String) extends WaccErrorItem {
     def getItem () = { item }
 }
 case object WaccEndOfInput extends WaccErrorItem {
-    def getItem () = { "end of input" }
+    def getItem () = { "End of Input" }
 }
 
 class WaccErrorBuilder extends ErrorBuilder[WaccError] {
