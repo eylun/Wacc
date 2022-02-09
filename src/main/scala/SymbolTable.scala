@@ -1,6 +1,9 @@
 import scala.collection.mutable.Map
 
-class SymbolTable(val encSymTable: Option[SymbolTable], dict: Map[String, Identifier]) {
+class SymbolTable(
+    val encSymTable: Option[SymbolTable],
+    dict: Map[String, Identifier]
+) {
     /* Adds an identifier string to the current symbol table, mapped to an
        identifier object. */
     def add(name: String, obj: Identifier): Unit = {
@@ -20,9 +23,16 @@ class SymbolTable(val encSymTable: Option[SymbolTable], dict: Map[String, Identi
             var st = s.get
             st.lookup(name) match {
                 case Some(o) => Some(o)
-                case None => { s = st.encSymTable }
+                case None    => { s = st.encSymTable }
             }
         }
         None
     }
+}
+
+object SymbolTable {
+    def apply(): SymbolTable = new SymbolTable(None, Map[String, Identifier]())
+
+    def apply(encSymTable: SymbolTable) =
+        new SymbolTable(Some(encSymTable), Map[String, Identifier]())
 }

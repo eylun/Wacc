@@ -8,23 +8,31 @@ class FrontendSpec extends AnyFlatSpec {
     import parsley.io.ParseFromIO
 
     // TODO: load programs in batches with more specific test messages
-    val valid = waccProgramsInDir(new File("./programs/valid"))
-    val invalid = waccProgramsInDir(new File("./programs/invalid/syntaxErr"))
+    val syntaxValid = waccProgramsInDir(new File("./programs/valid"))
+    val syntaxInvalid = waccProgramsInDir(
+      new File("./programs/invalid/syntaxErr")
+    )
+    val semanticInvalid = waccProgramsInDir(
+      new File("./programs/invalid/semanticErr")
+    )
 
     behavior of "compiler front-end"
-    it should "get valid programs from folder" in {
-        assert(valid.nonEmpty)
-        valid.foreach { case x: File =>
+    it should "get syntactically and semantically valid programs from folder" in {
+        assert(syntaxValid.nonEmpty)
+        syntaxValid.foreach { case x: File =>
             syntax.parse.parseFromFile(x).get match {
-                case Success(_)   => succeed
+                case Success(ast) => {
+                    // ast.check(SymbolTable(), List())
+                    succeed
+                }
                 case Failure(err) => fail(err)
             }
         }
     }
 
     it should "get invalid programs from folder" in {
-        assert(invalid.nonEmpty)
-        invalid.foreach { case x: File =>
+        assert(syntaxInvalid.nonEmpty)
+        syntaxInvalid.foreach { case x: File =>
             syntax.parse.parseFromFile(x).get match {
                 case Success(s) => {
                     println(x)
