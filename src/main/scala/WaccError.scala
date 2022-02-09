@@ -1,22 +1,106 @@
 import parsley.errors.ErrorBuilder
+
 case class WaccError(
     pos: (Int, Int),
     source: Option[String],
-    lines: WaccErrorLines
-)
+    lines: WaccErrorLines,
+    syntaxError: Boolean = true
+){
+    def render() = {
+        var errorType = "Syntax Error: "
+        if (!syntaxError) {
+            errorType = "Semantic Error: "
+        }
+        val src = "In file \'" + source.get + "\' "
+        val position = "(line " + pos._1 + " , column " + pos._2 + ")"
+        var errorMsg = "Error message here"
+
+        if(lines.isInstanceOf[VanillaError]){
+            val vanillaError = lines.asInstanceOf[VanillaError]
+            val unexpected = "unexpected: \"" + vanillaError.getUnexpecteds() + "\""
+            val expected = "expected: " + vanillaError.getExpecteds()
+            
+            if(vanillaError.getReasons().size == 0){
+                errorMsg = errorType + src + position + "\n" + unexpected + "\n" + expected
+            } else {
+                val explanation = "explanation: " + vanillaError.getReasons()
+                errorMsg = errorType + src + position + "\n" + unexpected + "\n" + expected + "\n" + explanation
+            }
+            
+        }
+
+        if(lines.isInstanceOf[SpecialisedError]){
+            val specializedError = lines.asInstanceOf[SpecialisedError]
+            errorMsg = errorType + src + position + "\n" + specializedError.getMsgs()
+        }
+
+        println(errorMsg)
+    }
+}
 
 sealed trait WaccErrorLines
+
 case class VanillaError(
     unexpected: Option[WaccErrorItem],
     expecteds: Set[WaccErrorItem],
     reasons: Set[String]
-) extends WaccErrorLines
-case class SpecialisedError(msgs: Set[String]) extends WaccErrorLines
+) extends WaccErrorLines {
 
-sealed trait WaccErrorItem
-case class WaccRaw(item: String) extends WaccErrorItem
-case class WaccNamed(item: String) extends WaccErrorItem
-case object WaccEndOfInput extends WaccErrorItem
+    def getUnexpecteds() = {
+        if(unexpected.isEmpty){
+            ""
+        } else {
+            unexpected.get.getItem()
+        }
+    }
+
+    def getExpecteds() = {
+        var result = ""
+        for(expected <- expecteds){
+            if(result.size == 0){
+                result = expected.getItem()
+            } else {
+                result = result + " " + expected.getItem()
+            }
+        }
+        result
+    }
+
+    def getReasons() = {
+        var allReasons = ""
+        for(reason <- reasons){
+            if(allReasons.size == 0){
+                allReasons = reason
+            } else {
+                allReasons = allReasons + "\n" + reason
+            }
+        }
+        allReasons
+    }
+}
+
+case class SpecialisedError(msgs: Set[String]) extends WaccErrorLines {
+    def getMsgs() = {
+        var msgs = ""
+        for(msg <- msgs){
+            msgs = msgs + msg + "\n"
+        }
+        msgs
+    }
+}
+
+sealed trait WaccErrorItem {
+    def getItem(): String
+}
+case class WaccRaw(item: String) extends WaccErrorItem {
+    def getItem () = { item }
+}
+case class WaccNamed(item: String) extends WaccErrorItem {
+    def getItem () = { item }
+}
+case object WaccEndOfInput extends WaccErrorItem {
+    def getItem () = { "End of Input" }
+}
 
 class WaccErrorBuilder extends ErrorBuilder[WaccError] {
     type Position = (Int, Int)

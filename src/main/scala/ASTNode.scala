@@ -527,7 +527,7 @@ sealed trait ExprNode extends AssignRHSNode
 // implementors of ParserBuilder can serve as a builder of parsers of type T
 trait ParserBuilder[T] {
     val parser: Parsley[T]
-    final def <#(p: Parsley[_]): Parsley[T] = parser <* p
+    final def <#(p: Parsley[_]): Parsley[T] = parser <* p.label("operator")
 }
 
 trait ParserBuilderPos0[R] extends ParserBuilder[R] {
@@ -537,7 +537,7 @@ trait ParserBuilderPos0[R] extends ParserBuilder[R] {
 
 trait ParserBuilderPos1[T1, R] extends ParserBuilder[T1 => R] {
     def apply(x: T1)(pos: (Int, Int)): R
-    val parser = pos.map(p => apply(_)(p))
+    val parser = pos.map(p => (apply(_)(p)))
 }
 
 // Unary Operator
