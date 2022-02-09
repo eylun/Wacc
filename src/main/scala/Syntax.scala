@@ -123,18 +123,18 @@ object lexer {
         "end of escape sequence"
       )
       .explain(
-        "- Escape Sequences include: \\0, \\b, \\t, \\n, \\f, \\r, \\\", \\\', \\\\"
+        "- escape sequences include: \\0, \\b, \\t, \\n, \\f, \\r, \\\", \\\', \\\\"
       )
 
   val esc =
     ((c: Char) => utility.escapedChars.apply(c)) <#> escapedChar
 
   val character: Parsley[Char] =
-    (noneOf('"', '\'', '\\') <|> ("\\" *> esc)).label("Character")
+    (noneOf('"', '\'', '\\') <|> ("\\" *> esc)).label("character")
 
   // int-sign := '+' | '-'
   val intSign =
-    ("+" #> identity[Long] _ <|> "-" #> ((x: Long) => -x)).label("Integer Sign")
+    ("+" #> identity[Long] _ <|> "-" #> ((x: Long) => -x)).label("integer sign")
 
   /* LITERALS */
 
@@ -151,7 +151,7 @@ object lexer {
         .collectMsg("Integer Overflow") {
           case x if x.toInt == x => x.toInt
         }
-        .label("Integer Literal")
+        .label("integer literal")
     )
 
   // TODO: Try to use implicits to not use 'lex.keyword' everytime
@@ -159,12 +159,12 @@ object lexer {
   val boolLiter: Parsley[ExprNode] =
     BoolLiterNode(
       (lexer.keyword("true") #> true <|> lexer.keyword("false") #> false)
-        .label("Boolean Literal")
+        .label("boolean literal")
     )
 
   // pair-liter := null
   val pairLiter: Parsley[ExprNode] =
-    lexer.keyword("null").label("Pair Literal") *> PairLiterNode()
+    lexer.keyword("null").label("pair literal") *> PairLiterNode()
 
   // string-liter := '"' <character>* '"'
   val stringLiter =
@@ -176,7 +176,7 @@ object lexer {
           ) <~ "\""
         ))
         .map(s => s.mkString)
-        .label("String Literal")
+        .label("string literal")
     )
 
   // expression atoms
@@ -195,7 +195,7 @@ object lexer {
     StringTypeNode <# lexer.keyword("string").label("String Type")
   lazy val baseType: Parsley[BaseTypeNode] =
     (intType <|> boolType <|> charType <|> stringType)
-      .label("Base Type: int, bool, char, string")
+      .label("Base Types: int, bool, char, string")
   val pairBaseType =
     PairElemTypePairNode <# lexer.keyword("pair").label("Pair Base Type")
 
@@ -252,7 +252,7 @@ object syntax {
           .collectMsg(
             "Return Statement not at end of statement block"
           )(verifyCleanExit) <~ "end"
-      ).label("Function Declaration")
+      ).label("function declaration")
         .explain(
           "- Function Declaration Syntax: <return-type> <function-name> ( <list-of-parameters> ) is <statement> end"
         )
@@ -300,18 +300,18 @@ object syntax {
         <|> exprAtoms
     )(
       Ops(Prefix)(
-        Not <# "!".label("unary Operator"),
-        Neg <# attempt("-" <~ notFollowedBy(number)).label("Unary Operator"),
-        Len <# "len".label("Unary Operator"),
-        Ord <# "ord".label("Unary Operator"),
-        Chr <# "chr".label("Unary Operator")
+        Not <# "!".label("unary operator"),
+        Neg <# attempt("-" <~ notFollowedBy(number)).label("unary operator"),
+        Len <# "len".label("unary operator"),
+        Ord <# "ord".label("unary operator"),
+        Chr <# "chr".label("unary operator")
       ),
-      Ops(InfixL)(Mult <# "*".label("Binary Operator"), Div <# "/".label("Binary Operator"), Mod <# "%".label("Binary Operator")),
-      Ops(InfixL)(Add <# "+".label("Binary Operator"), Sub <# "-".label("Binary Operator")),
-      Ops(InfixL)(GTE <# ">=".label("Comparison Operator"), LTE <# "<=".label("Comparison Operator"), LT <# "<".label("Comparison Operator"), GT <# ">".label("Comparison Operator")),
-      Ops(InfixL)(Equal <# "==".label("Equality Operator"), NotEqual <# "!=".label("Equality Operator")),
-      Ops(InfixL)(And <# "&&".label("Logical Operator")),
-      Ops(InfixL)(Or <# "||".label("Logical Operator"))
+      Ops(InfixL)(Mult <# "*".label("binary operator"), Div <# "/".label("binary operator"), Mod <# "%".label("binary operator")),
+      Ops(InfixL)(Add <# "+".label("binary operator"), Sub <# "-".label("binary operator")),
+      Ops(InfixL)(GTE <# ">=".label("comparison operator"), LTE <# "<=".label("comparison operator"), LT <# "<".label("comparison operator"), GT <# ">".label("comparison operator")),
+      Ops(InfixL)(Equal <# "==".label("equality operator"), NotEqual <# "!=".label("equality operator")),
+      Ops(InfixL)(And <# "&&".label("logical operator")),
+      Ops(InfixL)(Or <# "||".label("logical operator"))
     )
   // array-elem := identifier ('[' <expr> ']')+
   lazy val arrayElem =
@@ -324,7 +324,7 @@ object syntax {
   lazy val secondPairElem = SecondPairElemNode("snd" *> expr)
 
   lazy val pairElem = (firstPairElem <|> secondPairElem)
-    .label("Pair Element: 'fst <Expression>' or 'snd <Expression>'")
+    .label("pair element: 'fst <Expression>' or 'snd <Expression>'")
     // .explain( "- Structure for Pair Elements: 'fst <Expression>' or 'snd <Expression>'")
 
   /* ASSIGNMENTS */
@@ -338,19 +338,19 @@ object syntax {
   // newPair := 'newpair''(' expr ',' expr ')'
   lazy val newPair =
     NewPairNode(
-      "newpair".label("Pair Constructor") *> "(" *> expr <* ",",
+      "newpair".label("pair constructor") *> "(" *> expr <* ",",
       expr <* ")"
     )
 
   // call := ‘call’ ⟨ident⟩ ‘(’ ⟨arg-list⟩? ‘)’
   lazy val call =
-    CallNode("call".label("Function Call") *> ident.label("function name"),
+    CallNode("call".label("function call") *> ident.label("function name"),
      "(".label("\"(\" <function arguments> \")\"") *> exprArgList.label("function arguments") <* ")")
 
   // array-liter := ‘[’ ( ⟨expr ⟩ (‘,’ ⟨expr ⟩)* )? ‘]’
   // ***Note: difference between option vs. optional?
   lazy val arrayLiter = ArrayLiterNode(
-    ("[" *> sepBy(expr, ",") <* "]").label("Array Literal")
+    ("[" *> sepBy(expr, ",") <* "]").label("array literal")
   )
 
   // assign-rhs := expr <|> array-liter <|> 'newpair' '(' expr ',' expr ')'
@@ -360,23 +360,23 @@ object syntax {
   .explain("Valid RHS Assignments include: Expression, Array Literal, New Pair, Pair Element, Function Call")
 
   /* STATEMENTS */
-  lazy val skipStat = SkipNode <# "skip".label("Skip Statement")
+  lazy val skipStat = SkipNode <# "skip".label("skip statement")
 
   lazy val newAssignStat =
     NewAssignNode(anyType, ident, "=".label("\"= <RHS assignment>\"") *> assignRHS)
-      .label("New Assignment Statement: <anyType> <identifier> '=' <assign-rhs> ")
+      .label("new assignment statement: <anyType> <identifier> '=' <assign-rhs> ")
       //.explain("- New Assignment Statement: <anyType> <identifier> '=' <assign-rhs> ")
 
   lazy val lrAssignStat = 
     LRAssignNode(assignLHS, "=" *> assignRHS)
-      .label("Assignment Statement: <assign-lhs> '=' <assign-rhs>")
+      .label("assignment statement: <assign-lhs> '=' <assign-rhs>")
       //.explain("- Assignment Statement: <assign-lhs> '=' <assign-rhs>")
-  lazy val readStat = ReadNode("read" *> assignLHS).label("Read Statement: read <Expression>")
-  lazy val freeStat = FreeNode("free" *> expr).label("Free Statement: free <Expression>")
-  lazy val returnStat = ReturnNode("return" *> expr).label("Return Statement: return <Expression>")
-  lazy val exitStat = ExitNode("exit" *> expr).label("Exit Statement: exit <Expression>")
-  lazy val printStat = PrintNode("print" *> expr).label("Print Statement: print <Expression>")
-  lazy val printlnStat = PrintlnNode("println" *> expr).label("Println Statement: println <Expression>")
+  lazy val readStat = ReadNode("read" *> assignLHS).label("read statement: read <Expression>")
+  lazy val freeStat = FreeNode("free" *> expr).label("free statement: free <Expression>")
+  lazy val returnStat = ReturnNode("return" *> expr).label("return statement: return <Expression>")
+  lazy val exitStat = ExitNode("exit" *> expr).label("exit statement: exit <Expression>")
+  lazy val printStat = PrintNode("print" *> expr).label("print statement: print <Expression>")
+  lazy val printlnStat = PrintlnNode("println" *> expr).label("println statement: println <Expression>")
 
   // if-else-stat := ‘if’ ⟨expr ⟩ ‘then’ ⟨stat ⟩ ‘else’ ⟨stat ⟩ ‘fi’
   lazy val ifThenElseStat: Parsley[StatNode] =
@@ -386,11 +386,11 @@ object syntax {
       "else".label("if statement else") *> stat <* "fi".label(
           "if statement fi"
         )
-    ).label("If-Else Conditional")
+    ).label("if-else conditional")
 
   // while-do-stat := ‘while’ ⟨expr ⟩ ‘do’ ⟨stat ⟩ ‘done’
   lazy val whileDoStat =
-    WhileDoNode("while".label("While Statement") *> expr, "do".label("do-while loop body: do <Statement>") *> stat <* "done".label("do-while loop closing \"done\" keyword"))
+    WhileDoNode("while".label("while statement") *> expr, "do".label("do-while loop body: do <Statement>") *> stat <* "done".label("do-while loop closing \"done\" keyword"))
 
   // begin-end-stat := ‘begin’ ⟨stat ⟩ ‘end’
   lazy val beginEndStat =
@@ -409,7 +409,7 @@ object syntax {
     (skipStat <|> newAssignStat <|> lrAssignStat <|> readStat <|>
       freeStat <|> returnStat <|> exitStat <|> printStat <|>
       printlnStat <|> ifThenElseStat <|> whileDoStat <|> beginEndStat)
-      .label("Statement Atoms")
+      .label("statement atoms")
       .explain(
         "- Statement atoms include: 'skip', Assignment, Read, Free, Return, Exit, Print, Conditional or Begin-end statements"
       )
