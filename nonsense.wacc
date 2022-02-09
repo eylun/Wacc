@@ -5,5 +5,7 @@
 
 # Program:
 begin
-char x = 5 + 5
+    pair(int, char) p = newpair(10, 'a') ;
+    int x = 0 ;
+    int t = fst x
 end

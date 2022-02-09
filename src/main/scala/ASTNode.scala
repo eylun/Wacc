@@ -774,8 +774,15 @@ case class IdentNode(var s: String)(val pos: (Int, Int))
     with AssignLHSNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable, errors: List[String]): Unit = {
+
         st.lookup(s) match {
-            case None        => errors :+ "identifier does not exist in scope"
+            case None    => errors :+ "identifier does not exist in scope"
+            case Some(FunctionId(_, _, _)) => {
+                st.lookup(s + "$") match {
+                    case None    => errors :+ "identifier does not exist in scope"
+                    case i @ Some(_)  => this.typeId = i
+                }
+            }
             case i @ Some(_) => this.typeId = i
         }
     }
@@ -811,8 +818,9 @@ case class FirstPairElemNode(e: ExprNode)(val pos: (Int, Int))
     def check(st: SymbolTable, errors: List[String]): Unit = {
         e.check(st, errors)
         e.typeId.get match {
-            case Variable(t) => this.typeId = Some(t)
-            case _           => this.typeId = e.typeId
+            case Variable(PairType(t,_)) => this.typeId = Some(t)
+            case PairType(t,_)           => this.typeId = Some(t)
+            case _                       => errors :+ "expression is not of type pair"
         }
     }
 }
@@ -828,8 +836,9 @@ case class SecondPairElemNode(e: ExprNode)(val pos: (Int, Int))
     def check(st: SymbolTable, errors: List[String]): Unit = {
         e.check(st, errors)
         e.typeId.get match {
-            case Variable(t) => this.typeId = Some(t)
-            case _           => this.typeId = e.typeId
+            case Variable(PairType(_,t)) => this.typeId = Some(t)
+            case PairType(_,t)           => this.typeId = Some(t)
+            case _                       => errors :+ "expression is not of type pair"
         }
     }
 }
