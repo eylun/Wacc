@@ -214,8 +214,11 @@ case class ReturnNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
         e.check(st)
-        this.typeId = e.typeId
-        // Only callable from inside functions
+        e.typeId.get match {
+            case Variable(t) => this.typeId = Some(t)
+            case _           => this.typeId = e.typeId
+        }
+
         st.lookup("return") match {
             case Some(id) => {
                 if (this.typeId.get != id) {
@@ -239,8 +242,7 @@ case class ExitNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
     def check(st: SymbolTable): Unit = {
         e.check(st)
         e.typeId.get match {
-            case IntType() | Variable(IntType()) |
-                FunctionId(IntType(), _, _) => {
+            case IntType() | Variable(IntType()) => {
                 this.typeId = Some(IntType())
             }
             case _ =>
@@ -286,8 +288,7 @@ case class IfThenElseNode(e: ExprNode, s1: StatNode, s2: StatNode)(
     def check(st: SymbolTable): Unit = {
         e.check(st)
         e.typeId.get match {
-            case BoolType() | Variable(BoolType()) |
-                FunctionId(BoolType(), _, _) => {
+            case BoolType() | Variable(BoolType()) => {
                 s1.check(st)
                 s2.check(st)
             }
@@ -313,8 +314,7 @@ case class WhileDoNode(e: ExprNode, s: StatNode)(val pos: (Int, Int))
     def check(st: SymbolTable): Unit = {
         e.check(st)
         e.typeId.get match {
-            case BoolType() | Variable(BoolType()) |
-                FunctionId(BoolType(), _, _) => {
+            case BoolType() | Variable(BoolType()) => {
                 s.check(st)
             }
             case _ =>
@@ -409,13 +409,6 @@ case class CallNode(i: IdentNode, args: List[ExprNode])(val pos: (Int, Int))
                     if (index < paramTypes.length) {
                         arg.typeId.get match {
                             case Variable(t) => {
-                                if (t != paramTypes(index)) {
-                                    println(
-                                      "argument type does not match that of the parameter"
-                                    )
-                                }
-                            }
-                            case FunctionId(t, _, _) => {
                                 if (t != paramTypes(index)) {
                                     println(
                                       "argument type does not match that of the parameter"
@@ -579,8 +572,7 @@ case class Not(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     def check(st: SymbolTable): Unit = {
         x.check(st)
         x.typeId.get match {
-            case BoolType() | Variable(BoolType()) |
-                FunctionId(BoolType(), _, _) =>
+            case BoolType() | Variable(BoolType()) =>
                 this.typeId = Some(BoolType())
             case _ => println("incompatible argument type for operator 'not'")
         }
@@ -595,8 +587,7 @@ case class Neg(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     def check(st: SymbolTable): Unit = {
         x.check(st)
         x.typeId.get match {
-            case IntType() | Variable(IntType()) |
-                FunctionId(IntType(), _, _) =>
+            case IntType() | Variable(IntType()) =>
                 this.typeId = Some(IntType())
             case _ => println("incompatible argument type for operator 'neg'")
         }
@@ -610,8 +601,7 @@ case class Len(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     def check(st: SymbolTable): Unit = {
         x.check(st)
         x.typeId.get match {
-            case ArrayType(_, _) | Variable(ArrayType(_, _)) |
-                FunctionId(ArrayType(_, _), _, _) =>
+            case ArrayType(_, _) | Variable(ArrayType(_, _)) =>
                 this.typeId = Some(IntType())
             case _ => println("incompatible argument type for operator 'len'")
         }
@@ -626,8 +616,7 @@ case class Ord(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     def check(st: SymbolTable): Unit = {
         x.check(st)
         x.typeId.get match {
-            case CharType() | Variable(CharType()) |
-                FunctionId(CharType(), _, _) =>
+            case CharType() | Variable(CharType()) =>
                 this.typeId = Some(IntType())
             case _ => println("incompatible argument type for operator 'ord'")
         }
@@ -641,8 +630,7 @@ case class Chr(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     def check(st: SymbolTable): Unit = {
         x.check(st)
         x.typeId.get match {
-            case IntType() | Variable(IntType()) |
-                FunctionId(IntType(), _, _) =>
+            case IntType() | Variable(IntType()) =>
                 this.typeId = Some(CharType())
             case _ => println("incompatible argument type for operator 'chr'")
         }
@@ -827,7 +815,10 @@ case class FirstPairElemNode(e: ExprNode)(val pos: (Int, Int))
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
         e.check(st)
-        this.typeId = e.typeId
+        e.typeId.get match {
+            case Variable(t) => this.typeId = Some(t)
+            case _           => this.typeId = e.typeId
+        }
     }
 }
 
@@ -841,7 +832,10 @@ case class SecondPairElemNode(e: ExprNode)(val pos: (Int, Int))
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
         e.check(st)
-        this.typeId = e.typeId
+        e.typeId.get match {
+            case Variable(t) => this.typeId = Some(t)
+            case _           => this.typeId = e.typeId
+        }
     }
 }
 
