@@ -7,7 +7,7 @@ object SyntaxParser {
     def main(args: Array[String]): Unit = {
         assert(args.length == 1, "Usage: ./compile <wacc filename>")
         println("Parsing file: " + args(0))
-        // implicit val eb = new WaccErrorBuilder
+        implicit val eb = new WaccErrorBuilder
         val waccFile = new File(args(0))
         val parseResult =
             syntax.parse.parseFromFile(waccFile)
@@ -17,7 +17,8 @@ object SyntaxParser {
                 println(s"${args(0)} is valid!")
                 System.exit(0)
             case Failure(err) =>
-                println(err)
+                // println(err)
+                err.render()
                 System.exit(200)
         }
     }
