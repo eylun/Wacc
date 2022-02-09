@@ -5,5 +5,5 @@
 
 # Program:
 begin
-if true then skip ;
+x = call v
 end
