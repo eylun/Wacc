@@ -462,7 +462,12 @@ case class PairTypeNode(fst: PairElemTypeNode, snd: PairElemTypeNode)(
     val pos: (Int, Int)
 ) extends TypeNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+        fst.check(st)
+        snd.check(st)
+        this.typeId = Some(PairType(fst.typeId.get.asInstanceOf[Type],
+                                snd.typeId.get.asInstanceOf[Type]))
+    }
 }
 
 object PairTypeNode {
@@ -605,7 +610,8 @@ case class Chr(x: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
     def check(st: SymbolTable): Unit = {
         x.check(st)
         x.typeId.get match {
-            case IntType() => this.typeId = Some(CharType())
+            case IntType() | Variable(IntType()) | FunctionId(IntType(), _, _) 
+                => this.typeId = Some(CharType())
             case _ => println("incompatible argument type for operator 'chr'")
         }
     }
@@ -751,12 +757,11 @@ object Or extends ParserBuilderPos2[ExprNode, ExprNode, Or]
 case class IdentNode(s: String)(val pos: (Int, Int))
     extends ExprNode
     with AssignLHSNode {
-    // TODO: confirm if this typeId stores Some(Variable(t: Type)) or Some(t: Type)
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable): Unit = {
         st.lookup(s) match {
             case None    => println("identifier does not exist in scope")
-            case Some(t) => this.typeId = Some(t)
+            case Some(t) => this.typeId = Some(Variable(t.asInstanceOf[Type]))
         }
     }
 }
@@ -771,7 +776,8 @@ case class ArrayElemNode(i: IdentNode, es: List[ExprNode])(val pos: (Int, Int))
     extends ExprNode
     with AssignLHSNode {
     var typeId: Option[Identifier] = None
-    def check(st: SymbolTable): Unit = {}
+    def check(st: SymbolTable): Unit = {
+    }
 }
 
 object ArrayElemNode {
