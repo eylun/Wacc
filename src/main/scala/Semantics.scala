@@ -10,7 +10,8 @@ object semantics {
     ): Unit = {
         x.check(st, errors)
         y.check(st, errors)
-
+        // Ensure that expressions have checked successfully
+        if (x.typeId.isEmpty || y.typeId.isEmpty) return ()
         x.typeId.get match {
             case IntType() | Variable(IntType()) => {
                 y.typeId.get match {
@@ -37,7 +38,8 @@ object semantics {
     ): Unit = {
         x.check(st, errors)
         y.check(st, errors)
-
+        // Ensure that expressions have checked successfully
+        if (x.typeId.isEmpty || y.typeId.isEmpty) return ()
         x.typeId.get match {
             case IntType() | Variable(IntType()) => {
                 y.typeId.get match {
@@ -73,7 +75,8 @@ object semantics {
     ): Unit = {
         x.check(st, errors)
         y.check(st, errors)
-
+        // Ensure that expressions have checked successfully
+        if (x.typeId.isEmpty || y.typeId.isEmpty) return ()
         x.typeId.get match {
             case Variable(tx) => {
                 y.typeId.get match {
@@ -118,7 +121,8 @@ object semantics {
     ): Unit = {
         x.check(st, errors)
         y.check(st, errors)
-
+        // Ensure that expressions have checked successfully
+        if (x.typeId.isEmpty || y.typeId.isEmpty) return ()
         x.typeId.get match {
             case BoolType() | Variable(BoolType()) => {
                 y.typeId.get match {

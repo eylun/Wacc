@@ -20,9 +20,10 @@ class FrontendSpec extends AnyFlatSpec {
     it should "get syntactically and semantically valid programs from folder" in {
         assert(syntaxValid.nonEmpty)
         syntaxValid.foreach { case x: File =>
+            println(x)
             syntax.parse.parseFromFile(x).get match {
                 case Success(ast) => {
-                    // ast.check(SymbolTable(), List())
+                    ast.check(SymbolTable(), List())
                     succeed
                 }
                 case Failure(err) => fail(err)

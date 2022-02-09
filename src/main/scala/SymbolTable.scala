@@ -22,7 +22,7 @@ class SymbolTable(
         while (s != None) {
             var st = s.get
             st.lookup(name) match {
-                case Some(o) => Some(o)
+                case Some(o) => return Some(o)
                 case None    => { s = st.encSymTable }
             }
         }
@@ -33,6 +33,6 @@ class SymbolTable(
 object SymbolTable {
     def apply(): SymbolTable = new SymbolTable(None, Map[String, Identifier]())
 
-    def apply(encSymTable: SymbolTable) =
+    def apply(encSymTable: SymbolTable): SymbolTable =
         new SymbolTable(Some(encSymTable), Map[String, Identifier]())
 }
