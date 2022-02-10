@@ -1,21 +1,17 @@
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers._
+import scala.collection.mutable.ListBuffer
+import testUtils.{assertTypeIdEquals}
 
 class SemanticCheckerSpec extends AnyFlatSpec {
-  behavior of "Semantic Checker"
+  behavior of "<type> nodes"
+    it should "interpret the correct type associated with the node" in {
+        val st = SymbolTable()
+        val log = ListBuffer[WaccError]()
+        val node = IntTypeNode()((0,0))
 
-  it should "check nodes for literals" in {
-    1 should be(1);
-  }
+        node.check(st, log)
 
-  it should "check nodes for booleans"
-
-  it should "check nodes for arrays"
-
-  it should "check nodes for pairs"
-
-  it should "check nodes for strings"
-
-  it should "check nodes for identifiers"
-
+        assertTypeIdEquals(Some(IntType()), node.typeId, ListBuffer(), log)
+    }
 }
