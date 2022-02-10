@@ -232,31 +232,33 @@ object syntax {
         sepBy1
     }
     import parsley.expr.{precedence, Ops, InfixL, Prefix, Postfix, chain}
-    import parsley.errors.combinator.ErrorMethods
+    import parsley.errors.combinator.{ErrorMethods, fail}
 
     /* TODO: change this at the end - currently set to check multiple
        expressions separareted by semicolons */
 
     // program := 'begin' <func>* <stat> 'end'
     lazy val program = ProgramNode(
-      entrench {
-          "begin".label("beginning of program") ~>
-              many(func).label(
-                "function declarations"
-              )
-      },
-      amend(stat <~ "end".label("end of program"))
+      "begin".label("beginning of program") ~>
+          many(func).label(
+            "function declarations"
+          ),
+      stat <~ "end".label("end of program")
     )
 
     val parse = fully(program)
 
     /* FUNCTIONS */
+    lazy val _semiFunc = amend(fail("expected function parameters"))
+
     lazy val func: Parsley[FuncNode] =
         attempt {
             FuncNode(
               anyType,
               ident,
-              "(" ~> sepBy(param, ",").label("function parameters") <~ ")",
+              "(" ~>
+                  (sepBy(param, ",").label("function parameters")
+                      <~ ")" <|> _semiFunc),
               "is" ~> stat
                   .collectMsg(
                     "Missing return or exit statement on a path"

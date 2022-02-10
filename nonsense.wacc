@@ -1,4 +1,4 @@
-# program missing parameter type in function
+# if missing then clause
 
 # Output:
 # #syntax_error#
@@ -9,9 +9,9 @@
 # Program:
 
 begin
-  int f(x) is
-    return 0 
-  end
-  int x = call f(1)
-end	
+  if true 
+  else
+    skip
+  fi
+end
 
