@@ -28,7 +28,11 @@ class FrontendSpec extends AnyFlatSpec {
                     ast.check(SymbolTable(), ListBuffer())
                     succeed
                 }
-                case Failure(err) => fail("Should have not failed")
+                case Failure(err) => {
+                    println(x.getName())
+                    err.render()
+                    fail()
+                }
             }
         }
     }
@@ -41,8 +45,8 @@ class FrontendSpec extends AnyFlatSpec {
                     val errorBuffer = ListBuffer[WaccError]()
                     ast.check(SymbolTable(), errorBuffer)
                     val errorNum = errorBuffer.length
-                    println(s"---------${x.getName()}---------")
-                    errorBuffer.foreach(x => x.render())
+                    // println(s"---------${x.getName()}---------")
+                    // errorBuffer.foreach(x => x.render())
                     errorNum match {
                         case 0 =>
                             fail(

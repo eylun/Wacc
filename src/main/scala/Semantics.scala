@@ -21,14 +21,14 @@ object semantics {
                     case _ =>
                         errors += WaccError(
                           pos,
-                          s"expression $y's type is incompatible for arithmetic operator (Expected: INT, Actual: ${y.typeId.get})"
+                          s"expression ${y.repr()}'s type is incompatible for arithmetic operator (Expected: INT, Actual: ${y.typeId.get.getType()})"
                         )
                 }
             }
             case _ =>
                 errors += WaccError(
                   pos,
-                  s"expression $x's type is incompatible for arithmetic operator (Expected: INT, Actual: ${x.typeId.get})"
+                  s"expression ${x.repr()}'s type is incompatible for arithmetic operator (Expected: INT, Actual: ${x.typeId.get.getType()})"
                 )
         }
         op.typeId = Some(IntType())
@@ -54,7 +54,8 @@ object semantics {
                     case _ =>
                         errors += WaccError(
                           pos,
-                          s"expression $y's type does not match expression $x's type for ordering operator (Expected: ${x.typeId.get}, Actual: ${y.typeId.get})"
+                          s"expression ${y.repr()}'s type does not match expression ${x.repr()}'s type for ordering operator (Expected: ${x.typeId.get
+                              .getType()}, Actual: ${y.typeId.get.getType()})"
                         )
                 }
             }
@@ -64,7 +65,8 @@ object semantics {
                     case _ =>
                         errors += WaccError(
                           pos,
-                          s"expression $y's type does not match expression $x's type for ordering operator (Expected: ${x.typeId.get}, Actual: ${y.typeId.get})"
+                          s"expression ${y.repr()}'s type does not match expression ${x.repr()}'s type for ordering operator (Expected: ${x.typeId.get
+                              .getType()}, Actual: ${y.typeId.get.getType()})"
                         )
 
                 }
@@ -72,7 +74,7 @@ object semantics {
             case _ => {
                 errors += WaccError(
                   pos,
-                  s"expression $x's type is incompatible for ordering operator (Expected: INT or CHAR, Actual: ${x.typeId.get})"
+                  s"expression ${x.repr()}'s type is incompatible for ordering operator (Expected: INT or CHAR, Actual: ${x.typeId.get.getType()})"
                 )
             }
         }
@@ -95,41 +97,11 @@ object semantics {
         if (x.typeId.get.getType() != y.typeId.get.getType()) {
             errors += WaccError(
               pos,
-              s"expression $y's type does not match expression $x's type for equality operator (Expected: ${x.typeId.get}, Actual: ${y.typeId.get})"
+              s"expression ${y.repr()}'s type does not match expression ${x
+                  .repr()}'s type for equality operator (Expected: ${x.typeId.get
+                  .getType()}, Actual: ${y.typeId.get.getType()})"
             )
         }
-        // }
-        // x.typeId.get match {
-        //     case Variable(tx) => {
-        //         y.typeId.get match {
-        //             case Variable(ty) => {
-        //                 if (tx != ty)
-        //                     errors +=
-        //                         "non-matching argument types for equality operator"
-        //             }
-        //             case _ => {
-        //                 if (tx != y.typeId.get)
-        //                     errors +=
-        //                         "non-matching argument types for equality operator"
-
-        //             }
-        //         }
-        //     }
-        //     case _ => {
-        //         y.typeId.get match {
-        //             case Variable(ty) => {
-        //                 if (x.typeId.get != ty)
-        //                     errors +=
-        //                         "non-matching argument types for equality operator"
-        //             }
-        //             case _ => {
-        //                 if (x.typeId.get != y.typeId.get)
-        //                     errors +=
-        //                         "non-matching argument types for equality operator"
-        //             }
-        //         }
-        //     }
-        // }
         op.typeId = Some(BoolType())
     }
 
@@ -153,14 +125,14 @@ object semantics {
                     case _ =>
                         errors += WaccError(
                           pos,
-                          s"expression $y's type is incompatible for type check operator (Expected: BOOL, Actual: ${y.typeId.get})"
+                          s"expression ${y.repr()}'s type is incompatible for type check operator (Expected: BOOL, Actual: ${y.typeId.get.getType()})"
                         )
                 }
             }
             case _ =>
                 errors += WaccError(
                   pos,
-                  s"expression $x's type is incompatible for type check operator (Expected: BOOL, Actual: ${x.typeId.get})"
+                  s"expression ${x.repr()}'s type is incompatible for type check operator (Expected: BOOL, Actual: ${x.typeId.get.getType()})"
                 )
         }
         op.typeId = Some(BoolType())

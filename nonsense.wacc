@@ -1,14 +1,17 @@
-# call fst on a null pair literal 
+# program missing parameter type in function
 
 # Output:
-# #semantic_error#
+# #syntax_error#
 
 # Exit:
-# 200
+# 100
 
 # Program:
 
 begin
-	pair(int, char) x = newpair (1, 'c');
-  int i = snd x
-end
+  int f(x) is
+    return 0 
+  end
+  int x = call f(1)
+end	
+

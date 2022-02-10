@@ -239,10 +239,13 @@ object syntax {
 
     // program := 'begin' <func>* <stat> 'end'
     lazy val program = ProgramNode(
-      "begin".label("beginning of program") ~> many(func).label(
-        "function declarations"
-      ),
-      stat <~ "end".label("end of program")
+      entrench {
+          "begin".label("beginning of program") ~>
+              many(func).label(
+                "function declarations"
+              )
+      },
+      amend(stat <~ "end".label("end of program"))
     )
 
     val parse = fully(program)
