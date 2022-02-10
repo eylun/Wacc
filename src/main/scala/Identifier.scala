@@ -14,26 +14,43 @@ case class Variable(t: Type) extends Identifier {
 
 case class Param(t: Type) extends Identifier {
     override def getType(): Type = t
+    override def toString(): String = t.toString()
 }
 
 /* Basic types */
-case class IntType() extends Type
+case class IntType() extends Type {
+    override def toString(): String = "INT"
+}
 
-case class BoolType() extends Type
+case class BoolType() extends Type {
+    override def toString(): String = "BOOL"
+}
 
-case class CharType() extends Type
+case class CharType() extends Type {
+    override def toString(): String = "CHAR"
+}
 
-case class StringType() extends Type
+case class StringType() extends Type {
+    override def toString(): String = "STRING"
+}
 
-case class NestedPairType() extends Type
+case class NestedPairType() extends Type {
+    override def toString(): String = "PAIR"
+}
 
 case class AnyType() extends Type
 
-case class ArrayType(elemType: Type, var dimension: Int) extends Type
+case class ArrayType(elemType: Type, var dimension: Int) extends Type {
+    override def toString(): String = elemType.toString() + "[]" * dimension
+}
 
-case class PairType(fstType: Type, sndType: Type) extends Type
+case class PairType(fstType: Type, sndType: Type) extends Type {
+    override def toString(): String = s"PAIR(${fstType}, ${sndType})"
+}
 
-case class NullPairType() extends Type
+case class NullPairType() extends Type {
+    override def toString(): String = "PAIR"
+}
 
 case class FunctionId(
     returnType: Type,

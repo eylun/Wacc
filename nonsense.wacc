@@ -1,17 +1,14 @@
-# read into pair type
+# operator missing second operand
 
 # Output:
-# #semantic_error#
+# #syntax_error#
 
 # Exit:
-# 200
+# 100
 
 # Program:
 
 begin
-intx () is
-return 5
+	pair(int, int) x = newpair(1, 2);
+	print x
 end
-skip
-end
-

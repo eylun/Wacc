@@ -17,9 +17,10 @@ object SyntaxParser {
                 println(x)
                 println(s"${args(0)} is synctactically valid.")
                 val topLevelST = SymbolTable()
-                val errorLog = ListBuffer[String]()
+                val errorLog = ListBuffer[WaccError]()
                 x.check(topLevelST, errorLog)
                 if (errorLog.length == 0) {
+                    println(s"${}")
                     System.exit(0)
                 }
                 println(errorLog)

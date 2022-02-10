@@ -21,7 +21,6 @@ class FrontendSpec extends AnyFlatSpec {
     it should "get syntactically and semantically valid programs from folder" in {
         assert(syntaxValid.nonEmpty)
         syntaxValid.foreach { case x: File =>
-            println(x)
             syntax.parse.parseFromFile(x).get match {
                 case Success(ast) => {
                     ast.check(SymbolTable(), ListBuffer())
@@ -35,10 +34,9 @@ class FrontendSpec extends AnyFlatSpec {
     it should "get syntactically valid but semantically invalid programs from folder" in {
         assert(semanticInvalid.nonEmpty)
         semanticInvalid.foreach { case x: File =>
-            println(x)
             syntax.parse.parseFromFile(x).get match {
                 case Success(ast) => {
-                    val errorBuffer = ListBuffer[String]()
+                    val errorBuffer = ListBuffer[WaccError]()
                     ast.check(SymbolTable(), errorBuffer)
                     val errorNum = errorBuffer.length
                     errorNum match {
@@ -56,6 +54,7 @@ class FrontendSpec extends AnyFlatSpec {
 
     it should "get syntactically invalid programs from folder" in {
         assert(syntaxInvalid.nonEmpty)
+        implicit val eb = new WaccErrorBuilder
         syntaxInvalid.foreach { case x: File =>
             syntax.parse.parseFromFile(x).get match {
                 case Success(s) => {
@@ -63,6 +62,9 @@ class FrontendSpec extends AnyFlatSpec {
                     fail("Invalid program somehow passed")
                 }
                 case Failure(err) => {
+                    println(s"---------${x.getName()}---------")
+                    err.render()
+                    println(err)
                     succeed
                 }
             }
