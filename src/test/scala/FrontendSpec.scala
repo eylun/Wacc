@@ -3,6 +3,7 @@ import org.scalatest.matchers.should.Matchers._
 import parsley.Parsley, Parsley._
 import java.io.File
 import scala.collection.mutable.ListBuffer
+
 class FrontendSpec extends AnyFlatSpec {
     import testUtils.{waccProgramsInDir, assertResultEquals}
     import parsley.{Failure, Success}
@@ -20,20 +21,46 @@ class FrontendSpec extends AnyFlatSpec {
     )
 
     behavior of "compiler front-end"
-    it should "get syntactically and semantically valid programs from folder" in {
+    it should "verify syntax of valid programs" in {
+        val syntaxFailed = ListBuffer[String]()
+
+        assert(syntaxValid.nonEmpty)
+        syntaxValid.foreach { case x: File =>
+            syntax.parse.parseFromFile(x).get match {
+                case Success(ast) => succeed
+                case Failure(err) => {
+                    syntaxFailed += x.getName()
+                }
+            }
+        }
+        if (syntaxFailed.length > 0) {
+            fail(
+              s"semantic errors found in valid programs ${syntaxFailed.toString()}"
+            )
+        }
+    }
+    it should "verify semantics of valid programs" in {
+        val semanticFailed = ListBuffer[String]()
+
         assert(syntaxValid.nonEmpty)
         syntaxValid.foreach { case x: File =>
             syntax.parse.parseFromFile(x).get match {
                 case Success(ast) => {
-                    ast.check(SymbolTable(), ListBuffer())
-                    succeed
+                    val log = ListBuffer[WaccError]()
+                    ast.check(SymbolTable(), log)
+                    if (log.length > 0) {
+                        semanticFailed += x.getName()
+                    }
                 }
                 case Failure(err) => {
-                    println(x.getName())
-                    err.render()
-                    fail()
+                    fail(s"syntax errors found in valid program ${x.getName()}")
                 }
             }
+        }
+        if (semanticFailed.length > 0) {
+            fail(
+              s"semantic errors found in valid programs ${semanticFailed.toString()}"
+            )
         }
     }
 
@@ -45,8 +72,6 @@ class FrontendSpec extends AnyFlatSpec {
                     val errorBuffer = ListBuffer[WaccError]()
                     ast.check(SymbolTable(), errorBuffer)
                     val errorNum = errorBuffer.length
-                    // println(s"---------${x.getName()}---------")
-                    // errorBuffer.foreach(x => x.render())
                     errorNum match {
                         case 0 =>
                             fail(
@@ -56,7 +81,7 @@ class FrontendSpec extends AnyFlatSpec {
                     }
                 }
                 case Failure(err) =>
-                    fail("Should not have syntactically failed")
+                    fail(s"${x.getName()} should not have syntactically failed")
             }
         }
     }
@@ -66,11 +91,12 @@ class FrontendSpec extends AnyFlatSpec {
         syntaxInvalid.foreach { case x: File =>
             syntax.parse.parseFromFile(x).get match {
                 case Success(s) => {
+                    println(x.getName())
                     fail("Invalid program somehow passed")
                 }
                 case Failure(err) => {
-                    // println(s"---------${x.getName()}---------")
-                    // err.render()
+                    println(s"---------${x.getName()}---------")
+                    err.render()
                     // println(err)
                     succeed
                 }

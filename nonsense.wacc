@@ -1,4 +1,4 @@
-# if missing then clause
+# program missing body
 
 # Output:
 # #syntax_error#
@@ -8,10 +8,8 @@
 
 # Program:
 
-begin
-  if true 
-  else
-    skip
-  fi
+begin 
+int x() is
+return 5
 end
-
+end
