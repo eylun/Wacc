@@ -1,14 +1,14 @@
-# operator missing second operand
+# call fst on a null pair literal 
 
 # Output:
-# #syntax_error#
+# #semantic_error#
 
 # Exit:
-# 100
+# 200
 
 # Program:
 
 begin
-	pair(int, int) x = newpair(1, 2);
-	print x
+  int i = 'a';
+  println i
 end

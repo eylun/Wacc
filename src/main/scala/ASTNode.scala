@@ -162,9 +162,8 @@ case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode)(
                 case _ => {
                     errors += WaccError(
                       pos,
-                      s"variable ${i.s} is assigned incompatible type (Expected: ${t.typeId}, Actual: ${r.typeId})"
+                      s"variable ${i.s} is assigned incompatible type (Expected: ${t.typeId.get}, Actual: ${r.typeId.get})"
                     )
-                    return ()
                 }
             }
         }
@@ -1053,7 +1052,7 @@ case class SecondPairElemNode(e: ExprNode)(val pos: (Int, Int))
             case _ =>
                 errors += WaccError(
                   pos,
-                  s"expression $e type imcompatible for 'snd' (Expected: PAIR, Actual: ${e.typeId.get})"
+                  s"expression ${e} type imconpatible for 'snd' (Expected: , Actual: ${e.typeId.get})"
                 )
         }
     }

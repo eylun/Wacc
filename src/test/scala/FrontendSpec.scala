@@ -8,6 +8,8 @@ class FrontendSpec extends AnyFlatSpec {
     import parsley.{Failure, Success}
     import parsley.io.ParseFromIO
 
+    implicit val eb = new WaccErrorBuilder
+
     // TODO: load programs in batches with more specific test messages
     val syntaxValid = waccProgramsInDir(new File("./programs/valid"))
     val syntaxInvalid = waccProgramsInDir(
@@ -26,7 +28,7 @@ class FrontendSpec extends AnyFlatSpec {
                     ast.check(SymbolTable(), ListBuffer())
                     succeed
                 }
-                case Failure(err) => fail(err)
+                case Failure(err) => fail("Should have not failed")
             }
         }
     }
@@ -39,6 +41,8 @@ class FrontendSpec extends AnyFlatSpec {
                     val errorBuffer = ListBuffer[WaccError]()
                     ast.check(SymbolTable(), errorBuffer)
                     val errorNum = errorBuffer.length
+                    println(s"---------${x.getName()}---------")
+                    errorBuffer.foreach(x => x.render())
                     errorNum match {
                         case 0 =>
                             fail(
@@ -47,24 +51,23 @@ class FrontendSpec extends AnyFlatSpec {
                         case _ => succeed
                     }
                 }
-                case Failure(err) => fail(err)
+                case Failure(err) =>
+                    fail("Should not have syntactically failed")
             }
         }
     }
 
     it should "get syntactically invalid programs from folder" in {
         assert(syntaxInvalid.nonEmpty)
-        implicit val eb = new WaccErrorBuilder
         syntaxInvalid.foreach { case x: File =>
             syntax.parse.parseFromFile(x).get match {
                 case Success(s) => {
-                    println(x)
                     fail("Invalid program somehow passed")
                 }
                 case Failure(err) => {
-                    println(s"---------${x.getName()}---------")
-                    err.render()
-                    println(err)
+                    // println(s"---------${x.getName()}---------")
+                    // err.render()
+                    // println(err)
                     succeed
                 }
             }
