@@ -14,7 +14,7 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         this.node = n
     }
 
-    behavior of "<type> nodes"
+    behavior of "type check of <type> nodes"
     it should "correctly interpret <base-type> node types" in {
         resetNode(IntTypeNode()((0,0)))
         node.check(st, log)
@@ -31,5 +31,26 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         resetNode(StringTypeNode()((0,0)))
         node.check(st, log)
         assertTypeIdEquals(Some(StringType()), node.typeId, ListBuffer(), log)
+    }
+    it should "correctly interpret <pair-type> node types" in {
+        // Pair of 2 base types
+        resetNode(PairTypeNode(IntTypeNode()((0,0)), 
+                                BoolTypeNode()((0,0)))((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(PairType(IntType(), BoolType())), node.typeId,
+                            ListBuffer(), log)
+
+        // Pair with nested pairs
+        resetNode(PairTypeNode(PairElemTypePairNode()((0,0)), 
+                                PairElemTypePairNode()((0,0)))((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(PairType(NestedPairType(), NestedPairType())),
+                            node.typeId, ListBuffer(), log)
+
+        // Pair with array
+        // resetNode(PairTypeNode(ArrayTypeNode(IntTypeNode()((0,0)), 3)((0,0)),
+        //                         StringTypeNode()((0,0)))((0,0)))
+        // assertTypeIdEquals(Some(PairType(ArrayType(IntType(), 3), StringType())),
+        //                     node.typeId, ListBuffer(), log)
     }
 }
