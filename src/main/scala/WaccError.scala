@@ -39,7 +39,7 @@ case class WaccError(
                 }
             }
             case specializedError @ SpecialisedError(messages) => {
-                sb ++= messages mkString "\n"
+                sb ++= s">> ${messages mkString "\n"}"
             }
         }
         println(sb)

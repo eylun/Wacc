@@ -9,6 +9,6 @@
 # Program:
 
 begin
-  int i = 'a';
-  println i
+	pair(int, char) x = newpair (1, 'c');
+  int i = snd x
 end

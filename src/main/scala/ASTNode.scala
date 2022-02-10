@@ -1026,6 +1026,11 @@ case class FirstPairElemNode(e: ExprNode)(val pos: (Int, Int))
         if (e.typeId.isEmpty) return ()
         e.typeId.get.getType() match {
             case PairType(t, _) => this.typeId = Some(t)
+            case NullPairType() =>
+                errors += WaccError(
+                  pos,
+                  s"accessing element of null pair"
+                )
             case _ =>
                 errors += WaccError(
                   pos,
@@ -1049,10 +1054,15 @@ case class SecondPairElemNode(e: ExprNode)(val pos: (Int, Int))
         if (e.typeId.isEmpty) return ()
         e.typeId.get.getType() match {
             case PairType(_, t) => this.typeId = Some(t)
+            case NullPairType() =>
+                errors += WaccError(
+                  pos,
+                  s"accessing element of null pair"
+                )
             case _ =>
                 errors += WaccError(
                   pos,
-                  s"expression ${e} type imconpatible for 'snd' (Expected: , Actual: ${e.typeId.get})"
+                  s"expression ${e} type incompatible for 'snd' (Expected: PAIR(ANY, ANY) , Actual: ${e.typeId.get})"
                 )
         }
     }
@@ -1104,7 +1114,7 @@ object StringLiterNode {
         pos <**> s.map(StringLiterNode(_) _)
 }
 
-class PairLiterNode()(val pos: (Int, Int)) extends ExprNode {
+case class PairLiterNode()(val pos: (Int, Int)) extends ExprNode {
     var typeId: Option[Identifier] = Some(NullPairType())
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {}
 }
