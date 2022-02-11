@@ -1,4 +1,5 @@
 import scala.collection.mutable.ListBuffer
+import typeUtil.lrTypeCheck
 object semantics {
     /* Check types of arithmetic binary operations (Mult, Div, Mod, Add, Sub)
         Arguments can be literals, variables, array elements. */
@@ -14,21 +15,17 @@ object semantics {
         y.check(st, errors)
         // Ensure that expressions have checked successfully
         if (x.typeId.isEmpty || y.typeId.isEmpty) return ()
-        x.typeId.get.getType() match {
-            case IntType() => {
-                y.typeId.get.getType() match {
-                    case IntType() => {}
-                    case _ =>
-                        errors += WaccError(
-                          pos,
-                          s"expression ${y.repr()}'s type is incompatible for arithmetic operator (Expected: INT, Actual: ${y.typeId.get.getType()})"
-                        )
-                }
-            }
+        (x.typeId.get.getType(), y.typeId.get.getType()) match {
+            case (IntType(), IntType()) => ()
+            case (_, IntType()) =>
+                errors += WaccError(
+                  y.pos,
+                  s"expression ${y.repr()}'s type is incompatible for arithmetic operator (Expected: INT, Actual: ${y.typeId.get.getType()})"
+                )
             case _ =>
                 errors += WaccError(
-                  pos,
-                  s"expression ${x.repr()}'s type is incompatible for arithmetic operator (Expected: INT, Actual: ${x.typeId.get.getType()})"
+                  x.pos,
+                  s"expression ${x.repr()}'s type is incompatible for arithmetic operator (Expected: INT, Actual: ${y.typeId.get.getType()})"
                 )
         }
         op.typeId = Some(IntType())
@@ -47,36 +44,23 @@ object semantics {
         y.check(st, errors)
         // Ensure that expressions have checked successfully
         if (x.typeId.isEmpty || y.typeId.isEmpty) return ()
-        x.typeId.get.getType() match {
-            case IntType() => {
-                y.typeId.get.getType() match {
-                    case IntType() => {}
-                    case _ =>
-                        errors += WaccError(
-                          pos,
-                          s"expression ${y.repr()}'s type does not match expression ${x.repr()}'s type for ordering operator (Expected: ${x.typeId.get
-                              .getType()}, Actual: ${y.typeId.get.getType()})"
-                        )
-                }
-            }
-            case CharType() => {
-                y.typeId.get match {
-                    case CharType() | Variable(CharType()) => {}
-                    case _ =>
-                        errors += WaccError(
-                          pos,
-                          s"expression ${y.repr()}'s type does not match expression ${x.repr()}'s type for ordering operator (Expected: ${x.typeId.get
-                              .getType()}, Actual: ${y.typeId.get.getType()})"
-                        )
-
-                }
-            }
-            case _ => {
+        (x.typeId.get.getType(), y.typeId.get.getType()) match {
+            case (IntType(), IntType())   => ()
+            case (CharType(), CharType()) => ()
+            case (CharType(), _) | (IntType(), _) =>
                 errors += WaccError(
-                  pos,
-                  s"expression ${x.repr()}'s type is incompatible for ordering operator (Expected: INT or CHAR, Actual: ${x.typeId.get.getType()})"
+                  y.pos,
+                  s"expression ${y.repr()}'s type does not match expression ${x
+                      .repr()}'s type for ordering operator (Expected: ${x.typeId.get
+                      .getType()}, Actual: ${y.typeId.get.getType()})"
                 )
-            }
+            case _ =>
+                errors += WaccError(
+                  x.pos,
+                  s"expression ${y.repr()}'s type does not match expression ${x
+                      .repr()}'s type for ordering operator (Expected: ${x.typeId.get
+                      .getType()}, Actual: ${y.typeId.get.getType()})"
+                )
         }
         op.typeId = Some(BoolType())
     }
@@ -94,13 +78,14 @@ object semantics {
         y.check(st, errors)
         // Ensure that expressions have checked successfully
         if (x.typeId.isEmpty || y.typeId.isEmpty) return ()
-        if (x.typeId.get.getType() != y.typeId.get.getType()) {
+        if (!lrTypeCheck(x.typeId.get.getType(), y.typeId.get.getType())) {
             errors += WaccError(
-              pos,
+              x.pos,
               s"expression ${y.repr()}'s type does not match expression ${x
                   .repr()}'s type for equality operator (Expected: ${x.typeId.get
                   .getType()}, Actual: ${y.typeId.get.getType()})"
             )
+
         }
         op.typeId = Some(BoolType())
     }
@@ -118,21 +103,17 @@ object semantics {
         y.check(st, errors)
         // Ensure that expressions have checked successfully
         if (x.typeId.isEmpty || y.typeId.isEmpty) return ()
-        x.typeId.get.getType() match {
-            case BoolType() => {
-                y.typeId.get.getType() match {
-                    case BoolType() => {}
-                    case _ =>
-                        errors += WaccError(
-                          pos,
-                          s"expression ${y.repr()}'s type is incompatible for type check operator (Expected: BOOL, Actual: ${y.typeId.get.getType()})"
-                        )
-                }
-            }
+        (x.typeId.get.getType(), y.typeId.get.getType()) match {
+            case (BoolType(), BoolType()) => ()
+            case (_, BoolType()) =>
+                errors += WaccError(
+                  y.pos,
+                  s"expression ${y.repr()}'s type is incompatible for logical operator (Expected: BOOL, Actual: ${y.typeId.get.getType()})"
+                )
             case _ =>
                 errors += WaccError(
-                  pos,
-                  s"expression ${x.repr()}'s type is incompatible for type check operator (Expected: BOOL, Actual: ${x.typeId.get.getType()})"
+                  x.pos,
+                  s"expression ${x.repr()}'s type is incompatible for logical operator (Expected: BOOL, Actual: ${x.typeId.get.getType()})"
                 )
         }
         op.typeId = Some(BoolType())

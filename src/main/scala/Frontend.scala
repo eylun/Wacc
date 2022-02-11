@@ -14,7 +14,6 @@ object frontend {
             syntax.parse.parseFromFile(waccFile)
         parseResult.get match {
             case Success(x) =>
-                println(x)
                 println(s"${args(0)} is syntactically valid")
                 val topLevelST = SymbolTable()
                 val errorLog = ListBuffer[WaccError]()
@@ -23,11 +22,13 @@ object frontend {
                     println(s"${args(0)} is semantically valid")
                     System.exit(0)
                 }
+                /* SEMANTIC ERROR */
                 errorLog.foreach(e => e.render())
-                System.exit(100)
-            case Failure(err) =>
-                err.render()
                 System.exit(200)
+            case Failure(err) =>
+                /* SYNTAX ERROR */
+                err.render()
+                System.exit(100)
         }
     }
 }

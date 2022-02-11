@@ -1,15 +1,15 @@
-# program missing body
+# while condition type mismatch
 
 # Output:
-# #syntax_error#
+# #semantic_error#
 
 # Exit:
-# 100
+# 200
 
 # Program:
 
-begin 
-int x() is
-return 5
-end
+begin
+  while 15 + 6 do
+    skip
+  done
 end

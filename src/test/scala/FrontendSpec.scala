@@ -41,14 +41,16 @@ class FrontendSpec extends AnyFlatSpec {
     }
     it should "verify semantics of valid programs" in {
         val semanticFailed = ListBuffer[String]()
-
+        val log = ListBuffer[WaccError]()
         assert(syntaxValid.nonEmpty)
         syntaxValid.foreach { case x: File =>
             syntax.parse.parseFromFile(x).get match {
                 case Success(ast) => {
-                    val log = ListBuffer[WaccError]()
+                    log.clear()
                     ast.check(SymbolTable(), log)
                     if (log.length > 0) {
+                        println(s"--------${x.getPath()}--------")
+                        log.foreach { x => x.render() }
                         semanticFailed += x.getName()
                     }
                 }
@@ -58,9 +60,12 @@ class FrontendSpec extends AnyFlatSpec {
             }
         }
         if (semanticFailed.length > 0) {
+            println(s"THERE ARE ${semanticFailed.length} FAILED")
             fail(
               s"semantic errors found in valid programs ${semanticFailed.toString()}"
             )
+        } else {
+            succeed
         }
     }
 
@@ -85,10 +90,14 @@ class FrontendSpec extends AnyFlatSpec {
         }
 
         if (semanticPassed.length > 0) {
-            fail(s"semantic error should have been produced in programs ${semanticPassed.toString()}")
+            fail(
+              s"semantic error should have been produced in programs ${semanticPassed.toString()}"
+            )
         }
         if (syntaxFailed.length > 0) {
-            fail(s"syntax errors found in syntactically valid programs ${syntaxFailed.toString()}")
+            fail(
+              s"syntax errors found in syntactically valid programs ${syntaxFailed.toString()}"
+            )
         }
     }
 
@@ -101,12 +110,17 @@ class FrontendSpec extends AnyFlatSpec {
                     syntaxPassed += x.getName()
                 }
                 case Failure(err) => {
+                    // println(s"---------${x.getName()}---------")
+                    // err.render()
+                    // println(err)
                     succeed
                 }
             }
         }
         if (syntaxPassed.length > 0) {
-            fail(s"syntax error should have been produced in programs ${syntaxPassed.toString()}")
+            fail(
+              s"syntax error should have been produced in programs ${syntaxPassed.toString()}"
+            )
         }
     }
 }

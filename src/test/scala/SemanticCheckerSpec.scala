@@ -166,7 +166,14 @@ class SemanticCheckerSpec extends AnyFlatSpec {
 
     behavior of "semantic check of unary operations"
     it should "correctly verify the type of the argument passed in for '!'" in {
+        // bool literal
         resetNode(Not(BoolLiterNode(false)((0,0)))((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(BoolType()), node.typeId, ListBuffer(), log)
+
+        // boolean variable
+        resetNode(Not(IdentNode("a_bool")((0,0)))((0,0)))
+        st.add("a_bool", Variable(BoolType()))
         node.check(st, log)
         assertTypeIdEquals(Some(BoolType()), node.typeId, ListBuffer(), log)
     }
@@ -175,6 +182,37 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((0,0),
             "expression -2's type is incompatible for the '!' operator (Expected: BOOL, Actual: INT)")),
+            log)
+        
+        resetNode(Not(IdentNode("not_a_bool")((2,5)))((2,0)))
+        st.add("not_a_bool", StringType())
+        node.check(st, log)
+        assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((2,5), 
+            "expression not_a_bool's type is incompatible for the '!' operator (Expected: BOOL, Actual: STRING)")),
+            log)
+    }
+    it should "correctly verify the type of the argument passed in for '-'" in {
+        resetNode(Neg(IntLiterNode(3)((0,0)))((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(IntType()), node.typeId, ListBuffer(), log)
+
+        resetNode(Neg(IdentNode("a_number")((0,0)))((0,0)))
+        st.add("a_number", Variable(IntType()))
+        node.check(st, log)
+        assertTypeIdEquals(Some(IntType()), node.typeId, ListBuffer(), log)
+    }
+    it should "produce an error for an invalid argument type for '-'" in {
+        resetNode(Neg(BoolLiterNode(true)((1,6)))((1,0)))
+        node.check(st, log)
+        assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((1,6),
+            "expression true's type is incompatible for the '-' operator (Expected: INT, Actual: BOOL)")),
+            log)
+
+        resetNode(Neg(IdentNode("not_an_int")((23, 9)))((22, 8)))
+        st.add("not_an_int", CharType())
+        node.check(st, log)
+        assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((23, 9), 
+            "expression not_an_int's type is incompatible for the '-' operator (Expected: INT, Actual: CHAR)")),
             log)
     }
 }

@@ -102,7 +102,8 @@ object lexer {
 
     val lexer = new Lexer(lang)
 
-    def fully[A](p: => Parsley[A]): Parsley[A] = lexer.whiteSpace ~> p <~ eof
+    def fully[A](p: => Parsley[A]): Parsley[A] =
+        lexer.whiteSpace ~> p <~ (eof <|> _kw)
 
     // def forceKeywordCheck(p: => Parsley[Unit]): Unit = p
     //     .map(q => lexer.keyword(q))
@@ -133,14 +134,17 @@ object lexer {
             )
 
     val esc =
-        ((c: Char) => utility.escapedChars.apply(c)) <#> escapedChar
+        (((c: Char) => utility.escapedChars.apply(c)) <#> escapedChar) <|>
+            amend(anyChar.unexpected(c => s"\\$c"))
 
     val character: Parsley[Char] =
         (noneOf('"', '\'', '\\') <|> ("\\" *> esc)).label("character")
 
     // int-sign := '+' | '-'
     val intSign =
-        ("+" #> identity[Long] _ <|> "-" #> ((x: Long) => -x))
+        (lexer.lexeme("+") #> identity[Long] _ <|> lexer.lexeme("-") #> (
+          (x: Long) => -x
+        ))
             .label("integer sign")
 
     /* LITERALS */
@@ -154,11 +158,12 @@ object lexer {
     // int-liter := <int-sign>? <digit>+
     val intLiter: Parsley[ExprNode] =
         IntLiterNode(
-          (intSign <*> number.label("number after integer sign") <|> number)
-              .collectMsg("Integer Overflow") {
-                  case x if x.toInt == x => x.toInt
-              }
-              .label("integer literal")
+          amend(
+            (intSign <*> number.label("number after integer sign") <|> number)
+                .collectMsg("Integer Overflow") {
+                    case x if x.toInt == x => x.toInt
+                }
+          ).label("integer literal")
         )
 
     // TODO: Try to use implicits to not use 'lex.keyword' everytime
@@ -256,11 +261,13 @@ object syntax {
 
     // program := 'begin' <func>* <stat> 'end'
     lazy val program = ProgramNode(
-      "begin".label("beginning of program") ~>
+      "begin".label(
+        "'begin' in beginning of program"
+      ) ~>
           manyUntil(func, attempt(lookAhead(stat))).label(
             "function declarations or statement(s)"
           ),
-      stat.label("statement(s)") <~ "end".label("end of program")
+      stat.label("statement(s)") <~ ("end".label("end of program") <|> _kw)
     )
 
     val parse = fully(program)
@@ -458,8 +465,11 @@ object syntax {
     lazy val whileDoStat =
         WhileDoNode(
           "while".label("while statement") *> expr,
-          "do".label("do-while loop body: do <Statement>") *> stat <* "done"
-              .label("do-while loop closing \"done\" keyword")
+          ("do".label("do-while loop body: do <Statement>") <|> _kw)
+              *> stat.label(
+                "do-while loop body statement <Statement> "
+              ) <* "done"
+                  .label("do-while loop closing \"done\" keyword")
         )
 
     // begin-end-stat := ‘begin’ ⟨stat ⟩ ‘end’
@@ -472,7 +482,10 @@ object syntax {
 
     lazy val statList: Parsley[StatNode] =
         StatListNode(
-          sepBy1(statAtoms.label("next statement atom after \";\""), ";".hide)
+          sepBy1(
+            statAtoms.label("next statement atom after \";\""),
+            ";".hide
+          )
         )
     // stat := 'skip' | ⟨type ⟩ ⟨ident ⟩ ‘=’ ⟨assign-rhs ⟩
     // 	| ⟨assign-lhs ⟩ ‘=’ ⟨assign-rhs ⟩ | ‘read’ ⟨assign-lhs ⟩
@@ -491,7 +504,8 @@ object syntax {
             )
 
     lazy val stat: Parsley[StatNode] =
-        (statList <|> statAtoms <* notFollowedBy(";")).label("statement(s)")
+        (statList <|> statAtoms <* notFollowedBy(";"))
+            .label("statement(s)")
 
     /* TYPES */
     // type := <base-type> | <array-type> | <pair-type>
