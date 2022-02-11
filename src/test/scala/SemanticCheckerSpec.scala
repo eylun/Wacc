@@ -33,21 +33,21 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         assertTypeIdEquals(Some(StringType()), node.typeId, ListBuffer(), log)
     }
     it should "correctly interpret <pair-type> node types" in {
-        // Pair of 2 base types
+        // pair of 2 base types
         resetNode(PairTypeNode(IntTypeNode()((0,0)), 
                                 BoolTypeNode()((0,0)))((0,0)))
         node.check(st, log)
         assertTypeIdEquals(Some(PairType(IntType(), BoolType())), node.typeId,
                             ListBuffer(), log)
 
-        // Pair with nested pairs
+        // pair with nested pairs
         resetNode(PairTypeNode(PairElemTypePairNode()((0,0)), 
                                 PairElemTypePairNode()((0,0)))((0,0)))
         node.check(st, log)
         assertTypeIdEquals(Some(PairType(NestedPairType(), NestedPairType())),
                             node.typeId, ListBuffer(), log)
 
-        // Pair with array
+        // pair containing array type
         resetNode(PairTypeNode(ArrayTypeNode(IntTypeNode()((0,0)), 3)((0,0)),
                                 StringTypeNode()((0,0)))((0,0)))
         node.check(st, log)
@@ -55,10 +55,24 @@ class SemanticCheckerSpec extends AnyFlatSpec {
                             node.typeId, ListBuffer(), log)
     }
     it should "correctly interpret <array-type> node types" in {
-        // 1-dimensional char array
+        // 1-dimensional char array type
         resetNode(ArrayTypeNode(CharTypeNode()((0,0)), 1)((0,0)))
         node.check(st, log)
         assertTypeIdEquals(Some(ArrayType(CharType(), 1)), node.typeId,
                             ListBuffer(), log)
+        
+        // nested array type
+        resetNode(ArrayTypeNode(BoolTypeNode()((0,0)), 10)((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(ArrayType(BoolType(), 10)), node.typeId,
+                            ListBuffer(), log)
+
+        // array containing pair type
+        resetNode(ArrayTypeNode(PairTypeNode(ArrayTypeNode(IntTypeNode()((0,0)), 1)((0,0)),
+                                            IntTypeNode()((0,0)))((0,0)), 2)((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(ArrayType(PairType(ArrayType(IntType(), 1),
+                                                    IntType()), 2)),
+                            node.typeId, ListBuffer(), log)
     }
 }
