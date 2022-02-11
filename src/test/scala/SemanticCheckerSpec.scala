@@ -119,6 +119,15 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         assertTypeIdEquals(Some(Variable(PairType(StringType(), IntType()))),
                             node.typeId, ListBuffer(), log)
     }
+    it should "search for variables in nested scopes" in {
+        resetNode(IdentNode("nested")((0,0)))
+        val innerST = SymbolTable(st)
+        val innerMostST = SymbolTable(innerST)
+        st.add("nested", Variable(IntType()))
+        node.check(innerMostST, log)
+        assertTypeIdEquals(Some(Variable(IntType())), node.typeId, ListBuffer(),
+                            log)
+    }
     it should "get the type of the variable in the smallest scope" in {
         resetNode(IdentNode("inTwoPlaces")((0,0)))
         val innerST = SymbolTable(st)
@@ -148,10 +157,24 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         resetNode(IdentNode("inAnotherWorld")((0,1)))
         val thisST = SymbolTable(st)
         val otherST = SymbolTable(st)
-        otherST.add("inAnotherWord", Variable(StringType()))
+        otherST.add("inAnotherWorld", Variable(StringType()))
         node.check(thisST, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((0,1),
                         "inAnotherWorld has not been defined in this scope")),
                         log)
+    }
+
+    behavior of "semantic check of unary operations"
+    it should "correctly verify the type of the argument passed in for '!'" in {
+        resetNode(Not(BoolLiterNode(false)((0,0)))((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(BoolType()), node.typeId, ListBuffer(), log)
+    }
+    it should "produce an error for an invalid argument type for '!'" in {
+        resetNode(Not(IntLiterNode(-2)((0,0)))((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((0,0),
+            "expression -2's type is incompatible for the '!' operator (Expected: BOOL, Actual: INT)")),
+            log)
     }
 }
