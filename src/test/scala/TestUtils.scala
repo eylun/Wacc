@@ -14,7 +14,8 @@ object testUtils {
                 file => file.getName.endsWith(".wacc")
             }
             
-            currentWacc ++ current.filter(_.isDirectory).flatMap(d => waccProgramsInDir(d))
+            currentWacc ++ current.filter(_.isDirectory)
+                                    .flatMap(d => waccProgramsInDir(d))
         } else {
             Array[File]()
         }
@@ -44,7 +45,8 @@ object testUtils {
     def checkTokenMatch[A](expected: A, actual: A): Unit = {
         if (expected != actual)
             fail(
-              "matched incorrect token (expected: " + expected + ", actual: " + actual + ")"
+              s"""matched incorrect token (expected: ${expected}, 
+              |actual: ${actual})""".stripMargin.replaceAll("\n", "")
             )
     }
 
@@ -62,10 +64,14 @@ object testUtils {
                         expectedType match {
                             case Some(t2) => {
                                 if (t1 != t2) 
-                                    fail("incorrect type id (expected: " + t2 + ", actual: " + t1)
+                                    fail(s"""incorrect type id (expected: ${t2},
+                                        | actual: ${t1}
+                                        |""".stripMargin.replaceAll("\n", ""))
                             }
                             case None => {
-                                fail("incorrect type id (expected: None, actual: " + t1)
+                                fail(s"""incorrect type id (expected: None, 
+                                        |actual: ${t1}
+                                        |""".stripMargin.replaceAll("\n", ""))
                             }
                         }
                     }
@@ -73,7 +79,9 @@ object testUtils {
                         expectedType match {
                             case None => {}
                             case Some(t) => {
-                                fail("incorrect type id (expected: " + t + ", actual: None")
+                                fail(s"""incorrect type id (expected: ${t}, 
+                                        |actual: None
+                                        |""".stripMargin.replaceAll("\n", ""))
                             }
                         }
                     }
@@ -84,9 +92,13 @@ object testUtils {
             case _ => {
                 for (i <- 0 until expectedLog.length) {
                     if (i >= actualLog.length) {
-                        fail("not enough errors produced (expected: " + expectedLog + ", actual: " + actualLog)
+                        fail(s"""not enough errors produced (expected: 
+                            |${expectedLog}, actual: 
+                            |${actualLog}""".stripMargin.replaceAll("\n", ""))
                     } else if (expectedLog(i) != actualLog(i)) {
-                        fail(s"${i}th error did not match (expected: " + expectedLog + ", actual: " + actualLog)
+                        fail(s"""${i}th error did not match (expected: 
+                            |${expectedLog}, actual: 
+                            |${actualLog}""".stripMargin.replaceAll("\n", ""))
                     }
                 }
             }
