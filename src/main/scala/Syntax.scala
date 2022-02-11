@@ -256,7 +256,7 @@ object syntax {
 
     // program := 'begin' <func>* <stat> 'end'
     lazy val program = ProgramNode(
-      "begin".label("beginning of program") ~>
+      "begin".label("'begin' in beginning of program") ~>
           manyUntil(func, attempt(lookAhead(stat))).label(
             "function declarations or statement(s)"
           ),

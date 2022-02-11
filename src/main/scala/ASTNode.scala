@@ -651,7 +651,9 @@ sealed trait ExprNode extends AssignRHSNode
 trait ParserBuilder[T] {
     val parser: Parsley[T]
     final def <#(p: Parsley[_]): Parsley[T] =
-        parser <* p.label("operators")
+        parser <* p.label(
+          "operators: { *, /, %, +, -, >, >=, <, <=, ==, !=, &&, ||"
+        )
 }
 
 trait ParserBuilderPos0[R] extends ParserBuilder[R] {
