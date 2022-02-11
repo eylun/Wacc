@@ -51,7 +51,8 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         resetNode(PairTypeNode(ArrayTypeNode(IntTypeNode()((0,0)), 3)((0,0)),
                                 StringTypeNode()((0,0)))((0,0)))
         node.check(st, log)
-        assertTypeIdEquals(Some(PairType(ArrayType(IntType(), 3), StringType())),
+        assertTypeIdEquals(Some(PairType(ArrayType(IntType(), 3), 
+                                        StringType())),
                             node.typeId, ListBuffer(), log)
     }
     it should "correctly check <array-type> node types" in {
@@ -68,8 +69,9 @@ class SemanticCheckerSpec extends AnyFlatSpec {
                             ListBuffer(), log)
 
         // array containing pair type
-        resetNode(ArrayTypeNode(PairTypeNode(ArrayTypeNode(IntTypeNode()((0,0)), 1)((0,0)),
-                                            IntTypeNode()((0,0)))((0,0)), 2)((0,0)))
+        resetNode(ArrayTypeNode(PairTypeNode(ArrayTypeNode(
+                                                IntTypeNode()((0,0)), 1)((0,0)),
+                                        IntTypeNode()((0,0)))((0,0)), 2)((0,0)))
         node.check(st, log)
         assertTypeIdEquals(Some(ArrayType(PairType(ArrayType(IntType(), 1),
                                                     IntType()), 2)),
@@ -153,7 +155,7 @@ class SemanticCheckerSpec extends AnyFlatSpec {
                     "cannot_be_accessed has not been defined in this scope")),
                     log)
     }
-    it should "not get the type of variables in another scope with the same outer scope" in {
+    it should "not get the type of variables in an unenclosed scope" in {
         resetNode(IdentNode("inAnotherWorld")((0,1)))
         val thisST = SymbolTable(st)
         val otherST = SymbolTable(st)
@@ -165,7 +167,7 @@ class SemanticCheckerSpec extends AnyFlatSpec {
     }
 
     behavior of "semantic check of unary operations"
-    it should "correctly verify the type of the argument passed in for '!'" in {
+    it should "correctly verify the argument type passed in for '!'" in {
         // bool literal
         resetNode(Not(BoolLiterNode(false)((0,0)))((0,0)))
         node.check(st, log)
@@ -181,17 +183,21 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         resetNode(Not(IntLiterNode(-2)((0,0)))((0,0)))
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((0,0),
-            "expression -2's type is incompatible for the '!' operator (Expected: BOOL, Actual: INT)")),
+            """expression -2's type is incompatible for the '!' operator 
+            |(Expected: BOOL, Actual: INT)
+            |""".stripMargin.replaceAll("\n", ""))),
             log)
         
         resetNode(Not(IdentNode("not_a_bool")((2,5)))((2,0)))
         st.add("not_a_bool", StringType())
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((2,5), 
-            "expression not_a_bool's type is incompatible for the '!' operator (Expected: BOOL, Actual: STRING)")),
+            """expression not_a_bool's type is incompatible for the '!' operator
+            | (Expected: BOOL, Actual: STRING)
+            |""".stripMargin.replaceAll("\n", ""))),
             log)
     }
-    it should "correctly verify the type of the argument passed in for '-'" in {
+    it should "correctly verify the argument type passed in for '-'" in {
         resetNode(Neg(IntLiterNode(3)((0,0)))((0,0)))
         node.check(st, log)
         assertTypeIdEquals(Some(IntType()), node.typeId, ListBuffer(), log)
@@ -205,17 +211,21 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         resetNode(Neg(BoolLiterNode(true)((1,6)))((1,0)))
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((1,6),
-            "expression true's type is incompatible for the '-' operator (Expected: INT, Actual: BOOL)")),
+            """expression true's type is incompatible for the '-' operator 
+            |(Expected: INT, Actual: BOOL)
+            |""".stripMargin.replaceAll("\n", ""))),
             log)
 
         resetNode(Neg(IdentNode("not_an_int")((23, 9)))((22, 8)))
         st.add("not_an_int", CharType())
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((23, 9), 
-            "expression not_an_int's type is incompatible for the '-' operator (Expected: INT, Actual: CHAR)")),
+            """expression not_an_int's type is incompatible for the '-' operator
+            | (Expected: INT, Actual: CHAR)
+            |""".stripMargin.replaceAll("\n", ""))),
             log)
     }
-    it should "correctly verify the type of the argument passed in for 'len'" in {
+    it should "correctly verify the argument type passed in for 'len'" in {
         // array
         resetNode(Len(IdentNode("array")((2,4)))((2,0)))
         st.add("array", ArrayType(StringType(), 2))
@@ -236,17 +246,21 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         st.add("_1d_array", Variable(ArrayType(BoolType(), 1)))
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((4,3), 
-            "expression _1d_array[2]'s type is incompatible for the 'len' operator (Expected: ANY[], Actual: BOOL)")), log)
+            """expression _1d_array[2]'s type is incompatible for the 'len' 
+            |operator (Expected: ANY[], Actual: BOOL)
+            |""".stripMargin.replaceAll("\n", ""))), log)
 
         // not an array
         resetNode(Len(IdentNode("not_an_array")((6, 8)))((6, 0)))
         st.add("not_an_array", StringType())
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((6, 8), 
-            "expression not_an_array's type is incompatible for the 'len' operator (Expected: ANY[], Actual: STRING)")),
+            """expression not_an_array's type is incompatible for the 'len' 
+            |operator (Expected: ANY[], Actual: STRING)
+            |""".stripMargin.replaceAll("\n", ""))),
             log)
     }
-    it should "correctly verify the type of the argument passed in for 'ord'" in {
+    it should "correctly verify the argument type passed in for 'ord'" in {
         // char literal
         resetNode(Ord(CharLiterNode('r')((0,5)))((0,0)))
         node.check(st, log)
@@ -270,7 +284,9 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         resetNode(Ord(StringLiterNode("aString")((0,5)))((0,0)))
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((0,5),
-            "expression \"aString\"'s type is incompatible for the 'ord' operator (Expected: CHAR, Actual: STRING)")), 
+            """expression "aString"'s type is incompatible for the 'ord' 
+            |operator (Expected: CHAR, Actual: STRING)
+            |""".stripMargin.replaceAll("\n", ""))), 
             log)
     
         // array elem not char type
@@ -279,10 +295,12 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         st.add("notCharArray", Variable(ArrayType(IntType(), 1)))
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((1,5),
-            "expression notCharArray[1]'s type is incompatible for the 'ord' operator (Expected: CHAR, Actual: INT)")),
+            """expression notCharArray[1]'s type is incompatible for the 'ord' 
+            |operator (Expected: CHAR, Actual: INT)
+            |""".stripMargin.replaceAll("\n", ""))),
             log)
     }
-    it should "correctly verify the type of the argument passed in for 'chr'" in {
+    it should "correctly verify the argument type passed in for 'chr'" in {
         // int literal
         resetNode(Chr(IntLiterNode(90)((0,5)))((0,0)))
         node.check(st, log)
@@ -307,7 +325,9 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         resetNode(Chr(StringLiterNode("aString")((0,5)))((0,0)))
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((0,5),
-            "expression \"aString\"'s type is incompatible for the 'chr' operator (Expected: INT, Actual: STRING)")), 
+            """expression "aString"'s type is incompatible for the 'chr' 
+            |operator (Expected: INT, Actual: STRING)
+            |""".stripMargin.replaceAll("\n", ""))), 
             log)
     
         // array elem not int type
@@ -316,12 +336,14 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         st.add("notIntArray", Variable(ArrayType(CharType(), 1)))
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((1,5),
-            "expression notIntArray[1]'s type is incompatible for the 'chr' operator (Expected: INT, Actual: CHAR)")),
+            """expression notIntArray[1]'s type is incompatible for the 'chr' 
+            |operator (Expected: INT, Actual: CHAR)
+            |""".stripMargin.replaceAll("\n", ""))),
             log)
     }
 
     behavior of "semantic check of binary operations"
-    it should "correctly verify the argument types of arithmetic operators (*, /, %, +, -)" in {
+    it should "correctly verify the argument types of *, /, %, +, -" in {
         resetNode(Mult(IntLiterNode(3)((2,3)), IdentNode("a")((2,5)))((2,4)))
         st.add("a", Variable(IntType()))
         node.check(st, log)
@@ -354,12 +376,13 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         node.check(st, log)
         assertTypeIdEquals(Some(IntType()), node.typeId, ListBuffer(), log)
     }
-    it should "produce an error for invalid semantics of arithmetic operators (*, /, %, +, -)" in {
+    it should "produce an error for invalid semantics of *, /, %, +, -" in {
         resetNode(Mult(IntLiterNode(3)((2,3)), IdentNode("a")((2,5)))((2,4)))
         st.add("a", Variable(CharType()))
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((2,5),
-            "expression a's type is incompatible for '*' (Expected: INT, Actual: CHAR)")), 
+            """expression a's type is incompatible for '*' (Expected: INT, 
+            |Actual: CHAR)""".stripMargin.replaceAll("\n", ""))), 
             log)
 
         resetNode(Div(IdentNode("b")((5,2)), 
@@ -367,26 +390,32 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         st.add("b", Variable(IntType()))
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((5,4),
-            "expression \"str\"'s type is incompatible for '/' (Expected: INT, Actual: STRING)")), 
+            """expression "str"'s type is incompatible for '/' (Expected: INT,
+            | Actual: STRING)""".stripMargin.replaceAll("\n", ""))), 
             log)
 
         resetNode(Mod(IdentNode("c")((5,2)), IntLiterNode(10)((5,4)))((5,3)))
         st.add("c", Variable(BoolType()))
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((5,2),
-            "expression c's type is incompatible for '%' (Expected: INT, Actual: BOOL)")), 
+            """expression c's type is incompatible for '%' (Expected: INT, 
+            |Actual: BOOL)""".stripMargin.replaceAll("\n", ""))), 
             log)
 
-        resetNode(Add(IntLiterNode(42)((5,2)), CharLiterNode('n')((5,4)))((5,3)))
+        resetNode(Add(IntLiterNode(42)((5,2)), 
+                    CharLiterNode('n')((5,4)))((5,3)))
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((5,4),
-            "expression 'n''s type is incompatible for '+' (Expected: INT, Actual: CHAR)")), 
+            """expression 'n''s type is incompatible for '+' (Expected: INT, 
+            |Actual: CHAR)""".stripMargin.replaceAll("\n", ""))), 
             log)
 
-        resetNode(Sub(new PairLiterNode()((5,2)), IntLiterNode(0)((5,4)))((5,3)))
+        resetNode(Sub(new PairLiterNode()((5,2)), 
+                    IntLiterNode(0)((5,4)))((5,3)))
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((5,2),
-            "expression null's type is incompatible for '-' (Expected: INT, Actual: PAIR)")), 
+            """expression null's type is incompatible for '-' (Expected: INT, 
+            |Actual: PAIR)""".stripMargin.replaceAll("\n", ""))), 
             log)
 
         // combined expr
@@ -397,7 +426,8 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         st.add("x", Variable(StringType()))
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((3,10),
-            "expression x's type is incompatible for '/' (Expected: INT, Actual: STRING)")), 
+            """expression x's type is incompatible for '/' (Expected: INT, 
+            |Actual: STRING)""".stripMargin.replaceAll("\n", ""))), 
             log)
     }
 }
