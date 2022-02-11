@@ -246,4 +246,40 @@ class SemanticCheckerSpec extends AnyFlatSpec {
             "expression not_an_array's type is incompatible for the 'len' operator (Expected: ANY[], Actual: STRING)")),
             log)
     }
+    it should "correctly verify the type of the argument passed in for 'ord'" in {
+        // char literal
+        resetNode(Ord(CharLiterNode('r')((0,5)))((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(IntType()), node.typeId, ListBuffer(), log)
+
+        // char variable
+        resetNode(Ord(IdentNode("aChar")((0,5)))((0,0)))
+        st.add("aChar", Variable(CharType()))
+        node.check(st, log)
+        assertTypeIdEquals(Some(IntType()), node.typeId, ListBuffer(), log)
+
+        // array elem of char
+        resetNode(Ord(ArrayElemNode(IdentNode("charArray")((0,5)), 
+                                List(IntLiterNode(3)((0,16))))((0,5)))((0,0)))
+        st.add("charArray", Variable(ArrayType(CharType(), 1)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(IntType()), node.typeId, ListBuffer(), log)
+    }
+    it should "produce an error for an invalid argument type for 'ord'" in {
+        // string literal
+        resetNode(Ord(StringLiterNode("aString")((0,5)))((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((0,5),
+            "expression aString's type is incompatible for the 'ord' operator (Expected: CHAR, Actual: STRING)")), 
+            log)
+    
+        // array elem not char type
+        resetNode(Ord(ArrayElemNode(IdentNode("notCharArray")((1,5)), 
+                                List(IntLiterNode(1)((1,18))))((1,5)))((1,1)))
+        st.add("notCharArray", Variable(ArrayType(IntType(), 1)))
+        node.check(st, log)
+        assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((1,5),
+            "expression notCharArray[1]'s type is incompatible for the 'ord' operator (Expected: CHAR, Actual: INT)")),
+            log)
+    }
 }
