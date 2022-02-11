@@ -34,7 +34,9 @@ class FrontendSpec extends AnyFlatSpec {
             }
         }
         if (syntaxFailed.length > 0) {
-            fail(s"semantic errors found in valid programs ${syntaxFailed.toString()}")
+            fail(
+              s"semantic errors found in valid programs ${syntaxFailed.toString()}"
+            )
         }
     }
     it should "verify semantics of valid programs" in {
@@ -56,7 +58,9 @@ class FrontendSpec extends AnyFlatSpec {
             }
         }
         if (semanticFailed.length > 0) {
-            fail(s"semantic errors found in valid programs ${semanticFailed.toString()}")
+            fail(
+              s"semantic errors found in valid programs ${semanticFailed.toString()}"
+            )
         }
     }
 

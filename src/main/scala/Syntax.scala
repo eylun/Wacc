@@ -82,7 +82,9 @@ object lexer {
         alphaNum,
         noneOf,
         string,
-        letter
+        letter,
+        anyChar,
+        satisfy
     }
     import parsley.token.{LanguageDef, Lexer, Parser, Predicate}
     import parsley.implicits.character.{charLift, stringLift}
@@ -208,6 +210,21 @@ object lexer {
     val pairBaseType =
         PairElemTypePairNode <# lexer.keyword("pair").label("Pair Base Type")
 
+    lazy val _kw = amend(
+      (lexer.whiteSpace ~> many(
+        satisfy(!_.isWhitespace)
+      ))
+          .map(s => s.mkString)
+          .unexpected(w => {
+              if (lang.keywords(w)) s"keyword $w"
+              else s"\"$w\""
+          })
+    )
+
+    // "" #> ((s: String) => {
+    //     if (lang.keywords(s)) unexpected(s"keyword $s")
+    //     else s
+    // })
     object implicits {
         implicit def implicitLexeme(s: String): Parsley[Unit] = {
             if (lang.keywords(s)) lexer.keyword(s)
@@ -219,7 +236,7 @@ object lexer {
 
 /* Syntax Parser */
 object syntax {
-    import lexer.{baseType, pairBaseType, fully, exprAtoms, number, ident}
+    import lexer.{baseType, pairBaseType, fully, exprAtoms, number, ident, _kw}
     import lexer.implicits.implicitLexeme
     import parsley.debug.{DebugCombinators, FullBreak}
     import parsley.combinator.{
@@ -232,43 +249,43 @@ object syntax {
         sepBy1
     }
     import parsley.expr.{precedence, Ops, InfixL, Prefix, Postfix, chain}
-    import parsley.errors.combinator.ErrorMethods
+    import parsley.errors.combinator.{ErrorMethods, fail}
 
     /* TODO: change this at the end - currently set to check multiple
        expressions separareted by semicolons */
 
     // program := 'begin' <func>* <stat> 'end'
     lazy val program = ProgramNode(
-      entrench {
-          "begin".label("beginning of program") ~>
-              many(func).label(
-                "function declarations"
-              )
-      },
-      amend(stat <~ "end".label("end of program"))
+      "begin".label("beginning of program") ~>
+          manyUntil(func, attempt(lookAhead(stat))).label(
+            "function declarations or statement(s)"
+          ),
+      stat.label("statement(s)") <~ "end".label("end of program")
     )
 
     val parse = fully(program)
 
     /* FUNCTIONS */
+    lazy val _semiFunc = amend("" *> fail("expected function parameters"))
+
     lazy val func: Parsley[FuncNode] =
-        attempt {
-            FuncNode(
-              anyType,
-              ident,
-              "(" ~> sepBy(param, ",").label("function parameters") <~ ")",
-              "is" ~> stat
-                  .collectMsg(
-                    "Missing return or exit statement on a path"
-                  )(verifyFuncExit)
-                  .collectMsg(
-                    "Return Statement not at end of statement block"
-                  )(verifyCleanExit) <~ "end"
-            ).label("function declaration")
-                .explain(
-                  "- Function Declaration Syntax: <return-type> <function-name> ( <list-of-parameters> ) is <statement> end"
-                )
-        }
+        FuncNode(
+          anyType,
+          ident,
+          "(" ~>
+              (sepBy(param, ",").label("function parameters")
+                  <~ ")" <|> _semiFunc),
+          "is" ~> stat
+              .collectMsg(
+                "Missing return or exit statement on a path"
+              )(verifyFuncExit)
+              .collectMsg(
+                "Return Statement not at end of statement block"
+              )(verifyCleanExit) <~ "end"
+        ).label("function declaration")
+            .explain(
+              "- Function Declaration Syntax: <return-type> <function-name> ( <list-of-parameters> ) is <statement> end"
+            )
 
     lazy val param: Parsley[ParamNode] = ParamNode(anyType, ident)
     lazy val verifyFuncExit: PartialFunction[StatNode, StatNode] = {
@@ -404,14 +421,14 @@ object syntax {
         NewAssignNode(
           anyType,
           ident,
-          "=".label("\"= <RHS assignment>\"") *> assignRHS
+          ("=".label("\"= <RHS assignment>\"") <|> _kw) *> assignRHS
         )
             .label(
               "new assignment statement: <anyType> <identifier> '=' <assign-rhs> "
             )
     //.explain("- New Assignment Statement: <anyType> <identifier> '=' <assign-rhs> ")
     lazy val lrAssignStat =
-        LRAssignNode(assignLHS, "=" *> assignRHS)
+        LRAssignNode(assignLHS, ("=" <|> _kw) *> assignRHS)
             .label("assignment statement: <assign-lhs> '=' <assign-rhs>")
     //.explain("- Assignment Statement: <assign-lhs> '=' <assign-rhs>")
     lazy val readStat =
@@ -455,7 +472,7 @@ object syntax {
 
     lazy val statList: Parsley[StatNode] =
         StatListNode(
-          sepBy1(statAtoms.label("next statement atom after \";\""), ";")
+          sepBy1(statAtoms.label("next statement atom after \";\""), ";".hide)
         )
     // stat := 'skip' | ⟨type ⟩ ⟨ident ⟩ ‘=’ ⟨assign-rhs ⟩
     // 	| ⟨assign-lhs ⟩ ‘=’ ⟨assign-rhs ⟩ | ‘read’ ⟨assign-lhs ⟩
@@ -474,7 +491,7 @@ object syntax {
             )
 
     lazy val stat: Parsley[StatNode] =
-        (statList <|> statAtoms <* notFollowedBy(";")).label("statement")
+        (statList <|> statAtoms <* notFollowedBy(";")).label("statement(s)")
 
     /* TYPES */
     // type := <base-type> | <array-type> | <pair-type>

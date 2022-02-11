@@ -1,4 +1,4 @@
-# program missing parameter type in function
+# program missing body
 
 # Output:
 # #syntax_error#
@@ -8,9 +8,8 @@
 
 # Program:
 
-begin
-    int[] a = [1,2,3];
-    int[] b = [3,4] ;
-    int[][] c = [a,b] ;
-    pair(int[][], string) = newpair(c, "hello")
-end	
+begin 
+int x() is
+return 5
+end
+end
