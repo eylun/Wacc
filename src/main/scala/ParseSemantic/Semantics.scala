@@ -1,5 +1,5 @@
 import scala.collection.mutable.ListBuffer
-import typeUtil.lrTypeCheck
+import Utility.{lrTypeCheck}
 object semantics {
     /* Check types of arithmetic binary operations (Mult, Div, Mod, Add, Sub)
         Arguments can be literals, variables, array elements. */

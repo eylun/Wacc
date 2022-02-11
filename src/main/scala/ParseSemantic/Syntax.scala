@@ -9,70 +9,7 @@ import parsley.errors.combinator.{
     ErrorMethods
 }
 
-object utility {
-    val keywords = Set(
-      "begin",
-      "end",
-      "is",
-      "skip",
-      "read",
-      "free",
-      "return",
-      "exit",
-      "print",
-      "println",
-      "if",
-      "then",
-      "else",
-      "fi",
-      "while",
-      "do",
-      "done",
-      "newpair",
-      "call",
-      "fst",
-      "snd",
-      "int",
-      "bool",
-      "chr",
-      "string",
-      "pair",
-      "len",
-      "ord",
-      "chr",
-      "true",
-      "false",
-      "null"
-    )
-
-    val operators = Set(
-      "*",
-      "/",
-      "%",
-      "+",
-      "-",
-      ">",
-      ">=",
-      "<",
-      "<=",
-      "==",
-      "!=",
-      "&&",
-      "||"
-    )
-
-    val escapedChars = Map(
-      '0' -> '\u0000',
-      'b' -> '\b',
-      't' -> '\t',
-      'n' -> '\n',
-      'f' -> '\f',
-      'r' -> '\r',
-      '"' -> '\"',
-      '\'' -> '\'',
-      '\\' -> '\\'
-    )
-}
+object utility {}
 
 /* Lexer */
 object lexer {
@@ -90,14 +27,15 @@ object lexer {
     import parsley.implicits.character.{charLift, stringLift}
     import parsley.combinator.{eof, many, manyUntil, optional, some}
     import parsley.errors.combinator.ErrorMethods
+    import Utility.{keywords, operators, escapedChars}
 
     val lang = LanguageDef.plain.copy(
       commentLine = "#",
       space = Predicate(isWhitespace),
       identStart = Predicate(c => (c == '_' || c.isLetter)),
       identLetter = Predicate(c => (c == '_' || c.isLetterOrDigit)),
-      keywords = utility.keywords,
-      operators = utility.operators
+      keywords = keywords,
+      operators = operators
     )
 
     val lexer = new Lexer(lang)
@@ -134,7 +72,7 @@ object lexer {
             )
 
     val esc =
-        (((c: Char) => utility.escapedChars.apply(c)) <#> escapedChar) <|>
+        (((c: Char) => escapedChars.apply(c)) <#> escapedChar) <|>
             amend(anyChar.unexpected(c => s"\\$c"))
 
     val character: Parsley[Char] =

@@ -11,28 +11,8 @@ import semantics.{
 import parsley.errors.combinator.ErrorMethods
 import java.util.function.UnaryOperator
 import scala.collection.mutable.ListBuffer
-import typeUtil.lrTypeCheck
+import Utility.{lrTypeCheck}
 
-object typeUtil {
-    final def lrTypeCheck(l: Type, r: Type): Boolean = {
-        // println("hahaha ", l, r)
-        (l, r) match {
-            case (_, AnyType()) => true
-            case (ArrayType(t1, n1), ArrayType(t2, n2)) =>
-                n1 == n2 && lrTypeCheck(t1, t2)
-            case (PairType(_, _), NullPairType()) |
-                (PairType(_, _), NestedPairType()) |
-                (NullPairType(), PairType(_, _)) |
-                (NestedPairType(), PairType(_, _)) |
-                (NullPairType(), NestedPairType()) |
-                (NestedPairType(), NullPairType()) =>
-                true
-            case (PairType(pair1L, pair1R), PairType(pair2L, pair2R)) =>
-                lrTypeCheck(pair1L, pair2L) && lrTypeCheck(pair1R, pair2R)
-            case (l, r) => l == r
-        }
-    }
-}
 sealed trait ASTNode {
     val pos: (Int, Int)
     var typeId: Option[Identifier]
@@ -199,7 +179,12 @@ case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode)(
         r.check(st, errors)
         // Ensure that rhs checked successfully
         if (r.typeId.isEmpty) return ()
-        if (!lrTypeCheck(t.typeId.get.getType(), r.typeId.get.getType())) {
+        if (
+          !lrTypeCheck(
+            t.typeId.get.getType(),
+            r.typeId.get.getType()
+          )
+        ) {
             errors += WaccError(
               pos,
               s"variable ${i.s} is assigned incompatible type at ${r.repr()} (Expected: ${t.typeId.get
