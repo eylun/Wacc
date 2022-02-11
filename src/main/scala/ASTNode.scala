@@ -844,7 +844,7 @@ case class Chr(e: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
             case _ =>
                 errors += WaccError(
                   e.pos,
-                  s"expression ${e.repr()}'s type is incompatible for the 'chr' operator (Expected: INT, Actual ${e.typeId.get.getType()})"
+                  s"expression ${e.repr()}'s type is incompatible for the 'chr' operator (Expected: INT, Actual: ${e.typeId.get.getType()})"
                 )
         }
 

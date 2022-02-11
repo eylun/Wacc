@@ -282,4 +282,41 @@ class SemanticCheckerSpec extends AnyFlatSpec {
             "expression notCharArray[1]'s type is incompatible for the 'ord' operator (Expected: CHAR, Actual: INT)")),
             log)
     }
+    it should "correctly verify the type of the argument passed in for 'chr'" in {
+        // int literal
+        resetNode(Chr(IntLiterNode(90)((0,5)))((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(CharType()), node.typeId, ListBuffer(), log)
+
+        // int variable
+        resetNode(Chr(IdentNode("someInt")((0,5)))((0,0)))
+        st.add("someInt", Variable(IntType()))
+        node.check(st, log)
+        assertTypeIdEquals(Some(CharType()), node.typeId, ListBuffer(), log)
+
+        // array elem of int
+        resetNode(Chr(ArrayElemNode(IdentNode("nestedIntArray")((0,5)), 
+                                List(IntLiterNode(2)((0,16)),
+                                    IntLiterNode(5)((0,19))))((0,5)))((0,0)))
+        st.add("nestedIntArray", Variable(ArrayType(IntType(), 2)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(CharType()), node.typeId, ListBuffer(), log)
+    }
+    it should "produce an error for an invalid argument type for 'chr'" in {
+        // string literal
+        resetNode(Chr(StringLiterNode("aString")((0,5)))((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((0,5),
+            "expression aString's type is incompatible for the 'chr' operator (Expected: INT, Actual: STRING)")), 
+            log)
+    
+        // array elem not int type
+        resetNode(Chr(ArrayElemNode(IdentNode("notIntArray")((1,5)), 
+                                List(IntLiterNode(1)((1,18))))((1,5)))((1,1)))
+        st.add("notIntArray", Variable(ArrayType(CharType(), 1)))
+        node.check(st, log)
+        assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((1,5),
+            "expression notIntArray[1]'s type is incompatible for the 'chr' operator (Expected: INT, Actual: CHAR)")),
+            log)
+    }
 }
