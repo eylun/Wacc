@@ -1,4 +1,4 @@
-# program missing body
+# while missing opening do
 
 # Output:
 # #syntax_error#
@@ -7,8 +7,10 @@
 # 100
 
 # Program:
+
 begin
-  while false doo
+  while false
     skip
   done
 end
+
