@@ -11,7 +11,6 @@ class FrontendSpec extends AnyFlatSpec {
 
     implicit val eb = new WaccErrorBuilder
 
-    // TODO: load programs in batches with more specific test messages
     val syntaxValid = waccProgramsInDir(new File("./programs/valid"))
     val syntaxInvalid = waccProgramsInDir(
       new File("./programs/invalid/syntaxErr")
@@ -35,7 +34,8 @@ class FrontendSpec extends AnyFlatSpec {
         }
         if (syntaxFailed.length > 0) {
             fail(
-              s"semantic errors found in valid programs ${syntaxFailed.toString()}"
+              s"""semantic errors found in valid programs ${syntaxFailed
+                  .toString()}""".stripMargin.replaceAll("\n", " ")
             )
         }
     }
@@ -62,7 +62,8 @@ class FrontendSpec extends AnyFlatSpec {
         if (semanticFailed.length > 0) {
             println(s"THERE ARE ${semanticFailed.length} FAILED")
             fail(
-              s"semantic errors found in valid programs ${semanticFailed.toString()}"
+              s"""semantic errors found in valid programs ${semanticFailed
+                  .toString()}""".stripMargin.replaceAll("\n", " ")
             )
         } else {
             succeed
@@ -91,12 +92,16 @@ class FrontendSpec extends AnyFlatSpec {
 
         if (semanticPassed.length > 0) {
             fail(
-              s"semantic error should have been produced in programs ${semanticPassed.toString()}"
+              s"""semantic error should have been produced in 
+                |programs ${semanticPassed
+                  .toString()}""".stripMargin.replaceAll("\n", " ")
             )
         }
         if (syntaxFailed.length > 0) {
             fail(
-              s"syntax errors found in syntactically valid programs ${syntaxFailed.toString()}"
+              s"""syntax errors found in syntactically valid 
+              |programs ${syntaxFailed.toString()}""".stripMargin
+                  .replaceAll("\n", " ")
             )
         }
     }
@@ -109,17 +114,14 @@ class FrontendSpec extends AnyFlatSpec {
                 case Success(s) => {
                     syntaxPassed += x.getName()
                 }
-                case Failure(err) => {
-                    // println(s"---------${x.getName()}---------")
-                    // err.render()
-                    // println(err)
-                    succeed
-                }
+                case Failure(err) => succeed
             }
         }
         if (syntaxPassed.length > 0) {
             fail(
-              s"syntax error should have been produced in programs ${syntaxPassed.toString()}"
+              s"""syntax error should have been produced in 
+              |programs ${syntaxPassed.toString()}""".stripMargin
+                  .replaceAll("\n", " ")
             )
         }
     }
