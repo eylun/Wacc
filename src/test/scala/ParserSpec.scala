@@ -24,7 +24,9 @@ class ParserSpec extends AnyFlatSpec {
           Success(StringLiterNode("a string")(0,0)),
           syntax.expr.parse("\"a string\"")
         )
-        assertResultEquals(Success(new PairLiterNode()(0,0)), syntax.expr.parse("null"))
+        assertResultEquals(
+        Success(new PairLiterNode()(0,0)), syntax.expr.parse("null")
+        )
     }
     it should "parse identifiers" in {
         assertResultEquals(
@@ -35,7 +37,8 @@ class ParserSpec extends AnyFlatSpec {
     it should "parse array references" in {
         assertResultEquals(
           Success(
-            ArrayElemNode(IdentNode("anArray")(0,0), List(IntLiterNode(3)(0,0)))(0,0)
+            ArrayElemNode(IdentNode("anArray")(0,0), 
+            List(IntLiterNode(3)(0,0)))(0,0)
           ),
           syntax.expr.parse("anArray[3]")
         )
@@ -102,7 +105,9 @@ class ParserSpec extends AnyFlatSpec {
           syntax.expr.parse("'a'<='a'")
         )
         assertResultEquals(
-          Success(Equal(BoolLiterNode(true)(0,0), BoolLiterNode(false)(0,0))(0,0)),
+          Success(
+          Equal(BoolLiterNode(true)(0,0), BoolLiterNode(false)(0,0))(0,0)
+          ),
           syntax.expr.parse("true == false")
         )
         assertResultEquals(
@@ -198,14 +203,17 @@ class ParserSpec extends AnyFlatSpec {
     }
     it should "parse an array-elem" in {
         assertResultEquals(
-          Success(ArrayElemNode(IdentNode("_")(0,0), List(IntLiterNode(0)(0,0)))(0,0)),
+          Success(
+          ArrayElemNode(IdentNode("_")(0,0), List(IntLiterNode(0)(0,0)))(0,0)),
           syntax.assignLHS.parse("_[0]")
         )
         assertResultEquals(
           Success(
             ArrayElemNode(
               IdentNode("arr_3D")(0,0),
-              List(IntLiterNode(2)(0,0), IntLiterNode(3)(0,0), IntLiterNode(20)(0,0))
+              List(
+              IntLiterNode(2)(0,0), IntLiterNode(3)(0,0), IntLiterNode(20)(0,0)
+              )
             )(0,0)
           ),
           syntax.assignLHS.parse("arr_3D[2][3][20]")
@@ -231,13 +239,18 @@ class ParserSpec extends AnyFlatSpec {
     }
     it should "parse an array literal" in {
         assertResultEquals(
-          Success(ArrayLiterNode(List(IntLiterNode(1)(0,0), IntLiterNode(2)(0,0)))(0,0)),
+          Success(
+          ArrayLiterNode(List(IntLiterNode(1)(0,0), IntLiterNode(2)(0,0)))(0,0)
+          ),
           syntax.assignRHS.parse("[1,2]")
         )
     }
     it should "parse a newpair construction" in {
         assertResultEquals(
-          Success(NewPairNode(Add(IdentNode("x")(0,0),IntLiterNode(3)(0,0))(0,0), IntLiterNode(10)(0,0))(0,0)),
+          Success(
+          NewPairNode(Add(IdentNode("x")(0,0),
+          IntLiterNode(3)(0,0))(0,0), IntLiterNode(10)(0,0))(0,0)
+          ),
           syntax.assignRHS.parse("newpair (x + 3, 10)")
         )
     }
@@ -255,7 +268,10 @@ class ParserSpec extends AnyFlatSpec {
 
     it should "parse a function call" in {
         assertResultEquals(
-          Success(CallNode(IdentNode("printLine")(0,0), List(IntLiterNode(13)(0,0)))(0,0)),
+          Success(
+          CallNode(IdentNode("printLine")(0,0), 
+          List(IntLiterNode(13)(0,0)))(0,0)
+          ),
           syntax.assignRHS.parse("call printLine(13)")
         )
     }
@@ -273,7 +289,11 @@ class ParserSpec extends AnyFlatSpec {
           Success(
           StatListNode(
           List(NewAssignNode(
-          BoolTypeNode()(0,0),IdentNode("x")(0,0),BoolLiterNode(false)(0,0))(0,0)))(0,0)),
+          BoolTypeNode()(0,0),IdentNode("x")(0,0),
+          BoolLiterNode(false)(0,0)
+          )(0,0))
+          )(0,0)
+          ),
           syntax.stat.parse("bool x = false")
         )
     }
@@ -325,20 +345,28 @@ class ParserSpec extends AnyFlatSpec {
 
     it should "parse a exit statement" in {
         assertResultEquals(
-          Success(StatListNode(List(ExitNode(IntLiterNode(100)(0,0))(0,0)))(0,0)),
+          Success(
+          StatListNode(List(ExitNode(IntLiterNode(100)(0,0))(0,0)))(0,0)
+          ),
           syntax.stat.parse("exit 100")
         )
     }
 
     it should "parse a print statement" in {
         assertResultEquals(
-          Success(StatListNode(List(PrintNode(StringLiterNode("hello world")(0,0))(0,0)))(0,0)),
+          Success(
+          StatListNode(
+          List(PrintNode(StringLiterNode("hello world")(0,0))(0,0)
+          ))(0,0)
+          ),
           syntax.stat.parse("print \"hello world\"")
         )
     }
     it should "parse a println statement" in {
         assertResultEquals(
-          Success(StatListNode(List(PrintlnNode(CharLiterNode('c')(0,0))(0,0)))(0,0)),
+          Success(
+          StatListNode(List(PrintlnNode(CharLiterNode('c')(0,0))(0,0)))(0,0)
+          ),
           syntax.stat.parse("println 'c'")
         )
     }
@@ -347,8 +375,12 @@ class ParserSpec extends AnyFlatSpec {
         assertResultEquals(
           Success(StatListNode(List(IfThenElseNode(
           Equal(IdentNode("a")(0,0),IntLiterNode(13)(0,0))(0,0),
-          StatListNode(List(PrintlnNode(StringLiterNode("correct")(0,0))(0,0)))(0,0),
-          StatListNode(List(PrintlnNode(StringLiterNode("incorrect")(0,0))(0,0)))(0,0)
+          StatListNode(
+          List(PrintlnNode(StringLiterNode("correct")(0,0))(0,0))
+          )(0,0),
+          StatListNode(
+          List(PrintlnNode(StringLiterNode("incorrect")(0,0))(0,0))
+          )(0,0)
           )(0,0)))(0,0)),
           syntax.stat.parse(
           "if a == 13 " +
@@ -366,7 +398,9 @@ class ParserSpec extends AnyFlatSpec {
           Success(StatListNode(List(
           WhileDoNode(
           NotEqual(IdentNode("n")(0,0),IntLiterNode(1)(0,0))(0,0),
-          StatListNode(List(LRAssignNode(IdentNode("n")(0,0),IntLiterNode(1)(0,0))(0,0)))(0,0)
+          StatListNode(
+          List(LRAssignNode(IdentNode("n")(0,0),IntLiterNode(1)(0,0))(0,0))
+          )(0,0)
           )(0,0)
           ))(0,0)),
           syntax.stat.parse(
@@ -401,7 +435,49 @@ class ParserSpec extends AnyFlatSpec {
 
 
 
-    // behavior of "<func> parsing"
+    behavior of "<func> parsing"
+    it should "correctly parse a simple function with no params" in {
+        assertResultEquals(
+          Success(
+          FuncNode(
+          IntTypeNode()(0,0),IdentNode("f")(0,0),
+          List(),StatListNode(List(ReturnNode(IntLiterNode(0)(0,0))(0,0)))(0,0)
+          )(0,0)
+          ),
+          syntax.func.parse("int f() is return 0 end")
+        )
+    }
+
+    it should "correctly parse a function with parameters" in {
+        assertResultEquals(
+          Success(
+          FuncNode(
+          IntTypeNode()(0,0),IdentNode("f")(0,0),
+          List(ParamNode(IntTypeNode()(0,0),IdentNode("x")(0,0))(0,0), 
+               ParamNode(BoolTypeNode()(0,0),IdentNode("y")(0,0))(0,0)),
+          StatListNode(List(ReturnNode(IdentNode("x")(0,0))(0,0)))(0,0)
+          )(0,0)
+          ),
+          syntax.func.parse("int f(int x, bool y) is return x end")
+        )
+    }
+
+    it should "correctly parse a function with multiple statements" in {
+        assertResultEquals(
+          Success(
+          FuncNode(
+          CharTypeNode()(0,0),IdentNode("f")(0,0),
+          List(),
+          StatListNode(
+          List(ReturnNode(CharLiterNode('c')(0,0))(0,0), 
+          ReturnNode(CharLiterNode('d')(0,0))(0,0)))(0,0)
+          )(0,0)
+          ),
+          syntax.func.parse("char f() is return 'c'; return 'd' end")
+        )
+    }
+
+
 
     behavior of "<array-type> parsing"
     it should "parse any type followed by square brackets" in {
@@ -415,7 +491,8 @@ class ParserSpec extends AnyFlatSpec {
         )
         assertResultEquals(
           Success(
-            ArrayTypeNode(PairTypeNode(CharTypeNode()(0,0), StringTypeNode()(0,0))(0,0), 2)(0,0)
+            ArrayTypeNode(PairTypeNode(CharTypeNode()(0,0), 
+            StringTypeNode()(0,0))(0,0), 2)(0,0)
           ),
           syntax.arrayType.parse("pair(char, string)[][]")
         )
@@ -434,7 +511,10 @@ class ParserSpec extends AnyFlatSpec {
 
     it should "parse pairs with array type elements" in {
         assertResultEquals(
-          Success(PairTypeNode(IntTypeNode()(0,0),ArrayTypeNode(CharTypeNode()(0,0), 1)(0,0))(0,0)),
+          Success(
+          PairTypeNode(IntTypeNode()(0,0),
+                       ArrayTypeNode(CharTypeNode()(0,0), 1)(0,0))(0,0)
+          ),
           syntax.anyType.parse("pair (int, char[])")
         )
         
@@ -448,12 +528,18 @@ class ParserSpec extends AnyFlatSpec {
 
     it should "parse pairs with pair type elements" in {
         assertResultEquals(
-          Success(PairTypeNode(IntTypeNode()(0,0),PairElemTypePairNode()(0,0))(0,0)),
+          Success(
+          PairTypeNode(IntTypeNode()(0,0),PairElemTypePairNode()(0,0))(0,0)
+          ),
           syntax.anyType.parse("pair (int, pair)")
         )
         
         assertResultEquals(
-          Success(PairTypeNode(PairElemTypePairNode()(0,0), PairElemTypePairNode()(0,0))(0,0)),
+          Success(
+          PairTypeNode(
+          PairElemTypePairNode()(0,0), PairElemTypePairNode()(0,0)
+          )(0,0)
+          ),
           syntax.anyType.parse("pair (pair, pair)")
         )
 
