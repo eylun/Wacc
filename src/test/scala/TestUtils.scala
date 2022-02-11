@@ -86,7 +86,7 @@ object testUtils {
                     if (i >= actualLog.length) {
                         fail("not enough errors produced (expected: " + expectedLog + ", actual: " + actualLog)
                     } else if (expectedLog(i) != actualLog(i)) {
-                        fail("$ith error did not match (expected: " + expectedLog + ", actual: " + actualLog)
+                        fail(s"${i}th error did not match (expected: " + expectedLog + ", actual: " + actualLog)
                     }
                 }
             }

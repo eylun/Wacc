@@ -270,7 +270,7 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         resetNode(Ord(StringLiterNode("aString")((0,5)))((0,0)))
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((0,5),
-            "expression aString's type is incompatible for the 'ord' operator (Expected: CHAR, Actual: STRING)")), 
+            "expression \"aString\"'s type is incompatible for the 'ord' operator (Expected: CHAR, Actual: STRING)")), 
             log)
     
         // array elem not char type
@@ -307,7 +307,7 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         resetNode(Chr(StringLiterNode("aString")((0,5)))((0,0)))
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((0,5),
-            "expression aString's type is incompatible for the 'chr' operator (Expected: INT, Actual: STRING)")), 
+            "expression \"aString\"'s type is incompatible for the 'chr' operator (Expected: INT, Actual: STRING)")), 
             log)
     
         // array elem not int type
@@ -317,6 +317,87 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         node.check(st, log)
         assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((1,5),
             "expression notIntArray[1]'s type is incompatible for the 'chr' operator (Expected: INT, Actual: CHAR)")),
+            log)
+    }
+
+    behavior of "semantic check of binary operations"
+    it should "correctly verify the argument types of arithmetic operators (*, /, %, +, -)" in {
+        resetNode(Mult(IntLiterNode(3)((2,3)), IdentNode("a")((2,5)))((2,4)))
+        st.add("a", Variable(IntType()))
+        node.check(st, log)
+        assertTypeIdEquals(Some(IntType()), node.typeId, ListBuffer(), log)
+
+        resetNode(Div(IdentNode("b")((5,2)), IntLiterNode(-2)((5,4)))((5,3)))
+        st.add("b", Variable(IntType()))
+        node.check(st, log)
+        assertTypeIdEquals(Some(IntType()), node.typeId, ListBuffer(), log)
+
+        resetNode(Mod(IdentNode("c")((5,2)), IntLiterNode(10)((5,4)))((5,3)))
+        st.add("c", Variable(IntType()))
+        node.check(st, log)
+        assertTypeIdEquals(Some(IntType()), node.typeId, ListBuffer(), log)
+
+        resetNode(Add(IntLiterNode(42)((5,2)), IntLiterNode(0)((5,4)))((5,3)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(IntType()), node.typeId, ListBuffer(), log)
+
+        resetNode(Sub(IntLiterNode(42)((5,2)), IntLiterNode(0)((5,4)))((5,3)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(IntType()), node.typeId, ListBuffer(), log)
+
+        // combined expr
+        resetNode(Add(Mod(IntLiterNode(10)((3,4)), 
+                        IntLiterNode(3)((3,8)))((3,6)), 
+                    Div(IdentNode("x")((3,10)), 
+                        IntLiterNode(2)((3,14)))((3,12)))((3,9)))
+        st.add("x", Variable(IntType()))
+        node.check(st, log)
+        assertTypeIdEquals(Some(IntType()), node.typeId, ListBuffer(), log)
+    }
+    it should "produce an error for invalid semantics of arithmetic operators (*, /, %, +, -)" in {
+        resetNode(Mult(IntLiterNode(3)((2,3)), IdentNode("a")((2,5)))((2,4)))
+        st.add("a", Variable(CharType()))
+        node.check(st, log)
+        assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((2,5),
+            "expression a's type is incompatible for '*' (Expected: INT, Actual: CHAR)")), 
+            log)
+
+        resetNode(Div(IdentNode("b")((5,2)), 
+                        StringLiterNode("str")((5,4)))((5,3)))
+        st.add("b", Variable(IntType()))
+        node.check(st, log)
+        assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((5,4),
+            "expression \"str\"'s type is incompatible for '/' (Expected: INT, Actual: STRING)")), 
+            log)
+
+        resetNode(Mod(IdentNode("c")((5,2)), IntLiterNode(10)((5,4)))((5,3)))
+        st.add("c", Variable(BoolType()))
+        node.check(st, log)
+        assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((5,2),
+            "expression c's type is incompatible for '%' (Expected: INT, Actual: BOOL)")), 
+            log)
+
+        resetNode(Add(IntLiterNode(42)((5,2)), CharLiterNode('n')((5,4)))((5,3)))
+        node.check(st, log)
+        assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((5,4),
+            "expression 'n''s type is incompatible for '+' (Expected: INT, Actual: CHAR)")), 
+            log)
+
+        resetNode(Sub(new PairLiterNode()((5,2)), IntLiterNode(0)((5,4)))((5,3)))
+        node.check(st, log)
+        assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((5,2),
+            "expression null's type is incompatible for '-' (Expected: INT, Actual: PAIR)")), 
+            log)
+
+        // combined expr
+        resetNode(Add(Mod(IntLiterNode(10)((3,4)), 
+                        IntLiterNode(3)((3,8)))((3,6)), 
+                    Div(IdentNode("x")((3,10)), 
+                        IntLiterNode(2)((3,14)))((3,12)))((3,9)))
+        st.add("x", Variable(StringType()))
+        node.check(st, log)
+        assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((3,10),
+            "expression x's type is incompatible for '/' (Expected: INT, Actual: STRING)")), 
             log)
     }
 }
