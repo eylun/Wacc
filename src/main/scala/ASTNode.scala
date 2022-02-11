@@ -11,7 +11,28 @@ import semantics.{
 import parsley.errors.combinator.ErrorMethods
 import java.util.function.UnaryOperator
 import scala.collection.mutable.ListBuffer
+import typeUtil.lrTypeCheck
 
+object typeUtil {
+    final def lrTypeCheck(l: Type, r: Type): Boolean = {
+        // println("hahaha ", l, r)
+        (l, r) match {
+            case (_, AnyType()) => true
+            case (ArrayType(t1, n1), ArrayType(t2, n2)) =>
+                n1 == n2 && lrTypeCheck(t1, t2)
+            case (PairType(_, _), NullPairType()) |
+                (PairType(_, _), NestedPairType()) |
+                (NullPairType(), PairType(_, _)) |
+                (NestedPairType(), PairType(_, _)) |
+                (NullPairType(), NestedPairType()) |
+                (NestedPairType(), NullPairType()) =>
+                true
+            case (PairType(pair1L, pair1R), PairType(pair2L, pair2R)) =>
+                lrTypeCheck(pair1L, pair2L) && lrTypeCheck(pair1R, pair2R)
+            case (l, r) => l == r
+        }
+    }
+}
 sealed trait ASTNode {
     var typeId: Option[Identifier]
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit
@@ -21,7 +42,62 @@ case class ProgramNode(flist: List[FuncNode], s: StatNode)(val pos: (Int, Int))
     extends ASTNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
-        flist.foreach { f => f.check(st, errors) }
+        /* Check all functions to prevent name clashes. Insert into top level
+         * symbol table upon completion, then call each function's check() to
+         * check the statements within each function*/
+        flist.foreach {
+            case f @ FuncNode(t, i, plist, s) => {
+                val funcST = SymbolTable(st)
+                st.lookup(i.s) match {
+                    case Some(id) =>
+                        errors += WaccError(
+                          pos,
+                          s"${i.s} is already defined in this scope"
+                        )
+                        // If a name clash has already happened
+                        // instantly return
+                        return ()
+                    case None => {
+                        t.check(st, errors)
+
+                        // Check list of params (using new symbol table funcST)
+                        plist.foreach { p =>
+                            {
+                                p.check(funcST, errors)
+                                if (p.typeId.isEmpty) return ()
+                            }
+                        }
+                        // Set type id as FunctionId
+                        f.typeId = Some(
+                          FunctionId(
+                            t.typeId.get.getType(),
+                            plist
+                                .map(p => Param(p.t.typeId.get.getType()))
+                                .toArray,
+                            funcST
+                          )
+                        )
+
+                        // Add function name to outer symbol table. DO this first
+                        // due to possible recursion
+                        st.add(i.s, f.typeId.get)
+                    }
+
+                }
+            }
+        }
+        flist.foreach { f =>
+            {
+                f.typeId.get match {
+                    case FunctionId(_, _, funcST) => f.check(funcST, errors)
+                    case _ =>
+                        errors += WaccError(
+                          pos,
+                          "function type allocation malfunction"
+                        )
+                }
+            }
+        }
         // Do not check statement semantics if functions have errors
         if (errors.length > 0) return ()
         s.check(st, errors)
@@ -46,44 +122,10 @@ case class FuncNode(
     extends ASTNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
-        // Check function name does not already exist
-
-        // Create new symbol table and link with outer scope
-        val funcST = SymbolTable(st)
-        st.lookup(i.s) match {
-            case Some(id) =>
-                errors += WaccError(
-                  pos,
-                  s"${i.s} is already defined in this scope"
-                )
-            case None => {
-                t.check(st, errors)
-
-                // Check list of params (using new symbol table funcST)
-                plist.foreach { p =>
-                    {
-                        p.check(funcST, errors)
-                        if (p.typeId.isEmpty) return ()
-                    }
-                }
-                // Set type id as FunctionId
-                this.typeId = Some(
-                  FunctionId(
-                    t.typeId.get.getType(),
-                    plist.map(p => Param(p.t.typeId.get.getType())).toArray,
-                    funcST
-                  )
-                )
-
-                // Add function name to outer symbol table. DO this first
-                // due to possible recursion
-                st.add(i.s, this.typeId.get)
-
-                funcST.add("return", t.typeId.get.getType())
-            }
-        }
-        s.check(funcST, errors)
+        st.add("return", t.typeId.get.getType())
+        s.check(st, errors)
     }
+
 }
 
 object FuncNode {
@@ -156,22 +198,16 @@ case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode)(
         r.check(st, errors)
         // Ensure that rhs checked successfully
         if (r.typeId.isEmpty) return ()
-        if (r.typeId.get.getType() != t.typeId.get.getType()) {
-            r.typeId.get.getType() match {
-                case AnyType() => ()
-                case _ => {
-                    errors += WaccError(
-                      pos,
-                      s"variable ${i.s} is assigned incompatible type (Expected: ${t.typeId.get
-                          .getType()}, Actual: ${r.typeId.get.getType()})"
-                    )
-                }
-            }
+        if (!lrTypeCheck(t.typeId.get.getType(), r.typeId.get.getType())) {
+            errors += WaccError(
+              pos,
+              s"variable ${i.s} is assigned incompatible type (Expected: ${t.typeId.get
+                  .getType()}, Actual: ${r.typeId.get.getType()})"
+            )
         }
         st.lookup(i.s) match {
             case None => {
                 st.add(i.s, Variable(t.typeId.get.getType()))
-
             }
             case Some(FunctionId(_, _, _)) => {
                 /* When a function node already exists, manually rename the
@@ -215,19 +251,14 @@ case class LRAssignNode(l: AssignLHSNode, r: AssignRHSNode)(val pos: (Int, Int))
         r.check(st, errors)
         // Ensure that lhs and rhs checked successfully
         if (r.typeId.isEmpty || l.typeId.isEmpty) return ()
-        if (l.typeId.get.getType() != r.typeId.get.getType()) {
-            r.typeId.get.getType() match {
-                // AnyType is triggered when an empty array literal is returned
-                case AnyType() => ()
-                case _ => {
-                    errors += WaccError(
-                      pos,
-                      s"${l.repr()} is assigned incompatible type (Expected: ${l.typeId}, Actual: ${r.typeId})"
-                    )
-                    return ()
-                }
-            }
+        if (!lrTypeCheck(l.typeId.get.getType(), r.typeId.get.getType())) {
+            errors += WaccError(
+              pos,
+              s"variable ${l.repr()} is assigned incompatible type (Expected: ${l.typeId.get
+                  .getType()}, Actual: ${r.typeId.get.getType()})"
+            )
         }
+
     }
 }
 
@@ -245,7 +276,7 @@ case class ReadNode(l: AssignLHSNode)(val pos: (Int, Int)) extends StatNode {
         l.check(st, errors)
         // Ensure that lhs has checked sucessfully
         if (l.typeId.isEmpty) return ()
-        l.typeId.get match {
+        l.typeId.get.getType() match {
             case IntType() | CharType() => {}
             case _ =>
                 errors += WaccError(
@@ -266,7 +297,7 @@ case class FreeNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
         e.check(st, errors)
         // Ensure that expression has checked successfully
         if (e.typeId.isEmpty) return ()
-        e.typeId.get match {
+        e.typeId.get.getType() match {
             case ArrayType(_, _) | PairType(_, _) => {}
             case _ =>
                 errors += WaccError(
@@ -289,7 +320,7 @@ case class ReturnNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
         if (e.typeId.isEmpty) return ()
         st.lookupAll("return") match {
             case Some(id) => {
-                if (e.typeId.get.getType() != id.getType()) {
+                if (!lrTypeCheck(e.typeId.get.getType(), id.getType())) {
                     errors += WaccError(
                       pos,
                       s"return expression ${e.repr()}'s type is incompatible (Expected: ${id
@@ -318,8 +349,8 @@ case class ExitNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
         e.check(st, errors)
         // Ensure that expression has checked successfully
         if (e.typeId.isEmpty) return ()
-        e.typeId.get match {
-            case IntType() | Variable(IntType()) => {
+        e.typeId.get.getType() match {
+            case IntType() => {
                 this.typeId = Some(IntType())
             }
             case _ =>
@@ -390,11 +421,13 @@ case class IfThenElseNode(e: ExprNode, s1: StatNode, s2: StatNode)(
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         e.check(st, errors)
         // Ensure that expression has checked successfully
+        val newScopeST1 = SymbolTable(st)
+        val newScopeST2 = SymbolTable(st)
         if (e.typeId.isEmpty) return ()
         e.typeId.get.getType() match {
             case BoolType() => {
-                s1.check(st, errors)
-                s2.check(st, errors)
+                s1.check(newScopeST1, errors)
+                s2.check(newScopeST2, errors)
             }
             case _ =>
                 errors += WaccError(
@@ -419,10 +452,11 @@ case class WhileDoNode(e: ExprNode, s: StatNode)(val pos: (Int, Int))
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         e.check(st, errors)
         // Ensure that expression has checked successfully
+        val newScopeST = SymbolTable(st)
         if (e.typeId.isEmpty) return ()
-        e.typeId.get match {
+        e.typeId.get.getType() match {
             case BoolType() => {
-                s.check(st, errors)
+                s.check(newScopeST, errors)
             }
             case _ =>
                 errors += WaccError(
@@ -509,7 +543,7 @@ case class CallNode(i: IdentNode, args: List[ExprNode])(val pos: (Int, Int))
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         // set type to be equal to function return type if it exists in symbol table
         st.lookupAll(i.s) match {
-            case Some(FunctionId(returnType, params, funcST)) => {
+            case Some(FunctionId(returnType, params, _)) => {
                 this.typeId = Some(returnType)
                 args.foreach { arg =>
                     {
@@ -532,7 +566,10 @@ case class CallNode(i: IdentNode, args: List[ExprNode])(val pos: (Int, Int))
                 for ((arg, index) <- args.zipWithIndex) {
                     if (index < paramTypes.length) {
                         if (
-                          arg.typeId.get.getType() != params(index).getType()
+                          !lrTypeCheck(
+                            arg.typeId.get.getType(),
+                            params(index).getType()
+                          )
                         ) {
                             errors += WaccError(
                               pos,
@@ -1008,9 +1045,10 @@ case class ArrayElemNode(i: IdentNode, es: List[ExprNode])(val pos: (Int, Int))
         es.foreach { e =>
             {
                 e.check(st, errors)
-                e.typeId match {
-                    case None => return ()
-                    case Some(IntType()) | Some(Variable(IntType())) => ()
+                // Ensure that expression has checked successfully
+                if (e.typeId.isEmpty) return ()
+                e.typeId.get.getType() match {
+                    case IntType() => ()
                     case _ => {
                         errors += WaccError(
                           pos,
@@ -1021,11 +1059,10 @@ case class ArrayElemNode(i: IdentNode, es: List[ExprNode])(val pos: (Int, Int))
                 }
             }
         }
-
-        i.typeId match {
-            case None => return ()
-            case Some(ArrayType(t, d)) => {
-
+        // Ensure that identifier has checked successfully
+        if (i.typeId.isEmpty) return ()
+        i.typeId.get.getType() match {
+            case ArrayType(t, d) => {
                 d.compare(es.length) match {
                     case -1 =>
                         errors += WaccError(
@@ -1037,7 +1074,7 @@ case class ArrayElemNode(i: IdentNode, es: List[ExprNode])(val pos: (Int, Int))
                     case 1 => this.typeId = Some(ArrayType(t, d - es.length))
                 }
             }
-            case Some(t) => {
+            case t => {
                 errors += WaccError(
                   pos,
                   s"array element type imcompatible (Expected: Any${"[]" * es.length}, Actual: ${t
@@ -1203,13 +1240,15 @@ case class ArrayLiterNode(es: List[ExprNode])(val pos: (Int, Int))
             es.foreach { e =>
                 {
                     e.check(st, errors)
-                    if (e.typeId == None) {
+                    if (e.typeId.isEmpty) {
                         return ()
                     }
                 }
             }
-            val typeToCheck = es(0).typeId.get
-            val typesMatch = es.forall(e => { e.typeId.get == typeToCheck })
+            val typeToCheck = es(0).typeId.get.getType()
+            val typesMatch = es.forall(e => {
+                e.typeId.get.getType() == typeToCheck
+            })
             if (!typesMatch) {
                 errors += WaccError(
                   pos,
@@ -1218,12 +1257,12 @@ case class ArrayLiterNode(es: List[ExprNode])(val pos: (Int, Int))
                 return ()
             }
             typeToCheck match {
-                case ArrayType(t, d) => this.typeId = Some(ArrayType(t, d + 1))
+                case ArrayType(t, d) => typeId = Some(ArrayType(t, d + 1))
                 case _ =>
-                    this.typeId = Some(ArrayType(typeToCheck.getType(), 1))
+                    typeId = Some(ArrayType(typeToCheck, 1))
             }
         } else {
-            this.typeId = Some(AnyType())
+            typeId = Some(AnyType())
         }
 
     }
