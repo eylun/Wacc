@@ -1,11 +1,15 @@
-# Simple conditional statement with int comparison test
+# while condition type mismatch
 
 # Output:
-# correct
+# #semantic_error#
+
+# Exit:
+# 200
 
 # Program:
 
 begin
-    int[] arr = 5;
-    int[] val = arr[1]
+  while 15 + 6 do
+    skip
+  done
 end

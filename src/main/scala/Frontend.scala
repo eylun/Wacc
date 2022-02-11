@@ -1,8 +1,9 @@
 import java.io.File
 import scala.util.Try
 import parsley.io.{ParseFromIO}
+import scala.collection.mutable.ListBuffer
 
-object SyntaxParser {
+object frontend {
     import parsley.{Success, Failure}
     def main(args: Array[String]): Unit = {
         assert(args.length == 1, "Usage: ./compile <wacc filename>")
@@ -13,18 +14,17 @@ object SyntaxParser {
             syntax.parse.parseFromFile(waccFile)
         parseResult.get match {
             case Success(x) =>
-                println(x)
-                println(s"${args(0)} is synctactically valid.")
+                println(s"${args(0)} is syntactically valid")
                 val topLevelST = SymbolTable()
-                val errorLog = List()
+                val errorLog = ListBuffer[WaccError]()
                 x.check(topLevelST, errorLog)
                 if (errorLog.length == 0) {
+                    println(s"${args(0)} is semantically valid")
                     System.exit(0)
                 }
-                println(errorLog)
+                errorLog.foreach(e => e.render())
                 System.exit(100)
             case Failure(err) =>
-                // println(err)
                 err.render()
                 System.exit(200)
         }
