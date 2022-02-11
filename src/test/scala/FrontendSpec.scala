@@ -60,7 +60,10 @@ class FrontendSpec extends AnyFlatSpec {
         }
     }
 
-    it should "get syntactically valid but semantically invalid programs from folder" in {
+    it should "fail on semantically invalid programs" in {
+        val syntaxFailed = ListBuffer[String]()
+        val semanticPassed = ListBuffer[String]()
+
         assert(semanticInvalid.nonEmpty)
         semanticInvalid.foreach { case x: File =>
             syntax.parse.parseFromFile(x).get match {
@@ -69,30 +72,37 @@ class FrontendSpec extends AnyFlatSpec {
                     ast.check(SymbolTable(), errorBuffer)
                     val errorNum = errorBuffer.length
                     errorNum match {
-                        case 0 =>
-                            fail(
-                              s"${x.getName()} should have semantically failed"
-                            )
+                        case 0 => semanticPassed += x.getName()
                         case _ => succeed
                     }
                 }
-                case Failure(err) =>
-                    fail(s"${x.getName()} should not have syntactically failed")
+                case Failure(err) => syntaxFailed += x.getName()
             }
+        }
+
+        if (semanticPassed.length > 0) {
+            fail(s"semantic error should have been produced in programs ${semanticPassed.toString()}")
+        }
+        if (syntaxFailed.length > 0) {
+            fail(s"syntax errors found in syntactically valid programs ${syntaxFailed.toString()}")
         }
     }
 
-    it should "get syntactically invalid programs from folder" in {
+    it should "fail on syntactically invalid programs" in {
+        val syntaxPassed = ListBuffer[String]()
         assert(syntaxInvalid.nonEmpty)
         syntaxInvalid.foreach { case x: File =>
             syntax.parse.parseFromFile(x).get match {
                 case Success(s) => {
-                    fail(s"${x.getName()} should have syntactically failed")
+                    syntaxPassed += x.getName()
                 }
                 case Failure(err) => {
                     succeed
                 }
             }
+        }
+        if (syntaxPassed.length > 0) {
+            fail(s"syntax error should have been produced in programs ${syntaxPassed.toString()}")
         }
     }
 }
