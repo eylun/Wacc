@@ -48,9 +48,17 @@ class SemanticCheckerSpec extends AnyFlatSpec {
                             node.typeId, ListBuffer(), log)
 
         // Pair with array
-        // resetNode(PairTypeNode(ArrayTypeNode(IntTypeNode()((0,0)), 3)((0,0)),
-        //                         StringTypeNode()((0,0)))((0,0)))
-        // assertTypeIdEquals(Some(PairType(ArrayType(IntType(), 3), StringType())),
-        //                     node.typeId, ListBuffer(), log)
+        resetNode(PairTypeNode(ArrayTypeNode(IntTypeNode()((0,0)), 3)((0,0)),
+                                StringTypeNode()((0,0)))((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(PairType(ArrayType(IntType(), 3), StringType())),
+                            node.typeId, ListBuffer(), log)
+    }
+    it should "correctly interpret <array-type> node types" in {
+        // 1-dimensional char array
+        resetNode(ArrayTypeNode(CharTypeNode()((0,0)), 1)((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(ArrayType(CharType(), 1)), node.typeId,
+                            ListBuffer(), log)
     }
 }
