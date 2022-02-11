@@ -799,7 +799,7 @@ case class Not(e: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
             case _ =>
                 errors += WaccError(
                   e.pos,
-                  s"""expression ${e.repr()}'s type is incompatible for the '!' 
+                  s"""expression ${e.repr()}'s type is incompatible for the '!'
                   |operator (Expected: BOOL, Actual: ${e.typeId.get
                       .getType()})""".stripMargin.replaceAll("\n", " ")
                 )
@@ -826,7 +826,7 @@ case class Neg(e: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
             case _ =>
                 errors += WaccError(
                   e.pos,
-                  s"""expression ${e.repr()}'s type is incompatible for the '-' 
+                  s"""expression ${e.repr()}'s type is incompatible for the '-'
                   |operator (Expected: INT, Actual: ${e.typeId.get
                       .getType()})""".stripMargin.replaceAll("\n", " ")
                 )
@@ -853,7 +853,7 @@ case class Len(e: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
             case _ =>
                 errors += WaccError(
                   e.pos,
-                  s"""expression ${e.repr()}'s type is incompatible for the 
+                  s"""expression ${e.repr()}'s type is incompatible for the
                   |'len' operator (Expected: ANY[], Actual: ${e.typeId.get
                       .getType()})""".stripMargin.replaceAll("\n", " ")
                 )
@@ -882,7 +882,7 @@ case class Ord(e: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
             case _ =>
                 errors += WaccError(
                   e.pos,
-                  s"""expression ${e.repr()}'s type is incompatible for the 
+                  s"""expression ${e.repr()}'s type is incompatible for the
                   |'ord' operator (Expected: CHAR, Actual: ${e.typeId.get
                       .getType()})""".stripMargin.replaceAll("\n", " ")
                 )
@@ -907,8 +907,8 @@ case class Chr(e: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
             case _ =>
                 errors += WaccError(
                   e.pos,
-                  s"""expression ${e.repr()}'s type is incompatible for the 
-                  |'chr' operator (Expected: INT, Actual ${e.typeId.get
+                  s"""expression ${e.repr()}'s type is incompatible for the
+                  |'chr' operator (Expected: INT, Actual: ${e.typeId.get
                       .getType()})""".stripMargin.replaceAll("\n", " ")
                 )
         }
@@ -925,7 +925,9 @@ trait ParserBuilderPos2[T1, T2, R] extends ParserBuilder[(T1, T2) => R] {
 }
 
 /** BINARY OPERATOR NODES */
-sealed trait BinaryOpNode extends ExprNode
+sealed trait BinaryOpNode extends ExprNode {
+    def symbol(): String
+}
 
 /** Integer Multiplication */
 case class Mult(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
@@ -1286,7 +1288,7 @@ object BoolLiterNode {
 case class CharLiterNode(c: Char)(val pos: (Int, Int)) extends ExprNode {
     typeId = Some(CharType())
 
-    def repr(): String = s"'${c.toString}'"
+    def repr(): String = s"'$c'"
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {}
 }
 
@@ -1297,7 +1299,7 @@ object CharLiterNode {
 
 case class StringLiterNode(s: String)(val pos: (Int, Int)) extends ExprNode {
     typeId = Some(StringType())
-    def repr(): String = s
+    def repr(): String = s"\"$s\""
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {}
 }
 
