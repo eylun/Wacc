@@ -1,16 +1,15 @@
-# while missing opening do
+# while condition type mismatch
 
 # Output:
-# #syntax_error#
+# #semantic_error#
 
 # Exit:
-# 100
+# 200
 
 # Program:
 
 begin
-  while false
+  while 15 + 6 do
     skip
   done
 end
-

@@ -14,7 +14,6 @@ object frontend {
             syntax.parse.parseFromFile(waccFile)
         parseResult.get match {
             case Success(x) =>
-                println(x)
                 println(s"${args(0)} is syntactically valid")
                 val topLevelST = SymbolTable()
                 val errorLog = ListBuffer[WaccError]()

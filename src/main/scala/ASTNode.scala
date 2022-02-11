@@ -34,6 +34,7 @@ object typeUtil {
     }
 }
 sealed trait ASTNode {
+    val pos: (Int, Int)
     var typeId: Option[Identifier]
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit
 }
@@ -201,7 +202,7 @@ case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode)(
         if (!lrTypeCheck(t.typeId.get.getType(), r.typeId.get.getType())) {
             errors += WaccError(
               pos,
-              s"variable ${i.s} is assigned incompatible type (Expected: ${t.typeId.get
+              s"variable ${i.s} is assigned incompatible type at ${r.repr()} (Expected: ${t.typeId.get
                   .getType()}, Actual: ${r.typeId.get.getType()})"
             )
         }
@@ -254,7 +255,8 @@ case class LRAssignNode(l: AssignLHSNode, r: AssignRHSNode)(val pos: (Int, Int))
         if (!lrTypeCheck(l.typeId.get.getType(), r.typeId.get.getType())) {
             errors += WaccError(
               pos,
-              s"variable ${l.repr()} is assigned incompatible type (Expected: ${l.typeId.get
+              s"variable ${l.repr()} is assigned incompatible type at ${r
+                  .repr()} (Expected: ${l.typeId.get
                   .getType()}, Actual: ${r.typeId.get.getType()})"
             )
         }
@@ -324,7 +326,7 @@ case class ReturnNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
                     errors += WaccError(
                       pos,
                       s"return expression ${e.repr()}'s type is incompatible (Expected: ${id
-                          .getType()}, Actual: ${e.typeId.get.getType()}"
+                          .getType()}, Actual: ${e.typeId.get.getType()})"
                     )
                 }
             }
@@ -355,8 +357,8 @@ case class ExitNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
             }
             case _ =>
                 errors += WaccError(
-                  pos,
-                  s"exit expression ${e.repr()}'s type is incompatible (Expected: INT, Actual: ${e.typeId.get.getType()}"
+                  e.pos,
+                  s"exit expression ${e.repr()}'s type is incompatible (Expected: INT, Actual: ${e.typeId.get.getType()})"
                 )
         }
     }
@@ -376,7 +378,7 @@ case class PrintNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
         e.typeId.get match {
             case (FunctionId(_, _, _)) => {
                 errors += WaccError(
-                  pos,
+                  e.pos,
                   s"print expression ${e.repr()} is a function, which is incompatible"
                 )
             }
@@ -401,7 +403,7 @@ case class PrintlnNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
         e.typeId.get match {
             case (FunctionId(_, _, _)) => {
                 errors += WaccError(
-                  pos,
+                  e.pos,
                   s"println expression ${e.repr()} is a function, which is incompatible"
                 )
             }
@@ -423,18 +425,19 @@ case class IfThenElseNode(e: ExprNode, s1: StatNode, s2: StatNode)(
         // Ensure that expression has checked successfully
         val newScopeST1 = SymbolTable(st)
         val newScopeST2 = SymbolTable(st)
-        if (e.typeId.isEmpty) return ()
-        e.typeId.get.getType() match {
-            case BoolType() => {
-                s1.check(newScopeST1, errors)
-                s2.check(newScopeST2, errors)
+        if (e.typeId.isDefined) {
+            e.typeId.get.getType() match {
+                case BoolType() => ()
+                case _ =>
+                    errors += WaccError(
+                      e.pos,
+                      s"expression ${e.repr()}'s type is incompatible (Expected: BOOL, Actual: ${e.typeId.get.getType()})"
+                    )
             }
-            case _ =>
-                errors += WaccError(
-                  pos,
-                  s"expression ${e.repr()}'s type is incompatible (Expected: BOOL, Actual: ${e.typeId.get.getType()}"
-                )
         }
+
+        s1.check(newScopeST1, errors)
+        s2.check(newScopeST2, errors)
     }
 }
 
@@ -453,17 +456,17 @@ case class WhileDoNode(e: ExprNode, s: StatNode)(val pos: (Int, Int))
         e.check(st, errors)
         // Ensure that expression has checked successfully
         val newScopeST = SymbolTable(st)
-        if (e.typeId.isEmpty) return ()
-        e.typeId.get.getType() match {
-            case BoolType() => {
-                s.check(newScopeST, errors)
+        if (e.typeId.isDefined) {
+            e.typeId.get.getType() match {
+                case BoolType() => ()
+                case _ =>
+                    errors += WaccError(
+                      e.pos,
+                      s"expression ${e.repr()}'s type is incompatible (Expected: BOOL, Actual: ${e.typeId.get.getType()})"
+                    )
             }
-            case _ =>
-                errors += WaccError(
-                  pos,
-                  s"expression ${e.repr()}'s type is incompatible (Expected: BOOL, Actual: ${e.typeId.get.getType()}"
-                )
         }
+        s.check(newScopeST, errors)
     }
 }
 
@@ -572,10 +575,10 @@ case class CallNode(i: IdentNode, args: List[ExprNode])(val pos: (Int, Int))
                           )
                         ) {
                             errors += WaccError(
-                              pos,
+                              arg.pos,
                               s"argument ${arg.repr()}'s type is incompatible (Expected: ${params(
                                 index
-                              )}, Actual: ${arg.typeId.get.getType()}"
+                              )}, Actual: ${arg.typeId.get.getType()})"
                             )
                             return ()
                         }
@@ -597,7 +600,7 @@ case class CallNode(i: IdentNode, args: List[ExprNode])(val pos: (Int, Int))
 
     }
     def repr() =
-        s"call ${i.repr()} (${args.foreach(a => a.repr()).toString})"
+        s"call ${i.repr()}(${args.map(a => a.repr()).mkString(", ")})"
 }
 
 object CallNode {
@@ -711,7 +714,7 @@ sealed trait UnaryOpNode extends ExprNode
  * array is. This is inserted upon parsing to make it less tedious for
  * semantic checking.
  */
-case class ArrayTypeNode(t: TypeNode, dimension: Int)(pos: (Int, Int))
+case class ArrayTypeNode(t: TypeNode, dimension: Int)(val pos: (Int, Int))
     extends PairElemTypeNode
     with UnaryOpNode
     with TypeNode {
@@ -750,13 +753,13 @@ case class Not(e: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
                 this.typeId = Some(BoolType())
             case _ =>
                 errors += WaccError(
-                  pos,
+                  e.pos,
                   s"expression ${e.repr()}'s type is incompatible for the '!' operator (Expected: BOOL, Actual: ${e.typeId.get.getType()})"
                 )
         }
 
     }
-    def repr(): String = s"!${e.repr()}"
+    def repr(): String = s"(!${e.repr()})"
 }
 
 // Ops(Prefix)(Not <# 'not') ----> returns Parser of type Not
@@ -773,13 +776,13 @@ case class Neg(e: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
                 this.typeId = Some(IntType())
             case _ =>
                 errors += WaccError(
-                  pos,
+                  e.pos,
                   s"expression ${e.repr()}'s type is incompatible for the '-' operator (Expected: INT, Actual: ${e.typeId.get.getType()})"
                 )
         }
 
     }
-    def repr(): String = s"- ${e.repr()}"
+    def repr(): String = s"(- ${e.repr()})"
 }
 
 object Neg extends ParserBuilderPos1[ExprNode, Neg]
@@ -795,13 +798,13 @@ case class Len(e: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
                 this.typeId = Some(IntType())
             case _ =>
                 errors += WaccError(
-                  pos,
+                  e.pos,
                   s"expression ${e.repr()}'s type is incompatible for the 'len' operator (Expected: ANY[], Actual: ${e.typeId.get.getType()})"
                 )
         }
 
     }
-    def repr(): String = s"len ${e.repr()}"
+    def repr(): String = s"(len ${e.repr()})"
 }
 
 object Len extends ParserBuilderPos1[ExprNode, Len]
@@ -818,13 +821,13 @@ case class Ord(e: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
                 this.typeId = Some(IntType())
             case _ =>
                 errors += WaccError(
-                  pos,
+                  e.pos,
                   s"expression ${e.repr()}'s type is incompatible for the 'ord' operator (Expected: CHAR, Actual: ${e.typeId.get.getType()})"
                 )
         }
 
     }
-    def repr(): String = s"ord ${e.repr()}"
+    def repr(): String = s"(ord ${e.repr()})"
 }
 
 object Ord extends ParserBuilderPos1[ExprNode, Ord]
@@ -840,13 +843,13 @@ case class Chr(e: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
                 this.typeId = Some(CharType())
             case _ =>
                 errors += WaccError(
-                  pos,
+                  e.pos,
                   s"expression ${e.repr()}'s type is incompatible for the 'chr' operator (Expected: INT, Actual ${e.typeId.get.getType()})"
                 )
         }
 
     }
-    def repr(): String = s"chr ${e.repr()}"
+    def repr(): String = s"(chr ${e.repr()})"
 }
 
 object Chr extends ParserBuilderPos1[ExprNode, Chr]
@@ -861,9 +864,9 @@ case class Mult(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
     extends BinaryOpNode {
     var typeId: Option[Identifier] = None
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
-        typeCheckArithmeticBinOp(pos, st, this, e1, e1, errors)
+        typeCheckArithmeticBinOp(pos, st, this, e1, e2, errors)
     }
-    def repr(): String = s"${e1.repr()} * ${e2.repr()}"
+    def repr(): String = s"(${e1.repr()} * ${e2.repr()})"
 }
 
 object Mult extends ParserBuilderPos2[ExprNode, ExprNode, Mult]
@@ -874,7 +877,7 @@ case class Div(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         typeCheckArithmeticBinOp(pos, st, this, e1, e2, errors)
     }
-    def repr(): String = s"${e1.repr()} / ${e2.repr()}"
+    def repr(): String = s"(${e1.repr()} / ${e2.repr()})"
 }
 
 object Div extends ParserBuilderPos2[ExprNode, ExprNode, Div]
@@ -884,7 +887,7 @@ case class Mod(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         typeCheckArithmeticBinOp(pos, st, this, e1, e2, errors)
     }
-    def repr(): String = s"${e1.repr()} % ${e2.repr()}"
+    def repr(): String = s"(${e1.repr()} % ${e2.repr()})"
 }
 
 object Mod extends ParserBuilderPos2[ExprNode, ExprNode, Mod]
@@ -894,7 +897,7 @@ case class Add(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         typeCheckArithmeticBinOp(pos, st, this, e1, e2, errors)
     }
-    def repr(): String = s"${e1.repr()} + ${e2.repr()}"
+    def repr(): String = s"(${e1.repr()} + ${e2.repr()})"
 }
 
 object Add extends ParserBuilderPos2[ExprNode, ExprNode, Add]
@@ -905,7 +908,7 @@ case class Sub(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         typeCheckArithmeticBinOp(pos, st, this, e1, e2, errors)
     }
-    def repr(): String = s"${e1.repr()} - ${e2.repr()}"
+    def repr(): String = s"(${e1.repr()} - ${e2.repr()})"
 }
 
 object Sub extends ParserBuilderPos2[ExprNode, ExprNode, Sub]
@@ -916,7 +919,7 @@ case class GT(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         typeCheckOrderingBinOp(pos, st, this, e1, e2, errors)
     }
-    def repr(): String = s"${e1.repr()} > ${e2.repr()}"
+    def repr(): String = s"(${e1.repr()} > ${e2.repr()})"
 }
 
 object GT extends ParserBuilderPos2[ExprNode, ExprNode, GT]
@@ -927,7 +930,7 @@ case class GTE(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         typeCheckOrderingBinOp(pos, st, this, e1, e2, errors)
     }
-    def repr(): String = s"${e1.repr()} >= ${e2.repr()}"
+    def repr(): String = s"(${e1.repr()} >= ${e2.repr()})"
 }
 
 object GTE extends ParserBuilderPos2[ExprNode, ExprNode, GTE]
@@ -938,7 +941,7 @@ case class LT(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         typeCheckOrderingBinOp(pos, st, this, e1, e2, errors)
     }
-    def repr(): String = s"${e1.repr()} < ${e2.repr()}"
+    def repr(): String = s"(${e1.repr()} < ${e2.repr()})"
 }
 
 object LT extends ParserBuilderPos2[ExprNode, ExprNode, LT]
@@ -949,7 +952,7 @@ case class LTE(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         typeCheckOrderingBinOp(pos, st, this, e1, e2, errors)
     }
-    def repr(): String = s"${e1.repr()} <= ${e2.repr()}"
+    def repr(): String = s"(${e1.repr()} <= ${e2.repr()})"
 }
 
 object LTE extends ParserBuilderPos2[ExprNode, ExprNode, LTE]
@@ -960,7 +963,7 @@ case class Equal(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         typeCheckEqualityBinOp(pos, st, this, e1, e2, errors)
     }
-    def repr(): String = s"${e1.repr()} == ${e2.repr()}"
+    def repr(): String = s"(${e1.repr()} == ${e2.repr()})"
 }
 
 object Equal extends ParserBuilderPos2[ExprNode, ExprNode, Equal]
@@ -971,7 +974,7 @@ case class NotEqual(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         typeCheckEqualityBinOp(pos, st, this, e1, e2, errors)
     }
-    def repr(): String = s"${e1.repr()} != ${e2.repr()}"
+    def repr(): String = s"(${e1.repr()} != ${e2.repr()})"
 }
 
 object NotEqual extends ParserBuilderPos2[ExprNode, ExprNode, NotEqual]
@@ -982,7 +985,7 @@ case class And(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         typeCheckLogicalBinOp(pos, st, this, e1, e2, errors)
     }
-    def repr(): String = s"${e1.repr()} && ${e2.repr()}"
+    def repr(): String = s"(${e1.repr()} && ${e2.repr()})"
 }
 
 object And extends ParserBuilderPos2[ExprNode, ExprNode, And]
@@ -993,7 +996,7 @@ case class Or(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         typeCheckLogicalBinOp(pos, st, this, e1, e2, errors)
     }
-    def repr(): String = s"${e1.repr()} || ${e2.repr()}"
+    def repr(): String = s"(${e1.repr()} || ${e2.repr()})"
 }
 
 object Or extends ParserBuilderPos2[ExprNode, ExprNode, Or]
@@ -1051,8 +1054,8 @@ case class ArrayElemNode(i: IdentNode, es: List[ExprNode])(val pos: (Int, Int))
                     case IntType() => ()
                     case _ => {
                         errors += WaccError(
-                          pos,
-                          s"expression ${e.repr()}'s type is incompatible for array element evaluation (Expected: INT, Actual: ${e.typeId.get.getType()}"
+                          e.pos,
+                          s"expression ${e.repr()}'s type is incompatible for array element evaluation (Expected: INT, Actual: ${e.typeId.get.getType()})"
                         )
                         return ()
                     }
@@ -1066,8 +1069,8 @@ case class ArrayElemNode(i: IdentNode, es: List[ExprNode])(val pos: (Int, Int))
                 d.compare(es.length) match {
                     case -1 =>
                         errors += WaccError(
-                          pos,
-                          s"array element type imcompatible (Expected: Any${"[]" * es.length}, Actual: ${t
+                          i.pos,
+                          s"array element type incompatible (Expected: Any${"[]" * es.length}, Actual: ${t
                               .getType()}${"[]" * d})"
                         )
                     case 0 => this.typeId = Some(t)
@@ -1076,8 +1079,8 @@ case class ArrayElemNode(i: IdentNode, es: List[ExprNode])(val pos: (Int, Int))
             }
             case t => {
                 errors += WaccError(
-                  pos,
-                  s"array element type imcompatible (Expected: Any${"[]" * es.length}, Actual: ${t
+                  i.pos,
+                  s"array element type incompatible (Expected: Any${"[]" * es.length}, Actual: ${t
                       .getType()})"
                 )
             }
@@ -1109,13 +1112,13 @@ case class FirstPairElemNode(e: ExprNode)(val pos: (Int, Int))
             case PairType(t, _) => this.typeId = Some(t)
             case NullPairType() =>
                 errors += WaccError(
-                  pos,
+                  e.pos,
                   s"accessing element of null pair"
                 )
             case _ =>
                 errors += WaccError(
-                  pos,
-                  s"expression ${e.repr()} type imcompatible for 'fst' (Expected: PAIR, Actual: ${e.typeId.get.getType()})"
+                  e.pos,
+                  s"expression ${e.repr()} type incompatible for 'fst' (Expected: PAIR, Actual: ${e.typeId.get.getType()})"
                 )
         }
 
@@ -1139,12 +1142,12 @@ case class SecondPairElemNode(e: ExprNode)(val pos: (Int, Int))
             case PairType(_, t) => this.typeId = Some(t)
             case NullPairType() =>
                 errors += WaccError(
-                  pos,
+                  e.pos,
                   s"accessing element of null pair"
                 )
             case _ =>
                 errors += WaccError(
-                  pos,
+                  e.pos,
                   s"expression ${e.repr()} type incompatible for 'snd' (Expected: PAIR(ANY, ANY) , Actual: ${e.typeId.get.getType()})"
                 )
         }
@@ -1203,9 +1206,7 @@ object CharLiterNode {
 
 case class StringLiterNode(s: String)(val pos: (Int, Int)) extends ExprNode {
     var typeId: Option[Identifier] = Some(StringType())
-    def repr(): String = {
-        s
-    }
+    def repr(): String = s
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {}
 }
 
@@ -1217,9 +1218,7 @@ object StringLiterNode {
 case class PairLiterNode()(val pos: (Int, Int)) extends ExprNode {
     var typeId: Option[Identifier] = Some(NullPairType())
 
-    def repr(): String = {
-        "null"
-    }
+    def repr(): String = "null"
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {}
 }
 
