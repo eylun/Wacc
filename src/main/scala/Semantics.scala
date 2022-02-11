@@ -17,15 +17,15 @@ object semantics {
         if (x.typeId.isEmpty || y.typeId.isEmpty) return ()
         (x.typeId.get.getType(), y.typeId.get.getType()) match {
             case (IntType(), IntType()) => ()
-            case (_, IntType()) =>
+            case (IntType(), _) =>
                 errors += WaccError(
                   y.pos,
-                  s"expression ${y.repr()}'s type is incompatible for arithmetic operator (Expected: INT, Actual: ${y.typeId.get.getType()})"
+                  s"expression ${y.repr()}'s type is incompatible for '${op.symbol()}' (Expected: INT, Actual: ${y.typeId.get.getType()})"
                 )
             case _ =>
                 errors += WaccError(
                   x.pos,
-                  s"expression ${x.repr()}'s type is incompatible for arithmetic operator (Expected: INT, Actual: ${y.typeId.get.getType()})"
+                  s"expression ${x.repr()}'s type is incompatible for '${op.symbol()}' (Expected: INT, Actual: ${x.typeId.get.getType()})"
                 )
         }
         op.typeId = Some(IntType())
@@ -51,15 +51,13 @@ object semantics {
                 errors += WaccError(
                   y.pos,
                   s"expression ${y.repr()}'s type does not match expression ${x
-                      .repr()}'s type for ordering operator (Expected: ${x.typeId.get
+                      .repr()}'s type for '${op.symbol()}' (Expected: ${x.typeId.get
                       .getType()}, Actual: ${y.typeId.get.getType()})"
                 )
             case _ =>
                 errors += WaccError(
                   x.pos,
-                  s"expression ${y.repr()}'s type does not match expression ${x
-                      .repr()}'s type for ordering operator (Expected: ${x.typeId.get
-                      .getType()}, Actual: ${y.typeId.get.getType()})"
+                  s"expression ${x.repr()}'s is incompatible for '${op.symbol()}' (Expected: INT or CHAR, Actual: ${x.typeId.get.getType()})"
                 )
         }
         op.typeId = Some(BoolType())
@@ -82,7 +80,7 @@ object semantics {
             errors += WaccError(
               x.pos,
               s"expression ${y.repr()}'s type does not match expression ${x
-                  .repr()}'s type for equality operator (Expected: ${x.typeId.get
+                  .repr()}'s type for '${op.symbol()}' (Expected: ${x.typeId.get
                   .getType()}, Actual: ${y.typeId.get.getType()})"
             )
 
@@ -108,12 +106,12 @@ object semantics {
             case (_, BoolType()) =>
                 errors += WaccError(
                   y.pos,
-                  s"expression ${y.repr()}'s type is incompatible for logical operator (Expected: BOOL, Actual: ${y.typeId.get.getType()})"
+                  s"expression ${y.repr()}'s type is incompatible for '${op.symbol()}' (Expected: BOOL, Actual: ${y.typeId.get.getType()})"
                 )
             case _ =>
                 errors += WaccError(
                   x.pos,
-                  s"expression ${x.repr()}'s type is incompatible for logical operator (Expected: BOOL, Actual: ${x.typeId.get.getType()})"
+                  s"expression ${x.repr()}'s type is incompatible for '${op.symbol()}' (Expected: BOOL, Actual: ${x.typeId.get.getType()})"
                 )
         }
         op.typeId = Some(BoolType())

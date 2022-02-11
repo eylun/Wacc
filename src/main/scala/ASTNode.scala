@@ -859,7 +859,9 @@ trait ParserBuilderPos2[T1, T2, R] extends ParserBuilder[(T1, T2) => R] {
     val parser = pos.map(p => apply(_, _)(p))
 }
 // Binary Operator
-sealed trait BinaryOpNode extends ExprNode
+sealed trait BinaryOpNode extends ExprNode {
+    def symbol(): String
+}
 case class Mult(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
     extends BinaryOpNode {
     var typeId: Option[Identifier] = None
@@ -867,6 +869,7 @@ case class Mult(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
         typeCheckArithmeticBinOp(pos, st, this, e1, e2, errors)
     }
     def repr(): String = s"(${e1.repr()} * ${e2.repr()})"
+    def symbol(): String = "*"
 }
 
 object Mult extends ParserBuilderPos2[ExprNode, ExprNode, Mult]
@@ -878,6 +881,7 @@ case class Div(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
         typeCheckArithmeticBinOp(pos, st, this, e1, e2, errors)
     }
     def repr(): String = s"(${e1.repr()} / ${e2.repr()})"
+    def symbol(): String = "/"
 }
 
 object Div extends ParserBuilderPos2[ExprNode, ExprNode, Div]
@@ -888,6 +892,7 @@ case class Mod(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
         typeCheckArithmeticBinOp(pos, st, this, e1, e2, errors)
     }
     def repr(): String = s"(${e1.repr()} % ${e2.repr()})"
+    def symbol(): String = "%"
 }
 
 object Mod extends ParserBuilderPos2[ExprNode, ExprNode, Mod]
@@ -898,6 +903,7 @@ case class Add(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
         typeCheckArithmeticBinOp(pos, st, this, e1, e2, errors)
     }
     def repr(): String = s"(${e1.repr()} + ${e2.repr()})"
+    def symbol(): String = "+"
 }
 
 object Add extends ParserBuilderPos2[ExprNode, ExprNode, Add]
@@ -909,6 +915,7 @@ case class Sub(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
         typeCheckArithmeticBinOp(pos, st, this, e1, e2, errors)
     }
     def repr(): String = s"(${e1.repr()} - ${e2.repr()})"
+    def symbol(): String = "-"
 }
 
 object Sub extends ParserBuilderPos2[ExprNode, ExprNode, Sub]
@@ -920,6 +927,7 @@ case class GT(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
         typeCheckOrderingBinOp(pos, st, this, e1, e2, errors)
     }
     def repr(): String = s"(${e1.repr()} > ${e2.repr()})"
+    def symbol(): String = ">"
 }
 
 object GT extends ParserBuilderPos2[ExprNode, ExprNode, GT]
@@ -931,6 +939,7 @@ case class GTE(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
         typeCheckOrderingBinOp(pos, st, this, e1, e2, errors)
     }
     def repr(): String = s"(${e1.repr()} >= ${e2.repr()})"
+    def symbol(): String = ">="
 }
 
 object GTE extends ParserBuilderPos2[ExprNode, ExprNode, GTE]
@@ -942,6 +951,7 @@ case class LT(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
         typeCheckOrderingBinOp(pos, st, this, e1, e2, errors)
     }
     def repr(): String = s"(${e1.repr()} < ${e2.repr()})"
+    def symbol(): String = "<"
 }
 
 object LT extends ParserBuilderPos2[ExprNode, ExprNode, LT]
@@ -953,6 +963,7 @@ case class LTE(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
         typeCheckOrderingBinOp(pos, st, this, e1, e2, errors)
     }
     def repr(): String = s"(${e1.repr()} <= ${e2.repr()})"
+    def symbol(): String = "<="
 }
 
 object LTE extends ParserBuilderPos2[ExprNode, ExprNode, LTE]
@@ -964,6 +975,7 @@ case class Equal(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
         typeCheckEqualityBinOp(pos, st, this, e1, e2, errors)
     }
     def repr(): String = s"(${e1.repr()} == ${e2.repr()})"
+    def symbol(): String = "=="
 }
 
 object Equal extends ParserBuilderPos2[ExprNode, ExprNode, Equal]
@@ -975,6 +987,7 @@ case class NotEqual(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
         typeCheckEqualityBinOp(pos, st, this, e1, e2, errors)
     }
     def repr(): String = s"(${e1.repr()} != ${e2.repr()})"
+    def symbol(): String = "!="
 }
 
 object NotEqual extends ParserBuilderPos2[ExprNode, ExprNode, NotEqual]
@@ -986,6 +999,7 @@ case class And(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
         typeCheckLogicalBinOp(pos, st, this, e1, e2, errors)
     }
     def repr(): String = s"(${e1.repr()} && ${e2.repr()})"
+    def symbol(): String = "&&"
 }
 
 object And extends ParserBuilderPos2[ExprNode, ExprNode, And]
@@ -997,6 +1011,7 @@ case class Or(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
         typeCheckLogicalBinOp(pos, st, this, e1, e2, errors)
     }
     def repr(): String = s"(${e1.repr()} || ${e2.repr()})"
+    def symbol(): String = "||"
 }
 
 object Or extends ParserBuilderPos2[ExprNode, ExprNode, Or]
@@ -1193,9 +1208,7 @@ object BoolLiterNode {
 case class CharLiterNode(c: Char)(val pos: (Int, Int)) extends ExprNode {
     var typeId: Option[Identifier] = Some(CharType())
 
-    def repr(): String = {
-        c.toString()
-    }
+    def repr(): String = s"'${c.toString}'"
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {}
 }
 
@@ -1206,7 +1219,7 @@ object CharLiterNode {
 
 case class StringLiterNode(s: String)(val pos: (Int, Int)) extends ExprNode {
     var typeId: Option[Identifier] = Some(StringType())
-    def repr(): String = s
+    def repr(): String = s"\"${s}\""
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {}
 }
 
