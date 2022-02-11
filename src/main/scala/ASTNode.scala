@@ -689,7 +689,7 @@ trait ParserBuilder[T] {
     val parser: Parsley[T]
     final def <#(p: Parsley[_]): Parsley[T] =
         parser <* p.label(
-          "operators: { *, /, %, +, -, >, >=, <, <=, ==, !=, &&, ||"
+          "operators: { *, /, %, +, -, >, >=, <, <=, ==, !=, &&, ||}"
         )
 }
 

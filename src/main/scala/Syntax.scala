@@ -461,8 +461,11 @@ object syntax {
     lazy val whileDoStat =
         WhileDoNode(
           "while".label("while statement") *> expr,
-          "do".label("do-while loop body: do <Statement>") *> stat <* "done"
-              .label("do-while loop closing \"done\" keyword")
+          "do".label("do-while loop body: do <Statement>")
+              *> stat.label(
+                "do-while loop body statement <Statement> "
+              ) <* "done"
+                  .label("do-while loop closing \"done\" keyword")
         )
 
     // begin-end-stat := ‘begin’ ⟨stat ⟩ ‘end’

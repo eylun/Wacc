@@ -7,7 +7,8 @@
 # 100
 
 # Program:
-
 begin
-  char i = "\H"
+  while false doo
+    skip
+  done
 end
