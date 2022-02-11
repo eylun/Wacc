@@ -1,12 +1,15 @@
 import parsley.errors.ErrorBuilder
 import parsley.Parsley, Parsley._
 
+/** Custom Error Object to be populated by Parsley's error builder */
 case class WaccError(
     pos: (Int, Int),
     source: Option[String] = None,
     lines: WaccErrorLines,
     syntaxError: Boolean = true
 ) {
+
+    /** Generate a string output based on the values in the WaccError */
     def render() = {
         val sb = syntaxError match {
             case true  => new StringBuilder("Syntax Error Detected at ")
@@ -46,6 +49,7 @@ case class WaccError(
     }
 }
 
+/** QCompanion object to help create specialised errors for semantic checking */
 object WaccError {
     def apply(pos: (Int, Int), errorLine: String): WaccError =
         WaccError(pos, None, SpecialisedError(Set(errorLine)), false)

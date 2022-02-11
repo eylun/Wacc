@@ -9,7 +9,5 @@
 # Program:
 
 begin
-  while 15 + 6 do
-    skip
-  done
+	bool x = 'c' < 5
 end
