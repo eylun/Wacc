@@ -215,4 +215,35 @@ class SemanticCheckerSpec extends AnyFlatSpec {
             "expression not_an_int's type is incompatible for the '-' operator (Expected: INT, Actual: CHAR)")),
             log)
     }
+    it should "correctly verify the type of the argument passed in for 'len'" in {
+        // array
+        resetNode(Len(IdentNode("array")((2,4)))((2,0)))
+        st.add("array", ArrayType(StringType(), 2))
+        node.check(st, log)
+        assertTypeIdEquals(Some(IntType()), node.typeId, ListBuffer(), log)
+
+        // array-elem
+        resetNode(Len(ArrayElemNode(IdentNode("_2d_array")((4,3)), 
+                                List(IntLiterNode(2)((4,15))))((4,3)))((4,0)))
+        st.add("_2d_array", Variable(ArrayType(BoolType(), 2)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(IntType()), node.typeId, ListBuffer(), log)
+    }
+    it should "produce an error for an invalid argument type for 'len'" in {
+        // array-elem accessing 1D array
+        resetNode(Len(ArrayElemNode(IdentNode("_1d_array")((4,3)), 
+                                List(IntLiterNode(2)((4,15))))((4,3)))((4,0)))
+        st.add("_1d_array", Variable(ArrayType(BoolType(), 1)))
+        node.check(st, log)
+        assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((4,3), 
+            "expression _1d_array[2]'s type is incompatible for the 'len' operator (Expected: ANY[], Actual: BOOL)")), log)
+
+        // not an array
+        resetNode(Len(IdentNode("not_an_array")((6, 8)))((6, 0)))
+        st.add("not_an_array", StringType())
+        node.check(st, log)
+        assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((6, 8), 
+            "expression not_an_array's type is incompatible for the 'len' operator (Expected: ANY[], Actual: STRING)")),
+            log)
+    }
 }

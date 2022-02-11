@@ -1041,7 +1041,7 @@ case class ArrayElemNode(i: IdentNode, es: List[ExprNode])(val pos: (Int, Int))
     with AssignLHSNode {
     var typeId: Option[Identifier] = None
     def repr(): String = {
-        s"${i.repr()} [${es.map { e => e.repr() }.mkString("\n")}]"
+        s"${i.repr()}[${es.map { e => e.repr() }.mkString("\n")}]"
     }
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         i.check(st, errors)
