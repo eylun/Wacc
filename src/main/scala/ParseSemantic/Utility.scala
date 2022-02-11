@@ -1,6 +1,12 @@
 object Utility {
+
+    /** Recursively type checks two types
+      *
+      * Recursive checking is required due to Pair, Null Pair and Nested Pair
+      * being the same type. The only exception is for two Pairs with different
+      * inner types
+      */
     def lrTypeCheck(l: Type, r: Type): Boolean = {
-        // println("hahaha ", l, r)
         (l, r) match {
             case (_, AnyType()) => true
             case (ArrayType(t1, n1), ArrayType(t2, n2)) =>

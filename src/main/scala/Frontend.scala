@@ -10,8 +10,7 @@ object frontend {
         println("Parsing file: " + args(0))
         implicit val eb = new WaccErrorBuilder
         val waccFile = new File(args(0))
-        val parseResult =
-            syntax.parse.parseFromFile(waccFile)
+        val parseResult = syntax.parse.parseFromFile(waccFile)
         parseResult.get match {
             case Success(x) =>
                 println(s"${args(0)} is syntactically valid")
@@ -22,11 +21,12 @@ object frontend {
                     println(s"${args(0)} is semantically valid")
                     System.exit(0)
                 }
-                /* SEMANTIC ERROR */
+
+                /** SEMANTIC ERROR */
                 errorLog.foreach(e => e.render())
                 System.exit(200)
             case Failure(err) =>
-                /* SYNTAX ERROR */
+                /** SYNTAX ERROR */
                 err.render()
                 System.exit(100)
         }
