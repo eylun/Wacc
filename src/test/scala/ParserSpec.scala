@@ -268,16 +268,6 @@ class ParserSpec extends AnyFlatSpec {
         )
     }
 
-    it should "parse a new assignment" in {
-        assertResultEquals(
-          Success(
-          StatListNode(
-          List(NewAssignNode(
-          BoolTypeNode()(0,0),IdentNode("x")(0,0),BoolLiterNode(false)(0,0))(0,0)))(0,0)),
-          syntax.stat.parse("bool x = false")
-        )
-    }
-
     it should "parse a new assignment/variable declaration" in {
         assertResultEquals(
           Success(
@@ -398,6 +388,18 @@ class ParserSpec extends AnyFlatSpec {
         )
     }
 
+    it should "parse more than one statements" in {
+        assertResultEquals(
+          Success(StatListNode(List(
+          PrintNode(StringLiterNode("hello")(0,0))(0,0), SkipNode()(0,0)
+          ))(0,0)),
+          syntax.stat.parse(
+          "print \"hello\"; skip")
+        )
+    }
+
+
+
 
     // behavior of "<func> parsing"
 
@@ -422,7 +424,67 @@ class ParserSpec extends AnyFlatSpec {
         assertResultEquals(Failure(""), syntax.arrayType.parse("pair[]"))
     }
 
-//     behavior of "<pair-type> parsing"
+    behavior of "<pair-type> parsing"
+    it should "parse pairs with base type elements" in {
+        assertResultEquals(
+          Success(PairTypeNode(IntTypeNode()(0,0),BoolTypeNode()(0,0))(0,0)),
+          syntax.anyType.parse("pair (int, bool)")
+        )
+    }
 
-//     behavior of "<type> parsing"
+    it should "parse pairs with array type elements" in {
+        assertResultEquals(
+          Success(PairTypeNode(IntTypeNode()(0,0),ArrayTypeNode(CharTypeNode()(0,0), 1)(0,0))(0,0)),
+          syntax.anyType.parse("pair (int, char[])")
+        )
+        
+        assertResultEquals(
+          Success(PairTypeNode(ArrayTypeNode(IntTypeNode()(0,0), 1)(0,0),
+          ArrayTypeNode(BoolTypeNode()(0,0), 2)(0,0))(0,0)),
+          syntax.anyType.parse("pair (int[], bool[][])")
+        )
+
+    }
+
+    it should "parse pairs with pair type elements" in {
+        assertResultEquals(
+          Success(PairTypeNode(IntTypeNode()(0,0),PairElemTypePairNode()(0,0))(0,0)),
+          syntax.anyType.parse("pair (int, pair)")
+        )
+        
+        assertResultEquals(
+          Success(PairTypeNode(PairElemTypePairNode()(0,0), PairElemTypePairNode()(0,0))(0,0)),
+          syntax.anyType.parse("pair (pair, pair)")
+        )
+
+    }
+
+    it should "fail on nested pair types" in {
+        assertResultEquals(
+          Failure(""),
+          syntax.anyType.parse("pair(int, pair(char, char))")
+        )
+    }
+
+
+    behavior of "<basic-type> parsing"
+    it should "parse all basic types" in {
+        assertResultEquals(
+          Success(IntTypeNode()(0,0)),
+          syntax.anyType.parse("int")
+        )
+
+        assertResultEquals(
+          Success(BoolTypeNode()(0,0)),
+          syntax.anyType.parse("bool")
+        )
+        assertResultEquals(
+          Success(CharTypeNode()(0,0)),
+          syntax.anyType.parse("char")
+        )
+        assertResultEquals(
+          Success(StringTypeNode()(0,0)),
+          syntax.anyType.parse("string")
+        )
+    }
 }
