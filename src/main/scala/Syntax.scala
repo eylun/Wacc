@@ -133,7 +133,8 @@ object lexer {
             )
 
     val esc =
-        ((c: Char) => utility.escapedChars.apply(c)) <#> escapedChar
+        (((c: Char) => utility.escapedChars.apply(c)) <#> escapedChar) <|>
+            escapedChar.unexpected(c => s"\\$c")
 
     val character: Parsley[Char] =
         (noneOf('"', '\'', '\\') <|> ("\\" *> esc)).label("character")
@@ -256,7 +257,9 @@ object syntax {
 
     // program := 'begin' <func>* <stat> 'end'
     lazy val program = ProgramNode(
-      "begin".label("'begin' in beginning of program") ~>
+      "begin".label(
+        "'begin' in beginning of program"
+      ) ~>
           manyUntil(func, attempt(lookAhead(stat))).label(
             "function declarations or statement(s)"
           ),

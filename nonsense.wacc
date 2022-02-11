@@ -9,8 +9,5 @@
 # Program:
 
 begin
-  if true 
-  else
-    skip
-  fi
+  char i = "\H"
 end
