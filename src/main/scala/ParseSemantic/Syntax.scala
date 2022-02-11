@@ -9,7 +9,11 @@ import parsley.errors.combinator.{
     ErrorMethods
 }
 
-/* Lexer */
+/** Lexer
+  *
+  * Contains parsing for literals and simple items. Raw strings defined in lexer
+  * do not have whitespace checking.
+  */
 object lexer {
     import parsley.character.{
         digit,
@@ -36,15 +40,26 @@ object lexer {
       operators = operators
     )
 
+    /** Keyword error widget */
+    lazy val _kw = amend(
+      (lexer.whiteSpace ~> many(
+        satisfy(!_.isWhitespace)
+      ))
+          .map(s => s.mkString)
+          .unexpected(w => {
+              if (lang.keywords(w)) s"keyword $w"
+              else s"\"$w\""
+          })
+    )
+
     val lexer = new Lexer(lang)
 
     def fully[A](p: => Parsley[A]): Parsley[A] =
         lexer.whiteSpace ~> p <~ (eof <|> _kw)
 
-    // def forceKeywordCheck(p: => Parsley[Unit]): Unit = p
-    //     .map(q => lexer.keyword(q))
-    //     .unexpected(s => s"unexpected keyword $s}")
-
+    /** Identifier := ( ‘ ’ | ‘a’-‘z’ | ‘A’-‘Z’ ) ( ‘ ’ | ‘a’-‘z’ | ‘A’-‘Z’ |
+      * ‘0’-‘9’ )*
+      */
     val ident = IdentNode(lexer.identifier.filterOut {
         case v if lang.keywords(v) =>
             s"keyword $v may not be used as an identifier"
@@ -59,24 +74,29 @@ object lexer {
             )
             .label("number")
 
-    // escaped-char := '0' | 'b' | 't' | 'n' | 'f' | 'r' | '"' | ''' | '\'
+    /** escaped-char := '0' | 'b' | 't' | 'n' | 'f' | 'r' | '"' | ''' | '\' */
     val escapedChar =
         ('0' <|> 'b' <|> 't' <|> 'n' <|> 'f' <|> 'r' <|> '\"' <|> '\'' <|> '\\')
             .label(
               "end of escape sequence"
             )
             .explain(
-              "- escape sequences include: \\0, \\b, \\t, \\n, \\f, \\r, \\\", \\\', \\\\"
+              """- escape sequences include:\\0, \\b, \\t, \\n, \\f,
+			  | \\r, \\\", \\\', \\\\""".stripMargin.replaceAll("\n", " ")
             )
 
+    /** Takes a parsed escape character and returns the actual character */
     val esc =
         (((c: Char) => escapedChars.apply(c)) <#> escapedChar) <|>
             amend(anyChar.unexpected(c => s"\\$c"))
 
+    /** character := any-ASCII-character-except-‘\’-‘'’-‘"’
+      * | ‘\’ ⟨escaped-char ⟩
+      */
     val character: Parsley[Char] =
         (noneOf('"', '\'', '\\') <|> ("\\" *> esc)).label("character")
 
-    // int-sign := '+' | '-'
+    /** int-sign := '+' | '-' */
     val intSign =
         (lexer.lexeme("+") #> identity[Long] _ <|> lexer.lexeme("-") #> (
           (x: Long) => -x
@@ -85,13 +105,13 @@ object lexer {
 
     /* LITERALS */
 
-    // char-liter := ''' <character> '''
+    /** char-liter := ''' <character> ''' */
     val charLiter: Parsley[ExprNode] =
         CharLiterNode(
           lexer.lexeme("'" ~> character <~ "'")
         )
 
-    // int-liter := <int-sign>? <digit>+
+    /** int-liter := <int-sign>? <digit>+ */
     val intLiter: Parsley[ExprNode] =
         IntLiterNode(
           amend(
@@ -102,44 +122,40 @@ object lexer {
           ).label("integer literal")
         )
 
-    // TODO: Try to use implicits to not use 'lex.keyword' everytime
-    // bool-liter := true | false
+    /** bool-liter := true | false */
     val boolLiter: Parsley[ExprNode] =
         BoolLiterNode(
           (lexer.keyword("true") #> true <|> lexer.keyword("false") #> false)
               .label("boolean literal")
         )
 
-    // pair-liter := null
+    /** pair-liter := null */
     val pairLiter: Parsley[ExprNode] =
         lexer.keyword("null").label("pair literal") *> PairLiterNode()
 
-    // string-liter := '"' <character>* '"'
+    /** string-liter := '"' <character>* '"' */
     val stringLiter =
         StringLiterNode(
           (lexer
-              .lexeme(
-                "\"" ~> many(
-                  character
-                ) <~ "\""
-              ))
+              .lexeme("\"" ~> many(character) <~ "\""))
               .map(s => s.mkString)
               .label("string literal")
         )
 
-    // expression atoms
+    /** expression atoms */
     val exprAtoms: Parsley[ExprNode] =
         (intLiter <|> boolLiter <|> charLiter <|> stringLiter <|> pairLiter <|>
             ident)
             .label(
-              "expression atoms" //(ie. identifier, integer, boolean, character, string or a pair literal)"
+              "expression atoms"
             )
             .explain(
-              "- Expression Atoms: identifier, integer, boolean, character, string or a pair literal"
+              """- Expression Atoms: identifier, integer, boolean, character, 
+			  |string or a pair literal""".stripMargin.replaceAll("\n", " ")
             )
 
     /* TYPES */
-    // base-type := 'int' | 'bool' | 'char' | 'string'
+    /** base-type := 'int' | 'bool' | 'char' | 'string' */
     lazy val intType = IntTypeNode <# lexer.keyword("int").label("Int Type")
     lazy val boolType = BoolTypeNode <# lexer.keyword("bool").label("Bool Type")
     lazy val charType = CharTypeNode <# lexer.keyword("char").label("Char Type")
@@ -151,21 +167,6 @@ object lexer {
     val pairBaseType =
         PairElemTypePairNode <# lexer.keyword("pair").label("Pair Base Type")
 
-    lazy val _kw = amend(
-      (lexer.whiteSpace ~> many(
-        satisfy(!_.isWhitespace)
-      ))
-          .map(s => s.mkString)
-          .unexpected(w => {
-              if (lang.keywords(w)) s"keyword $w"
-              else s"\"$w\""
-          })
-    )
-
-    // "" #> ((s: String) => {
-    //     if (lang.keywords(s)) unexpected(s"keyword $s")
-    //     else s
-    // })
     object implicits {
         implicit def implicitLexeme(s: String): Parsley[Unit] = {
             if (lang.keywords(s)) lexer.keyword(s)
@@ -175,7 +176,10 @@ object lexer {
     }
 }
 
-/* Syntax Parser */
+/** Syntax Parser
+  *
+  * Contains parsing for values that are that require other parsers
+  */
 object syntax {
     import lexer.{baseType, pairBaseType, fully, exprAtoms, number, ident, _kw}
     import lexer.implicits.implicitLexeme
@@ -192,10 +196,10 @@ object syntax {
     import parsley.expr.{precedence, Ops, InfixL, Prefix, Postfix, chain}
     import parsley.errors.combinator.{ErrorMethods, fail}
 
-    /* TODO: change this at the end - currently set to check multiple
-       expressions separareted by semicolons */
+    /** Entry point into parser */
+    val parse = fully(program)
 
-    // program := 'begin' <func>* <stat> 'end'
+    /** program := 'begin' <func>* <stat> 'end' */
     lazy val program = ProgramNode(
       "begin".label(
         "'begin' in beginning of program"
@@ -206,18 +210,17 @@ object syntax {
       stat.label("statement(s)") <~ ("end".label("end of program") <|> _kw)
     )
 
-    val parse = fully(program)
-
     /* FUNCTIONS */
+    /** Error widget for function parameter failure */
     lazy val _semiFunc = amend("" *> fail("expected function parameters"))
 
+    /** func := ⟨type⟩ ⟨ident⟩ ‘(’ ⟨param-list⟩? ‘)’ ‘is’ ⟨stat⟩ ‘end’ */
     lazy val func: Parsley[FuncNode] =
         FuncNode(
           anyType,
           ident,
-          "(" ~>
-              (sepBy(param, ",").label("function parameters")
-                  <~ ")" <|> _semiFunc),
+          "(" ~> (sepBy(param, ",").label("function parameters") <~ ")"
+              <|> _semiFunc),
           "is" ~> stat
               .collectMsg(
                 "Missing return or exit statement on a path"
@@ -227,16 +230,23 @@ object syntax {
               )(verifyCleanExit) <~ "end"
         ).label("function declaration")
             .explain(
-              "- Function Declaration Syntax: <return-type> <function-name> ( <list-of-parameters> ) is <statement> end"
+              """- Function Declaration Syntax: <return-type> <function-name> 
+			  |( <list-of-parameters> ) is <statement> 
+			  |end""".stripMargin.replaceAll("\n", " ")
             )
 
+    /** param := ⟨type⟩ ⟨ident⟩ */
     lazy val param: Parsley[ParamNode] = ParamNode(anyType, ident)
+
+    /** Function to ensure function bodies can exit
+      *
+      * Either a return or exit statement must be present, or an if-else
+      * statement that both reaches a return or exit statement
+      */
     lazy val verifyFuncExit: PartialFunction[StatNode, StatNode] = {
         case x if canExit(x) => x
     }
-    lazy val verifyCleanExit: PartialFunction[StatNode, StatNode] = {
-        case x if cleanExit(x) => x
-    }
+
     def canExit(base: StatNode): Boolean = {
         base match {
             case ReturnNode(_) | ExitNode(_) => true
@@ -246,6 +256,14 @@ object syntax {
         }
     }
 
+    /** Function to ensure function bodies exits do not have statements after
+      *
+      * If a function exits through an if-else statement, it is syntactically
+      * legal to have extra statements after it.
+      */
+    lazy val verifyCleanExit: PartialFunction[StatNode, StatNode] = {
+        case x if cleanExit(x) => x
+    }
     def cleanExit(base: StatNode): Boolean = {
         base match {
             case ReturnNode(_) | ExitNode(_) => true
@@ -263,9 +281,9 @@ object syntax {
         }
     }
     /* EXPRESSIONS */
-    // expr := literal <|> identifier <|> array-elem <|> unary op
-    // 		<|> bin op <|> paren
-    // unary-oper
+    /** expr := literal <|> identifier <|> array-elem <|> unary op <|> bin op
+      * <|> paren
+      */
     lazy val expr: Parsley[ExprNode] =
         precedence[ExprNode](
           ("(" *> expr <* ")").label("bracketed expressions")
@@ -302,7 +320,8 @@ object syntax {
           Ops(InfixL)(And <# "&&".label("logical operator")),
           Ops(InfixL)(Or <# "||".label("logical operator"))
         )
-    // array-elem := identifier ('[' <expr> ']')+
+
+    /** array-elem := identifier ('[' <expr> ']')+ */
     lazy val arrayElem =
         ArrayElemNode(ident, some("[" *> expr <* "]"))
             .label("array element") // <identifier> [<expression>]")
@@ -310,31 +329,29 @@ object syntax {
               "- Array Elements: <identifier> [<expression>]"
             )
 
-    // pair-elem := 'fst' expr <|> 'snd' expr
+    /** pair-elem := 'fst' expr <|> 'snd' expr */
     lazy val firstPairElem = FirstPairElemNode("fst" *> expr)
     lazy val secondPairElem = SecondPairElemNode("snd" *> expr)
-
     lazy val pairElem = (firstPairElem <|> secondPairElem)
         .label("pair element: 'fst <Expression>' or 'snd <Expression>'")
-    // .explain( "- Structure for Pair Elements: 'fst <Expression>' or 'snd <Expression>'")
 
     /* ASSIGNMENTS */
-    // assignLHS := ident <|> array-elem <|> pair-elem
+    /** assignLHS := ident <|> array-elem <|> pair-elem */
     lazy val assignLHS = (attempt(arrayElem) <|> ident <|> pairElem)
         .label("LHS Assignment: array element, identifier or pair element")
 
-    // arg-list := expr (',' expr )*
+    /** arg-list := expr (',' expr )* */
     lazy val exprArgList: Parsley[List[ExprNode]] = sepBy(expr, ",")
 
-    // Variables newPair, arrayLiter and call are for assign-rhs parsing
-    // newPair := 'newpair''(' expr ',' expr ')'
+    /** Variables newPair, arrayLiter and call are for assign-rhs parsing */
+    /** newPair := 'newpair''(' expr ',' expr ')' */
     lazy val newPair =
         NewPairNode(
           "newpair".label("pair constructor") *> "(" *> expr <* ",",
           expr <* ")"
         )
 
-    // call := ‘call’ ⟨ident⟩ ‘(’ ⟨arg-list⟩? ‘)’
+    /** call := ‘call’ ⟨ident⟩ ‘(’ ⟨arg-list⟩? ‘)’ */
     lazy val call =
         CallNode(
           "call".label("function call") *> ident.label("function name"),
@@ -343,37 +360,60 @@ object syntax {
           ) <* ")"
         )
 
-    // array-liter := ‘[’ ( ⟨expr ⟩ (‘,’ ⟨expr ⟩)* )? ‘]’
-    // ***Note: difference between option vs. optional?
+    /** array-liter := ‘[’ ( ⟨expr ⟩ (‘,’ ⟨expr ⟩)* )? ‘]’ */
     lazy val arrayLiter = ArrayLiterNode(
       ("[" *> sepBy(expr, ",") <* "]").label("array literal")
     )
 
-    // assign-rhs := expr <|> array-liter <|> 'newpair' '(' expr ',' expr ')'
-    // <|> pairElem <|> 'call' ident '(' arg-list? ')'
+    /** assign-rhs := expr <|> array-liter <|> 'newpair' '(' expr ',' expr ')'
+      * <|> pairElem <|> 'call' ident '(' arg-list? ')'
+      */
     lazy val assignRHS =
         (expr <|> arrayLiter <|> newPair <|> pairElem.hide <|> call)
             .label("RHS Assignment")
             .explain(
-              "Valid RHS Assignments include: Expression, Array Literal, New Pair, Pair Element, Function Call"
+              """Valid RHS Assignments include: Expression, Array Literal, 
+			  |New Pair, Pair Element, Function Call
+			  |""".stripMargin.replaceAll("\n", " ")
             )
 
     /* STATEMENTS */
+
+    // stat := 'skip' | ⟨type ⟩ ⟨ident ⟩ ‘=’ ⟨assign-rhs ⟩
+    // 	| ⟨assign-lhs ⟩ ‘=’ ⟨assign-rhs ⟩ | ‘read’ ⟨assign-lhs ⟩
+    //  | ‘free’ ⟨expr ⟩ | ‘return’ ⟨expr ⟩ | ‘exit’ ⟨expr ⟩
+    //  | ‘print’ ⟨expr ⟩ | ‘println’ ⟨expr ⟩
+    //  | ‘if’ ⟨expr ⟩ ‘then’ ⟨stat ⟩ ‘else’ ⟨stat ⟩ ‘fi’
+    //  | ‘while’ ⟨expr ⟩ ‘do’ ⟨stat ⟩ ‘done’
+    //  | ‘begin’ ⟨stat ⟩ ‘end’ | ⟨stat ⟩ ‘;’ ⟨stat ⟩
+
+    lazy val stat: Parsley[StatNode] =
+        (statList <|> statAtoms <* notFollowedBy(";"))
+            .label("statement(s)")
+
+    lazy val statAtoms: Parsley[StatNode] =
+        (skipStat <|> newAssignStat <|> lrAssignStat <|> readStat <|>
+            freeStat <|> returnStat <|> exitStat <|> printStat <|>
+            printlnStat <|> ifThenElseStat <|> whileDoStat <|> beginEndStat)
+            .label("statement atoms")
+            .explain(
+              """- Statement atoms include: 'skip', Assignment, Read, Free, 
+			  |Return, Exit, Print, Conditional or Begin-end statements
+			  |""".stripMargin.replaceAll("\n", " ")
+            )
+
     lazy val skipStat = SkipNode <# "skip".label("skip statement")
     lazy val newAssignStat =
         NewAssignNode(
           anyType,
           ident,
           ("=".label("\"= <RHS assignment>\"") <|> _kw) *> assignRHS
+        ).label(
+          "new assignment statement: <anyType> <identifier> '=' <assign-rhs> "
         )
-            .label(
-              "new assignment statement: <anyType> <identifier> '=' <assign-rhs> "
-            )
-    //.explain("- New Assignment Statement: <anyType> <identifier> '=' <assign-rhs> ")
     lazy val lrAssignStat =
         LRAssignNode(assignLHS, ("=" <|> _kw) *> assignRHS)
             .label("assignment statement: <assign-lhs> '=' <assign-rhs>")
-    //.explain("- Assignment Statement: <assign-lhs> '=' <assign-rhs>")
     lazy val readStat =
         ReadNode("read" *> assignLHS).label("read statement: read <Expression>")
     lazy val freeStat =
@@ -389,7 +429,6 @@ object syntax {
       "println statement: println <Expression>"
     )
 
-    // if-else-stat := ‘if’ ⟨expr ⟩ ‘then’ ⟨stat ⟩ ‘else’ ⟨stat ⟩ ‘fi’
     lazy val ifThenElseStat: Parsley[StatNode] =
         IfThenElseNode(
           "if" *> expr,
@@ -397,7 +436,6 @@ object syntax {
           "else" *> stat <* "fi"
         ).label("if-else conditional")
 
-    // while-do-stat := ‘while’ ⟨expr ⟩ ‘do’ ⟨stat ⟩ ‘done’
     lazy val whileDoStat =
         WhileDoNode(
           "while".label("while statement") *> expr,
@@ -408,7 +446,6 @@ object syntax {
                   .label("do-while loop closing \"done\" keyword")
         )
 
-    // begin-end-stat := ‘begin’ ⟨stat ⟩ ‘end’
     lazy val beginEndStat =
         BeginEndNode(
           "begin".label("begin-end statement") *> stat <* "end".label(
@@ -423,32 +460,13 @@ object syntax {
             ";".hide
           )
         )
-    // stat := 'skip' | ⟨type ⟩ ⟨ident ⟩ ‘=’ ⟨assign-rhs ⟩
-    // 	| ⟨assign-lhs ⟩ ‘=’ ⟨assign-rhs ⟩ | ‘read’ ⟨assign-lhs ⟩
-    //  | ‘free’ ⟨expr ⟩ | ‘return’ ⟨expr ⟩ | ‘exit’ ⟨expr ⟩
-    //  | ‘print’ ⟨expr ⟩ | ‘println’ ⟨expr ⟩
-    //  | ‘if’ ⟨expr ⟩ ‘then’ ⟨stat ⟩ ‘else’ ⟨stat ⟩ ‘fi’
-    //  | ‘while’ ⟨expr ⟩ ‘do’ ⟨stat ⟩ ‘done’
-    //  | ‘begin’ ⟨stat ⟩ ‘end’ | ⟨stat ⟩ ‘;’ ⟨stat ⟩
-    lazy val statAtoms: Parsley[StatNode] =
-        (skipStat <|> newAssignStat <|> lrAssignStat <|> readStat <|>
-            freeStat <|> returnStat <|> exitStat <|> printStat <|>
-            printlnStat <|> ifThenElseStat <|> whileDoStat <|> beginEndStat)
-            .label("statement atoms")
-            .explain(
-              "- Statement atoms include: 'skip', Assignment, Read, Free, Return, Exit, Print, Conditional or Begin-end statements"
-            )
-
-    lazy val stat: Parsley[StatNode] =
-        (statList <|> statAtoms <* notFollowedBy(";"))
-            .label("statement(s)")
 
     /* TYPES */
-    // type := <base-type> | <array-type> | <pair-type>
+    /** type := <base-type> | <array-type> | <pair-type> */
     lazy val anyType: Parsley[TypeNode] =
         attempt(arrayType) <|> pairType <|> baseType
 
-    // array-type := <type> '[' ']'
+    /** array-type := <type> '[' ']' */
     lazy val arrayType: Parsley[ArrayTypeNode] =
         chain
             .postfix1(
@@ -457,12 +475,12 @@ object syntax {
             )
             .label("Array Type")
 
-    // pair-elem-type := <base-type> | <array-type> | 'pair'
+    /** pair-elem-type := <base-type> | <array-type> | 'pair' */
     lazy val pairElemType: Parsley[PairElemTypeNode] =
         (attempt(arrayType) <|> baseType <|> pairBaseType)
             .label("Pair Element Type: any valid type")
 
-    // pair-type := 'pair' '(' <pair-elem-type> ',' <pair-elem-type> ')'
+    /** pair-type := 'pair' '(' <pair-elem-type> ',' <pair-elem-type> ')' */
     lazy val pairType: Parsley[PairTypeNode] = PairTypeNode(
       "pair" *> "(".label(
         " \"(\" <Any Type> , <Any Type> \")\" "
