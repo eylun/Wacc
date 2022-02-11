@@ -14,8 +14,8 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         this.node = n
     }
 
-    behavior of "type check of <type> nodes"
-    it should "correctly interpret <base-type> node types" in {
+    behavior of "semantic check of <type> nodes"
+    it should "correctly check <base-type> node types" in {
         resetNode(IntTypeNode()((0,0)))
         node.check(st, log)
         assertTypeIdEquals(Some(IntType()), node.typeId, ListBuffer(), log)
@@ -32,7 +32,7 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         node.check(st, log)
         assertTypeIdEquals(Some(StringType()), node.typeId, ListBuffer(), log)
     }
-    it should "correctly interpret <pair-type> node types" in {
+    it should "correctly check <pair-type> node types" in {
         // pair of 2 base types
         resetNode(PairTypeNode(IntTypeNode()((0,0)), 
                                 BoolTypeNode()((0,0)))((0,0)))
@@ -54,7 +54,7 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         assertTypeIdEquals(Some(PairType(ArrayType(IntType(), 3), StringType())),
                             node.typeId, ListBuffer(), log)
     }
-    it should "correctly interpret <array-type> node types" in {
+    it should "correctly check <array-type> node types" in {
         // 1-dimensional char array type
         resetNode(ArrayTypeNode(CharTypeNode()((0,0)), 1)((0,0)))
         node.check(st, log)
@@ -74,5 +74,84 @@ class SemanticCheckerSpec extends AnyFlatSpec {
         assertTypeIdEquals(Some(ArrayType(PairType(ArrayType(IntType(), 1),
                                                     IntType()), 2)),
                             node.typeId, ListBuffer(), log)
+    }
+    
+    behavior of "semantic check of literals"
+    it should "correctly check integer values" in {
+        resetNode(IntLiterNode(3)((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(IntType()), node.typeId, ListBuffer(), log)
+    }
+    it should "correctly check boolean values" in {
+        resetNode(BoolLiterNode(true)((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(BoolType()), node.typeId, ListBuffer(), log)
+    }
+    it should "correctly check character literals" in {
+        resetNode(CharLiterNode('p')((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(CharType()), node.typeId, ListBuffer(), log)
+    }   
+    it should "correctly check string literals" in {
+        resetNode(StringLiterNode("some string")((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(StringType()), node.typeId, ListBuffer(), log)
+    }
+    it should "correctly check pair literals" in {
+        resetNode(new PairLiterNode()((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(Some(NullPairType()), node.typeId, ListBuffer(), log)
+    }
+        
+    behavior of "semantic check of variables"
+    it should "get the type of variables in the current scope" in {
+        resetNode(IdentNode("var1")((0,0)))
+        st.add("var1", Variable(IntType()))
+        node.check(st, log)
+        assertTypeIdEquals(Some(Variable(IntType())), node.typeId, 
+                        ListBuffer(), log)
+    }
+    it should "search for variables in the outer scope" in {
+        resetNode(IdentNode("_var_2")((0,0)))
+        val innerST = SymbolTable(st)
+        st.add("_var_2", Variable(PairType(StringType(), IntType())))
+        node.check(innerST, log)
+        assertTypeIdEquals(Some(Variable(PairType(StringType(), IntType()))),
+                            node.typeId, ListBuffer(), log)
+    }
+    it should "get the type of the variable in the smallest scope" in {
+        resetNode(IdentNode("inTwoPlaces")((0,0)))
+        val innerST = SymbolTable(st)
+        st.add("inTwoPlaces", Variable(BoolType()))
+        innerST.add("inTwoPlaces", Variable(CharType()))
+        node.check(innerST, log)
+        assertTypeIdEquals(Some(Variable(CharType())), node.typeId, 
+                            ListBuffer(), log)
+    }
+    it should "produce an error for variables not in scope" in {
+        resetNode(IdentNode("id_2")((0,0)))
+        node.check(st, log)
+        assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((0,0), 
+                                    "id_2 has not been defined in this scope")),
+                            log)
+    }
+    it should "not get the type of variables in a smaller scope" in {
+        resetNode(IdentNode("cannot_be_accessed")((1,1)))
+        val innerST = SymbolTable(st)
+        innerST.add("cannot_be_accessed", Variable(NullPairType()))
+        node.check(st, log)
+        assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((1,1),
+                    "cannot_be_accessed has not been defined in this scope")),
+                    log)
+    }
+    it should "not get the type of variables in another scope with the same outer scope" in {
+        resetNode(IdentNode("inAnotherWorld")((0,1)))
+        val thisST = SymbolTable(st)
+        val otherST = SymbolTable(st)
+        otherST.add("inAnotherWord", Variable(StringType()))
+        node.check(thisST, log)
+        assertTypeIdEquals(None, node.typeId, ListBuffer(WaccError((0,1),
+                        "inAnotherWorld has not been defined in this scope")),
+                        log)
     }
 }
