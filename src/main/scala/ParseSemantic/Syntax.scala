@@ -9,8 +9,6 @@ import parsley.errors.combinator.{
     ErrorMethods
 }
 
-object utility {}
-
 /* Lexer */
 object lexer {
     import parsley.character.{
