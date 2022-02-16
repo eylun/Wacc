@@ -7,19 +7,26 @@ object frontend {
     import parsley.{Success, Failure}
     def main(args: Array[String]): Unit = {
         assert(args.length == 1, "Usage: ./compile <wacc filename>")
-        println("Parsing file: " + args(0))
+        val fn = args(0)
+        println("Parsing file: " + fn)
         implicit val eb = new WaccErrorBuilder
-        val waccFile = new File(args(0))
-        val parseResult = syntax.parse.parseFromFile(waccFile)
-        parseResult.get match {
-            case Success(x) =>
-                println(s"${args(0)} is syntactically valid")
+        val waccFile = new File(fn)
+        val parseResult = syntax.parse.parseFromFile(waccFile).get
+        parseResult match {
+            case Success(result) =>
+                println(s"$fn is syntactically valid")
                 val topLevelST = SymbolTable()
                 val errorLog = ListBuffer[WaccError]()
-                x.check(topLevelST, errorLog)
+                result.check(topLevelST, errorLog)
                 if (errorLog.length == 0) {
-                    println(s"${args(0)} is semantically valid")
-                    System.exit(0)
+                    println(s"$fn is semantically valid")
+
+                    /** Code Generation */
+                    ARMRepresentation(
+                      result,
+                      topLevelST,
+                      cleanFilename(fn)
+                    )
                 }
 
                 /** SEMANTIC ERROR */
@@ -30,5 +37,8 @@ object frontend {
                 err.render()
                 System.exit(100)
         }
+
     }
+
+    def cleanFilename(fn: String): String = fn.take(fn.lastIndexOf(".")) + ".s"
 }
