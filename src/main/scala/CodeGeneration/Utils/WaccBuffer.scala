@@ -9,7 +9,10 @@ class WaccBuffer {
         mutable.ListBuffer[Instruction]().empty
 
     private val mainStatements: mutable.ListBuffer[Instruction] =
-        mutable.ListBuffer[Instruction]().empty
+        mutable.ListBuffer[Instruction](
+          Directive("text"),
+          Directive("global main")
+        )
 
     private val functions: mutable.ListBuffer[Instruction] =
         mutable.ListBuffer[Instruction]().empty
