@@ -193,11 +193,27 @@ object transStatement {
                           printIntLiterFunc(idx)
                         )
 
-                        /** Translate the expressions and branch */
+                        /** Call transExpression and branch */
                         transExpression(e) ++
                             List(BranchLinkInstr("p_print_int"))
 
                     case BoolLiterNode(b) =>
+                        /** Add DataMsg for Bool Literal true & false */
+                        Int idxTrue = collector.tickDataMsg()
+                        Int idxFalse = collector.tickDataMsg()
+                        collector.addDataMsg(
+                          getPrintTrueDirective(idxTrue)
+                        )
+                        collector.addDataMsg(
+                          getPrintFalseDirective(idxFalse)
+                        )
+
+                        /** Add p_print_bool function */
+                        collector.addFunc(
+                          printBoolLiterFunc(idxTrue, idxFalse)
+                        )
+
+                        /** Call transExpression and branch */
                         transExpression(e) ++
                             List(BranchLinkInstr("p_print_bool"))
                     case CharLiterNode(c) =>

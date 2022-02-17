@@ -63,7 +63,7 @@ case class LoadImmOffsetInstr(
     condition: Condition.Condition = Condition.AL
 ) extends Instruction
 
-case class LoadImmLabelInstr(
+case class LoadLabelInstr(
     dst: Register,
     label: String,
     condition: Condition.Condition = Condition.AL
