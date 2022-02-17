@@ -12,7 +12,8 @@ class StackFrame(val offsetMap: Map[String, Int], val totalBytes: Int) {
               SubInstr(
                 sp,
                 sp,
-                ImmOffset(totalBytes)
+                ImmOffset(totalBytes),
+                false
               )
             )
     }
@@ -24,7 +25,8 @@ class StackFrame(val offsetMap: Map[String, Int], val totalBytes: Int) {
               AddInstr(
                 sp,
                 sp,
-                ImmOffset(totalBytes)
+                ImmOffset(totalBytes),
+                false
               )
             )
     }
