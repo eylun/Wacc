@@ -42,6 +42,12 @@ object transExpression {
                   )
                 )
             }
-            case _ =>
+            case PairLiterNode() => {
+                collector.addDataMsg(
+                  getStringDirective("null", collector.tickDataMsg())
+                )
+                List(LoadLabelInstr(Reg(0), s"=$str"))
+            }
+            case _ => List[Instruction]().empty
         }
 }

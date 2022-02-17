@@ -246,81 +246,8 @@ object transStatement {
                     }
                 }
             }
-<<<<<<< HEAD
             case _ =>
         }
-
-<<<<<<< HEAD
         collector.addStatement(stackFrame.tail)
-=======
-=======
-            case PrintNode(e) => {
-                e match {
-                    case IntLiterNode(i) =>
-                        /** Add DataMsg for the Int literal */
-                        Int idx = collector.tickDataMsg()
-                        collector.addDataMsg(getPrintIntDirective(i, idx))
-
-                        /** Add p_print_int function */
-                        collector.addFunc(
-                          printIntLiterFunc(idx)
-                        )
-
-                        /** Call transExpression and branch */
-                        transExpression(e) ++
-                            List(BranchLinkInstr("p_print_int"))
-
-                    case BoolLiterNode(b) =>
-                        /** Add DataMsg for Bool Literal true & false */
-                        Int idxTrue = collector.tickDataMsg()
-                        Int idxFalse = collector.tickDataMsg()
-                        collector.addDataMsg(
-                          getPrintTrueDirective(idxTrue)
-                        )
-                        collector.addDataMsg(
-                          getPrintFalseDirective(idxFalse)
-                        )
-
-                        /** Add p_print_bool function */
-                        collector.addFunc(
-                          printBoolLiterFunc(idxTrue, idxFalse)
-                        )
-
-                        /** Call transExpression and branch */
-                        transExpression(e) ++
-                            List(BranchLinkInstr("p_print_bool"))
-
-                    case CharLiterNode(c) =>
-                        transExpression(e) ++
-                            List(
-                              BranchLinkInstr("putchar"),
-                              MoveInstr(Reg(0), ImmOffset(0)),
-                              PopInstr(pc)
-                            )
-
-                    case StrLiterNode(str) =>
-                        /** Add DataMsg for string formating */
-                        Int idx = collector.tickDataMsg()
-                        collector.addDataMsg(getPrintStrDirective(idx))
-
-                        /** Add p_print_string function */
-                        collector.addFunc(
-                          printStrLiterFunc(idx)
-                        )
-
-                        /** Append transedExpr and branch */
-                        transExpression(e) ++
-                            List(BranchLinkInstr("p_print_string"))
-
-                    case PairLiterNode(p) =>
-                        transExpression(e) ++
-                            List(BranchLinkInstr("p_print_pair"))
-                }
-            }
-
->>>>>>> feat: print statement case for int literals
-            case _ => List[Instruction]().empty
-        }
->>>>>>> fix: rebase & minor refactor
     }
 }
