@@ -42,6 +42,18 @@ object transExpression {
                   )
                 )
             }
+            case Sub(e1, e2) => {
+                transExpression(e1, stackFrame)
+                collector.addStatement(List(PushInstr(Reg(0))))
+                transExpression(e2, stackFrame)
+                collector.addStatement(
+                  List(
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(Reg(0)),
+                    SubInstr(Reg(0), Reg(0), RegOp(Reg(1)))
+                  )
+                )
+            }
             case _ =>
         }
 }
