@@ -116,6 +116,7 @@ object transStatement {
                     case SecondPairElemNode(e) => // TODO complete for second
                 }
             }
+<<<<<<< HEAD
             case ite @ IfThenElseNode(e, s1, s2) => {
                 val labelFalse = s"ite_${collector.tickIte()}"
                 val labelTrue = s"ite_${collector.tickIte()}"
@@ -173,6 +174,9 @@ object transStatement {
                 )
             }
             case SkipNode() =>
+=======
+            case SkipNode() => { List[Instruction]() }
+>>>>>>> feat: print statement case for pair literal
             case ExitNode(e) => {
                 transExpression(e, stackFrame)
                 collector.addStatement(
@@ -183,7 +187,8 @@ object transStatement {
             }
             case PrintNode(e) => {
                 e match {
-                    case IntLiterNode(i) =>
+                    case IntLiterNode(_) => {
+
                         /** Add DataMsg for the Int literal */
                         Int idx = collector.tickDataMsg()
                         collector.addDataMsg(getPrintIntDirective(i, idx))
@@ -196,8 +201,10 @@ object transStatement {
                         /** Call transExpression and branch */
                         transExpression(e) ++
                             List(BranchLinkInstr("p_print_int"))
+                    }
 
-                    case BoolLiterNode(b) =>
+                    case BoolLiterNode(_) => {
+
                         /** Add DataMsg for Bool Literal true & false */
                         Int idxTrue = collector.tickDataMsg()
                         Int idxFalse = collector.tickDataMsg()
@@ -216,16 +223,19 @@ object transStatement {
                         /** Call transExpression and branch */
                         transExpression(e) ++
                             List(BranchLinkInstr("p_print_bool"))
+                    }
 
-                    case CharLiterNode(c) =>
+                    case CharLiterNode(_) => {
                         transExpression(e) ++
                             List(
                               BranchLinkInstr("putchar"),
                               MoveInstr(Reg(0), ImmOffset(0)),
                               PopInstr(pc)
                             )
+                    }
 
-                    case StrLiterNode(str) =>
+                    case StrLiterNode(_) || PairLiterNode() => {
+
                         /** Add DataMsg for string formating */
                         Int idx = collector.tickDataMsg()
                         collector.addDataMsg(getPrintStrDirective(idx))
@@ -238,10 +248,7 @@ object transStatement {
                         /** Append transedExpr and branch */
                         transExpression(e) ++
                             List(BranchLinkInstr("p_print_string"))
-
-                    case PairLiterNode(p) =>
-                        transExpression(e) ++
-                            List(BranchLinkInstr("p_print_pair"))
+                    }
                 }
             }
             case _ =>
