@@ -46,6 +46,9 @@ case class DivInstr(
 case class LoadInstr(dst: Register, src: Register, offset: SecondOperand)
     extends Instruction
 
+case class LoadImmInstr(dst: Register, imm: Int)
+    extends Instruction
+
 case class StoreInstr(dst: Register, src: Register, offset: SecondOperand)
     extends Instruction
 

@@ -18,6 +18,10 @@ object transStatement {
                 )
                 List[Instruction]().empty
             }
+            case SkipNode() => List[Instruction]()
+            case ExitNode(e) => {
+                transExpression(e) ++ List(BranchLinkInstr("exit"))
+            }
             case _ => List[Instruction]().empty
         }))
 }
