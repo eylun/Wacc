@@ -40,7 +40,13 @@ class StackFrame(val offsetMap: Map[String, Int], val totalBytes: Int) {
         StackFrame((newMap ++ sf.offsetMap).toMap, sf.totalBytes)
     }
 
-    def getOffset(ident: String): Option[Int] = offsetMap.get(ident)
+    def getOffset(ident: String): Int = {
+        offsetMap.get(ident) match {
+            case Some(x) => x
+            case None => 
+                throw new RuntimeException("ident should exist in stack frame")
+        }
+    } 
 }
 object StackFrame {
     def apply(st: SymbolTable) =

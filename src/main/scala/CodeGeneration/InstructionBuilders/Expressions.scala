@@ -10,7 +10,8 @@ object transExpression {
                 transExpression(e2) ++ 
                 List(MoveInstr(Reg(1), RegOp(Reg(0))), 
                     PopInstr(Reg(0)), AddInstr(Reg(0), Reg(0), RegOp(Reg(1))))  
-            }
+            } // TODO add logic for overflow handling
+            
             case IntLiterNode(n) => List(LoadImmInstr(Reg(0), n))
             case CharLiterNode(c) => List(MoveInstr(Reg(0), ImmOffset(c))) 
             case BoolLiterNode(true) => List(MoveInstr(Reg(0), ImmOffset(1))) 

@@ -7,6 +7,21 @@ object transStatement {
         // the statement, this also means that it should call transStatement
         // on nested statements (like in if-then-else, while-do, begin-end)
         collector.addStatement(stackFrame.emit(statNode match {
+            case NewAssignNode(t, i, r) => {
+                transRHS(r, stackFrame) ++ 
+                List(StoreInstr(Reg(0), StackPtrReg(), 
+                                ImmOffset(stackFrame.getOffset(i.s))))
+            }
+            case LRAssignNode(l, r) => {
+                l match {
+                    case IdentNode(i) => { 
+                        transRHS(r, stackFrame) ++
+                        List(StoreInstr(Reg(0), StackPtrReg(), 
+                                        ImmOffset(stackFrame.getOffset(i))))
+                    }
+                    case _ => List() // TODO complete for array and pair elems
+                }
+            }
             case ite @ IfThenElseNode(e, s1, s2) => {
                 transStatement(
                   s1,
