@@ -54,7 +54,7 @@ object transStatement {
                         transExpression(e, stackFrame)
                         collector.addStatement(
                           List(
-                            BranchLinkInstr("exit")
+                            BranchLinkInstr("exit", Condition.AL)
                           )
                         )
                     }
