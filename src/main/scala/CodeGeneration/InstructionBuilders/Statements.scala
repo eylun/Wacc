@@ -226,8 +226,19 @@ object transStatement {
                             )
 
                     case StrLiterNode(str) =>
+                        /** Add DataMsg for string formating */
+                        Int idx = collector.tickDataMsg()
+                        collector.addDataMsg(getPrintStrDirective(idx))
+
+                        /** Add p_print_string function */
+                        collector.addFunc(
+                          printStrLiterFunc(idx)
+                        )
+
+                        /** Append transedExpr and branch */
                         transExpression(e) ++
                             List(BranchLinkInstr("p_print_string"))
+
                     case PairLiterNode(p) =>
                         transExpression(e) ++
                             List(BranchLinkInstr("p_print_pair"))

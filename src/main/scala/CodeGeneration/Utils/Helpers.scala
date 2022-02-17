@@ -127,6 +127,30 @@ object Helpers {
         )
     }
 
+    /** Print String Literal */
+    def getPrintStrDirective(idx: Int): List[Instruction] = {
+        List(
+          Label(s"msg_$idx:"),
+          Directive(s".word 5"),
+          Directive(s".ascii \"%.*s\\0\"")
+        )
+    }
+
+    def printStrLiterFunc(idx: Int): List[Instruction] = {
+        List(
+          Label("p_print_string"),
+          PushInstr(lr),
+          LoadRegMemInstr(Reg(1), Reg(0)),
+          AddInstr(Reg(2), Reg(0), ImmOffset(4)),
+          LoadLabelInstr(Reg(0), s"msg_$idx:"),
+          AddInstr(Reg(0), Reg(0), ImmOffset(4)),
+          BranchLinkInstr("printf"),
+          MoveInstr(Reg(0), ImmOffset(0)),
+          BranchLinkInstr("fflush"),
+          PopInstr(pc)
+        )
+    }
+
     /** Enumerations: Condition Codes, Flags */
     object UtilFlag extends Enumeration {
         type UtilFlag = Value
