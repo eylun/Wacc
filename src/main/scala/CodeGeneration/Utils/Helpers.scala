@@ -72,7 +72,7 @@ object Helpers {
     }
 
     /** PRINT STATEMENT HELPERS */
-    /** Print IntLiteral */
+    /** Print Int Literal */
     def getPrintIntDirective(i: Int, idx: Int): List[Instruction] = {
         List(
           Label(s"msg_$idx:"),
@@ -85,7 +85,7 @@ object Helpers {
         List(
           Label("p_print_int"),
           PushInstr(lr),
-          MoveInstr(Reg(1), Reg(0)),
+          MoveInstr(Reg(1), RegOp(Reg(0))),
           LoadLabelInstr(Reg(0), s"msg_$idx:"),
           AddInstr(Reg(0), Reg(0), ImmOffset(4)),
           BranchLinkInstr("printf"),
@@ -95,6 +95,7 @@ object Helpers {
         )
     }
 
+    /** Print Bool Literal */
     def getPrintTrueDirective(idx: Int): List[Instruction] = {
         List(
           Label(s"msg_$idx:"),

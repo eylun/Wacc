@@ -216,9 +216,15 @@ object transStatement {
                         /** Call transExpression and branch */
                         transExpression(e) ++
                             List(BranchLinkInstr("p_print_bool"))
+
                     case CharLiterNode(c) =>
                         transExpression(e) ++
-                            List(BranchLinkInstr("p_print_char"))
+                            List(
+                              BranchLinkInstr("putchar"),
+                              MoveInstr(Reg(0), ImmOffset(0)),
+                              PopInstr(pc)
+                            )
+
                     case StrLiterNode(str) =>
                         transExpression(e) ++
                             List(BranchLinkInstr("p_print_string"))
