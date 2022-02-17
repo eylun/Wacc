@@ -26,7 +26,7 @@ object transExpression {
                 collector.addDataMsg(
                   getStringDirective(str, msgCount)
                 )
-                collector.addDataMsg(
+                collector.addStatement(
                   List(LoadImmLabelInstr(Reg(0), s"msg_$msgCount"))
                 )
             }
