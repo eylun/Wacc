@@ -3,7 +3,7 @@ sealed trait Instruction
 /** Enumerations: Condition Codes, Flags */
 object Condition extends Enumeration {
     type Condition = Value
-    val EQ, NE, LE, LT, GE, GT, AL = Value
+    val EQ, NE, LE, LT, GE, GT, AL, HS, LO, MI, PL, VS, VC, HI, LS = Value
 }
 
 // TODO: Fill up all of this
@@ -21,10 +21,12 @@ case class Label(labelName: String) extends Instruction {}
 case class Directive(name: String) extends Instruction
 
 /* Arithmetic Operations */
-case class AddInstr(dst: Register, fstOp: Register, sndOp: SecondOperand)
+case class AddInstr(dst: Register, fstOp: Register, sndOp: SecondOperand, 
+                    setFlags: Boolean)
     extends Instruction
 
-case class SubInstr(dst: Register, fstOp: Register, sndOp: SecondOperand)
+case class SubInstr(dst: Register, fstOp: Register, sndOp: SecondOperand,
+                    setFlags: Boolean)
     extends Instruction
 
 case class SMullInstr(
@@ -59,7 +61,7 @@ case class MoveInstr(dst: Register, src: SecondOperand) extends Instruction
 case class BranchInstr(label: String, condition: Condition.Condition)
     extends Instruction
 
-case class BranchLinkInstr(label: String) extends Instruction
+case class BranchLinkInstr(label: String, condition: Condition.Condition) extends Instruction
 
 /** Logic Operations */
 case class AndInstr(fstOp: Register, sndOp: Register) extends Instruction

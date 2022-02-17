@@ -38,10 +38,12 @@ object transExpression {
                   List(
                     MoveInstr(Reg(1), RegOp(Reg(0))),
                     PopInstr(Reg(0)),
-                    AddInstr(Reg(0), Reg(0), RegOp(Reg(1)))
+                    AddInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.VS),
+                    BranchLinkInstr("exit", Condition.AL)
                   )
                 )
-            }
+            } // TODO: create labels for BLs
             case Sub(e1, e2) => {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(Reg(0))))
@@ -50,10 +52,12 @@ object transExpression {
                   List(
                     MoveInstr(Reg(1), RegOp(Reg(0))),
                     PopInstr(Reg(0)),
-                    SubInstr(Reg(0), Reg(0), RegOp(Reg(1)))
+                    SubInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.VS),
+                    BranchLinkInstr("exit", Condition.AL)
                   )
                 )
-            }
+            } // TODO: create labels for BLs
             case Mult(e1, e2) => {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(Reg(0))))
@@ -62,10 +66,27 @@ object transExpression {
                     List(
                         MoveInstr(Reg(1), RegOp(Reg(0))),
                         PopInstr(Reg(0)),
-                        SMullInstr(Reg(0), Reg(1), Reg(0), Reg(1))
+                        SMullInstr(Reg(0), Reg(1), Reg(0), Reg(1)),
+                        CmpInstr(Reg(0), RegOp(Reg(1))),
+                        BranchLinkInstr("p_throw_overflow_error", Condition.NE),
+                        BranchLinkInstr("exit", Condition.AL)
                     )
                 )
-            } // TODO: handle overflow - CMP r1, r0, ASR #31
+            } // TODO: handle overflow - CMP r1, r0, ASR #31, create labels for BLs
+            case Div(e1, e2) => {
+                transExpression(e1, stackFrame)
+                collector.addStatement(List(PushInstr(Reg(0))))
+                transExpression(e2, stackFrame)
+                collector.addStatement(
+                    List(
+                        MoveInstr(Reg(1), RegOp(Reg(0))),
+                        PopInstr(Reg(0)),
+                        BranchLinkInstr("p_check_divide_by_zero", Condition.AL),
+                        BranchLinkInstr("__aeabi_idiv", Condition.AL),
+                        BranchLinkInstr("exit", Condition.AL)
+                    )
+                )
+            } // TODO: create labels for the BLs
             case _ =>
         }
 }
