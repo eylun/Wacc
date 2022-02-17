@@ -181,6 +181,36 @@ object transStatement {
                   )
                 )
             }
+            case PrintNode(e) => {
+                e match {
+                    case IntLiterNode(i) =>
+                        /** Add DataMsg for the Int literal */
+                        Int idx = collector.tickDataMsg()
+                        collector.addDataMsg(getPrintIntDirective(i, idx))
+
+                        /** Add p_print_int function */
+                        collector.addFunc(
+                          printIntLiterFunc(idx)
+                        )
+
+                        /** Translate the expressions and branch */
+                        transExpression(e) ++
+                            List(BranchLinkInstr("p_print_int"))
+
+                    case BoolLiterNode(b) =>
+                        transExpression(e) ++
+                            List(BranchLinkInstr("p_print_bool"))
+                    case CharLiterNode(c) =>
+                        transExpression(e) ++
+                            List(BranchLinkInstr("p_print_char"))
+                    case StrLiterNode(str) =>
+                        transExpression(e) ++
+                            List(BranchLinkInstr("p_print_string"))
+                    case PairLiterNode(p) =>
+                        transExpression(e) ++
+                            List(BranchLinkInstr("p_print_pair"))
+                }
+            }
             case _ =>
         }
 

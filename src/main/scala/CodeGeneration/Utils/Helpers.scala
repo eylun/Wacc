@@ -71,6 +71,30 @@ object Helpers {
         collector.addStatement(List(PushInstr(List(Reg(0)))))
     }
 
+    /** PRINT STATEMENT HELPERS */
+    /** Print IntLiteral */
+    def getPrintIntDirective(i: Int, idx: Int): List[Instruction] = {
+        List(
+          Label(s"msg_$idx:"),
+          Directive(s".word 3"),
+          Directive(s".ascii \"%d\\0\"")
+        )
+    }
+
+    def printIntLiterFunc(idx: Int): List[Instruction] = {
+        List(
+          Label("p_print_int"),
+          PushInstr(lr),
+          MoveInstr(Reg(1), Reg(0)),
+          LoadImmLabelInstr(Reg(0), s"msg_$idx:"),
+          AddInstr(Reg(0), Reg(0), ImmOffset(4)),
+          BranchLinkInstr("printf"),
+          MoveInstr(Reg(0), ImmOffset(0)),
+          BranchLinkInstr("fflush"),
+          PopInstr(pc)
+        )
+    }
+
     /** Enumerations: Condition Codes, Flags */
     object UtilFlag extends Enumeration {
         type UtilFlag = Value

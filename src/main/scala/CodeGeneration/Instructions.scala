@@ -50,12 +50,24 @@ case class DivInstr(
 
 /** Loading and Storing Instructions */
 /** Load from: memory */
-case class LoadInstr(dst: Register, src: Register, offset: SecondOperand)
-    extends Instruction
+case class LoadInstr(
+    dst: Register,
+    src: Register,
+    offset: SecondOperand,
+    condition: Condition.Condition = Condition.AL
+) extends Instruction
 
-case class LoadImmIntInstr(dst: Register, imm: Int) extends Instruction
+case class LoadImmOffsetInstr(
+    dst: Register,
+    imm: Int,
+    condition: Condition.Condition = Condition.AL
+) extends Instruction
 
-case class LoadImmLabelInstr(dst: Register, label: String) extends Instruction
+case class LoadImmLabelInstr(
+    dst: Register,
+    label: String,
+    condition: Condition.Condition = Condition.AL
+) extends Instruction
 
 case class StoreInstr(src: Register, dst: Register, offset: SecondOperand)
     extends Instruction
