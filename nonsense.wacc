@@ -9,5 +9,5 @@
 # Program:
 
 begin
-	skip
+	int x = 1 + 2
 end

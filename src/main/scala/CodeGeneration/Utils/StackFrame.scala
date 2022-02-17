@@ -5,7 +5,7 @@ import scala.collection.immutable.Map
 
 class StackFrame(val offsetMap: Map[String, Int], val totalBytes: Int) {
 
-    private val head: List[Instruction] = totalBytes match {
+    val head: List[Instruction] = totalBytes match {
         case 0 => List.empty
         case _ =>
             List(
@@ -17,7 +17,7 @@ class StackFrame(val offsetMap: Map[String, Int], val totalBytes: Int) {
             )
     }
 
-    private val tail: List[Instruction] = totalBytes match {
+    val tail: List[Instruction] = totalBytes match {
         case 0 => List.empty
         case _ =>
             List(
@@ -28,9 +28,6 @@ class StackFrame(val offsetMap: Map[String, Int], val totalBytes: Int) {
               )
             )
     }
-
-    def emit(instructions: List[Instruction]): List[Instruction] =
-        head ++ instructions ++ tail
 
     def join(sf: StackFrame): StackFrame = {
         val newMap: mutable.Map[String, Int] = mutable.Map[String, Int]()
@@ -43,10 +40,10 @@ class StackFrame(val offsetMap: Map[String, Int], val totalBytes: Int) {
     def getOffset(ident: String): Int = {
         offsetMap.get(ident) match {
             case Some(x) => x
-            case None => 
+            case None =>
                 throw new RuntimeException("ident should exist in stack frame")
         }
-    } 
+    }
 }
 object StackFrame {
     def apply(st: SymbolTable) =
@@ -62,6 +59,8 @@ object StackFrame {
         var acc = 0
         val map = mutable.Map[String, Int]()
         st.dict.foreach {
+            /** return is a only for semantic checking */
+            case ("return", _) =>
             case (k, v) => {
                 map += (k -> acc)
                 acc += getTypeSize(v)
