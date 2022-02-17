@@ -1,12 +1,18 @@
 sealed trait Instruction
 
+/** Enumerations: Condition Codes, Flags */
+object Condition extends Enumeration {
+    type Condition = Value
+    val EQ, NE, LE, LT, GE, GT, AL = Value
+}
+
 // TODO: Fill up all of this
 
 /** Label
   *
   * Labels are in the form <label>:
   */
-case class Label(labelName: String) extends Instruction
+case class Label(labelName: String) extends Instruction {}
 
 /** Directive
   *
@@ -15,37 +21,67 @@ case class Label(labelName: String) extends Instruction
 case class Directive(name: String) extends Instruction
 
 /* Arithmetic Operations */
-case class AddInstr() extends Instruction
+case class AddInstr(dst: Register, fstOp: Register, sndOp: SecondOperand)
+    extends Instruction
 
-case class SubInstr() extends Instruction
+case class SubInstr(dst: Register, fstOp: Register, sndOp: SecondOperand)
+    extends Instruction
 
-case class SMullInstr() extends Instruction
+case class SMullInstr(
+    regLo: Register,
+    regHi: Register,
+    fstOp: Register,
+    sndOp: Register
+) extends Instruction
 
-case class DivInstr() extends Instruction
-
-case class LoadInstr() extends Instruction
+case class DivInstr(
+    regLo: Register,
+    regHi: Register,
+    fstOp: Register,
+    sndOp: Register
+) extends Instruction
 
 /** Loading and Storing Instructions */
-case class StoreInstr() extends Instruction
+/** Load from: memory */
+case class LoadInstr(dst: Register, src: Register, offset: SecondOperand)
+    extends Instruction
 
-case class MoveInstr() extends Instruction
+case class StoreInstr(dst: Register, src: Register, offset: SecondOperand)
+    extends Instruction
+
+case class MoveInstr(dst: Register, src: SecondOperand) extends Instruction
 
 /** Branch Instructions */
-case class BranchInstr() extends Instruction
+case class BranchInstr(label: String, condition: Condition.Condition)
+    extends Instruction
 
-case class BranchLinkInstr() extends Instruction
+case class BranchLinkInstr(label: String) extends Instruction
 
 /** Logic Operations */
-case class AndInstr() extends Instruction
+case class AndInstr(fstOp: Register, sndOp: Register) extends Instruction
 
-case class XorInstr() extends Instruction
+case class XorInstr(fstOp: Register, sndOp: Register) extends Instruction
 
-case class OrInstr() extends Instruction
+case class OrInstr(fstOp: Register, sndOp: Register) extends Instruction
 
-/* Comparison Operation */
-case class CmpInstr() extends Instruction
+/** Comparison Operation */
+case class CmpInstr(reg: Register, sndOp: SecondOperand) extends Instruction
 
 /* Stack Manipulation Operation*/
-case class PushInstr() extends Instruction
+case class PushInstr(reg: Register) extends Instruction
 
-case class PopInstr() extends Instruction
+case class PopInstr(reg: Register) extends Instruction
+
+/** Second Operand */
+sealed trait SecondOperand {
+    override def toString: String = {
+        this match {
+            case ImmOffset(immOffset) => s"#$immOffset"
+            case RegOp(regOp)         => regOp.toString()
+        }
+    }
+}
+
+case class ImmOffset(immOffset: Int) extends SecondOperand
+
+case class RegOp(regOp: Register) extends SecondOperand

@@ -9,5 +9,5 @@
 # Program:
 
 begin
-	bool x = 'c' < 5
+	skip
 end

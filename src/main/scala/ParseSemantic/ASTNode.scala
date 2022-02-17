@@ -443,14 +443,16 @@ object PrintlnNode {
 case class IfThenElseNode(e: ExprNode, s1: StatNode, s2: StatNode)(
     val pos: (Int, Int)
 ) extends StatNode {
+    val newScopeST1 = SymbolTable()
+    val newScopeST2 = SymbolTable()
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         e.check(st, errors)
 
         /** Ensure that expression has checked successfully. Expr must be a
           * conditional expr (boolean)
           */
-        val newScopeST1 = SymbolTable(st)
-        val newScopeST2 = SymbolTable(st)
+        newScopeST1.setParent(st)
+        newScopeST2.setParent(st)
         if (e.typeId.isDefined) {
             e.typeId.get.getType() match {
                 case BoolType() => ()
@@ -479,13 +481,14 @@ object IfThenElseNode {
 }
 case class WhileDoNode(e: ExprNode, s: StatNode)(val pos: (Int, Int))
     extends StatNode {
+    val newScopeST = SymbolTable()
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         e.check(st, errors)
 
         /** Ensure that expression has checked successfully. Expr must be a
           * conditional expr (boolean)
           */
-        val newScopeST = SymbolTable(st)
+        newScopeST.setParent(st)
         if (e.typeId.isDefined) {
             e.typeId.get.getType() match {
                 case BoolType() => ()
@@ -511,10 +514,11 @@ object WhileDoNode {
 }
 
 case class BeginEndNode(s: StatNode)(val pos: (Int, Int)) extends StatNode {
+    val newScopeST = SymbolTable()
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
 
         /** Creates new symbol table and link with outer scope */
-        val newScopeST = SymbolTable(st)
+        newScopeST.setParent(st)
         s.check(newScopeST, errors)
     }
 }
