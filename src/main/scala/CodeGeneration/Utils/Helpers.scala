@@ -9,4 +9,10 @@ object Helpers {
             case _                                 => WORD_SIZE
         }
     }
+
+    def getStringDirective(s: String, idx: Int): List[Instruction] = {
+    
+        List(Label(s"msg_$idx:"),Directive(s".word ${s.length()}"),
+        Directive(s".ascii \"$s\""))
+    }
 }
