@@ -46,13 +46,11 @@ case class DivInstr(
 case class LoadInstr(dst: Register, src: Register, offset: SecondOperand)
     extends Instruction
 
-case class LoadImmOffsetInstr(dst: Register, imm: Int)
-    extends Instruction
+case class LoadImmIntInstr(dst: Register, imm: Int) extends Instruction
 
-case class LoadImmLabelInstr(dst: Register, label: String)
-    extends Instruction
+case class LoadImmLabelInstr(dst: Register, label: String) extends Instruction
 
-case class StoreInstr(dst: Register, src: Register, offset: SecondOperand)
+case class StoreInstr(src: Register, dst: Register, offset: SecondOperand)
     extends Instruction
 
 case class MoveInstr(dst: Register, src: SecondOperand) extends Instruction
@@ -91,5 +89,3 @@ sealed trait SecondOperand {
 case class ImmOffset(immOffset: Int) extends SecondOperand
 
 case class RegOp(regOp: Register) extends SecondOperand
-
-
