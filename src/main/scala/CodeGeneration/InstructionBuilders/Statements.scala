@@ -49,6 +49,12 @@ object transStatement {
                           stackFrame.join(StackFrame(ite.newScopeST2))
                         )
                     }
+                    case be @ BeginEndNode(s) => {
+                        transStatement(
+                          s,
+                          stackFrame.join(StackFrame(be.newScopeST))
+                        )
+                    }
                     case SkipNode() =>
                     case ExitNode(e) => {
                         transExpression(e, stackFrame)
