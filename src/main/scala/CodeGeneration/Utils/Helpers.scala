@@ -235,7 +235,7 @@ object Helpers {
           Label("p_print_int"),
           PushInstr(lr),
           MoveInstr(Reg(1), Reg(0)),
-          LoadImmLabelInstr(Reg(0), s"msg_$idx:"),
+          LoadLabelInstr(Reg(0), s"msg_$idx:"),
           AddInstr(Reg(0), Reg(0), ImmOffset(4)),
           BranchLinkInstr("printf"),
           MoveInstr(Reg(0), ImmOffset(0)),
@@ -244,4 +244,34 @@ object Helpers {
         )
     }
 
+    def getPrintTrueDirective(idx: Int): List[Instruction] = {
+        List(
+          Label(s"msg_$idx:"),
+          Directive(s".word 5"),
+          Directive(s".ascii \"true\\0\"")
+        )
+    }
+
+    def getPrintFalseDirective(idx: Int): List[Instruction] = {
+        List(
+          Label(s"msg_$idx:"),
+          Directive(s".word 6"),
+          Directive(s".ascii \"false\\0\"")
+        )
+    }
+
+    def printBoolLiterFunc(idxTrue: Int, idxFalse: Int): List[Instruction] = {
+        List(
+          Label("p_print_bool"),
+          PushInstr(lr),
+          CmpInstr(Reg(0), ImmOffset(0)),
+          LoadLabelInstr(Reg(0), s"msg_$idxTrue:", Condition.NE),
+          LoadLabelInstr(Reg(0), s"msg_$idxFalse:", Condition.EQ),
+          AddInstr(Reg(0), Reg(0), ImmOffset(4)),
+          BranchLinkInstr("printf"),
+          MoveInstr(Reg(0), ImmOffset(0)),
+          BranchLinkInstr("fflush"),
+          PopInstr(pc)
+        )
+    }
 }
