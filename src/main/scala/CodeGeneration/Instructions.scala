@@ -63,11 +63,16 @@ case class LoadImmOffsetInstr(
     condition: Condition.Condition = Condition.AL
 ) extends Instruction
 
+<<<<<<< HEAD
 case class LoadLabelInstr(
+=======
+case class LoadImmLabelInstr(
+>>>>>>> feat: print statement case for int literals
     dst: Register,
     label: String,
     condition: Condition.Condition = Condition.AL
 ) extends Instruction
+<<<<<<< HEAD
 
 <<<<<<< HEAD
 case class StoreInstr(src: Register, dst: Register, offset: SecondOperand)
@@ -77,6 +82,8 @@ case class LoadRegMemInstr(
     memory: Register,
     condition: Condition.Condition = Condition.AL
 ) extends Instruction
+=======
+>>>>>>> feat: print statement case for int literals
 
 case class StoreInstr(dst: Register, src: Register, offset: SecondOperand)
 >>>>>>> feat: print statement case for string literals

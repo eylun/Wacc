@@ -229,4 +229,19 @@ object Helpers {
           List(BranchLinkInstr("p_print_string"))
         )
     }
+
+    def printIntLiterFunc(idx: Int): List[Instruction] = {
+        List(
+          Label("p_print_int"),
+          PushInstr(lr),
+          MoveInstr(Reg(1), Reg(0)),
+          LoadImmLabelInstr(Reg(0), s"msg_$idx:"),
+          AddInstr(Reg(0), Reg(0), ImmOffset(4)),
+          BranchLinkInstr("printf"),
+          MoveInstr(Reg(0), ImmOffset(0)),
+          BranchLinkInstr("fflush"),
+          PopInstr(pc)
+        )
+    }
+
 }
