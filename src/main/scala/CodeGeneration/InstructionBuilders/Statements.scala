@@ -235,12 +235,7 @@ object transStatement {
 
                         collector.addStatement(
                           List(
-                            AddInstr(sp, sp, ImmOffset(4)),
-                            MoveInstr(
-                              Reg(0),
-                              ImmOffset(4)
-                            ),
-                            PopInstr(pc)
+                            AddInstr(sp, sp, ImmOffset(4))
                           )
                         )
                     }
