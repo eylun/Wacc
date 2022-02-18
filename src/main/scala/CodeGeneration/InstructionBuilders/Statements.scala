@@ -215,29 +215,12 @@ object transStatement {
                             (stackFrame.st.lookupAll(s)).get.getType()
 
                         /** Load sp into Reg(0) */
-                        collector.addStatement(
-                          List(LoadRegMemInstr(Reg(0), sp))
-                        )
-
-                        /** Add dataMsgs, functions and branch according to type
+                        /** TODO: add into printIdent: PairType & ArrayType case
+                          * ArrayType(elemType, dim) => _ case PairType(fstType,
+                          * sndType) => _
                           */
-                        nodeType match {
-                            case IntType()  => printIntLiter()
-                            case BoolType() => printBoolLiter()
-                            case CharType() => printCharLiter()
-                            case StringType() || NullPairType() =>
-                                printStrLiter()
-                            /** TODO: PairType & ArrayType case
-                              * ArrayType(elemType, dim) => _ case
-                              * PairType(fstType, sndType) => _
-                              */
-                        }
+                        printIdent(nodeType)
 
-                        collector.addStatement(
-                          List(
-                            AddInstr(sp, sp, ImmOffset(4))
-                          )
-                        )
                     }
                 }
             }
@@ -272,6 +255,22 @@ object transStatement {
                         println()
 
                     }
+
+                    case IdentNode(s) =>
+                        {
+
+                            /** Get Ident Node Type */
+                            Type nodeType =
+                                (stackFrame.st.lookupAll(s)).get.getType()
+
+                            /** Load sp into Reg(0) */
+                            /** TODO: add into printIdent: PairType & ArrayType
+                              * case ArrayType(elemType, dim) => _ case
+                              * PairType(fstType, sndType) => _
+                              */
+                            printIdent(nodeType)
+                        }
+                        println()
                 }
 
             }

@@ -222,6 +222,34 @@ object Helpers {
         )
     }
 
+    def printIdent(nodeType: Type) = {
+
+        /** Load sp into Reg(0) */
+        collector.addStatement(
+          List(LoadRegMemInstr(Reg(0), sp))
+        )
+
+        /** Add dataMsgs, functions and branch according to type
+          */
+        nodeType match {
+            case IntType()  => printIntLiter()
+            case BoolType() => printBoolLiter()
+            case CharType() => printCharLiter()
+            case StringType() || NullPairType() =>
+                printStrLiter()
+            /** TODO: PairType & ArrayType case ArrayType(elemType, dim) => _
+              * case PairType(fstType, sndType) => _
+              */
+        }
+
+        collector.addStatement(
+          List(
+            AddInstr(sp, sp, ImmOffset(4))
+          )
+        )
+
+    }
+
     /** PRINTLN STATEMENT HELPERS */
     def getPrintlnDirective(idx: Int): List[Instruction] = {
         List(
