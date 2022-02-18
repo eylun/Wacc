@@ -246,7 +246,41 @@ object transStatement {
                     }
                 }
             }
-            case _ =>
+
+            case PrintlnNode(e) => {
+                e match {
+                    case IntLiterNode(_) => {
+
+                        /** Call transExpression and branch */
+                        transExpression(e, stackFrame)
+                        printIntLiter()
+                        println()
+                    }
+                    case BoolLiterNode(_) => {
+
+                        /** Call transExpression and branch */
+                        transExpression(e, stackFrame)
+                        printBoolLiter()
+                        println()
+                    }
+                    case CharLiterNode(_) => {
+                        transExpression(e, stackFrame)
+                        printCharLiter()
+                        println()
+                    }
+
+                    case StrLiterNode(_) || PairLiterNode() => {
+
+                        /** call transExpression and branch */
+                        transExpression(e, stackFrame)
+                        printStrLiter()
+                        println()
+
+                    }
+                }
+
+            }
+            case _ => List[Instruction]().empty
         }
         collector.addStatement(stackFrame.tail)
     }

@@ -222,6 +222,45 @@ object Helpers {
         )
     }
 
+    /** PRINTLN STATEMENT HELPERS */
+    def getPrintlnDirective(idx: Int): List[Instruction] = {
+        List(
+          Label(s"msg_$idx:"),
+          Directive(s".word 1"),
+          Directive(s".ascii \"\\0\"")
+        )
+    }
+
+    def printlnFunc(idx: Int): List[Instruction] = {
+        List(
+          Label("p_print_ln"),
+          PushInstr(lr),
+          LoadLabelInstr(Reg(0), s"msg_$idx:"),
+          AddInstr(Reg(0), Reg(0), ImmOffset(4)),
+          BranchLinkInstr("puts"),
+          MoveInstr(Reg(0), ImmOffset(0)),
+          BranchLinkInstr("fflush"),
+          PopInstr(pc)
+        )
+    }
+
+    def println() = {
+
+        /** Add DataMsg for println newline escape char */
+        Int idx = collector.tickDataMsg()
+        collector.addDataMsg(getPrintlnDirective(idx))
+
+        /** Add p_print_int function */
+        collector.addFunc(
+          printlnFunc(idx)
+        )
+
+        /** Add branch instruction Statement */
+        collector.addStatement(
+          List(BranchLinkInstr("p_print_ln"))
+        )
+    }
+
     /** Enumerations: Condition Codes, Flags */
     object UtilFlag extends Enumeration {
         type UtilFlag = Value
