@@ -1,4 +1,5 @@
 import Condition._
+import Helpers._
 
 object transStatement {
     def apply(statList: StatNode, stackFrame: StackFrame)(implicit
@@ -16,63 +17,79 @@ object transStatement {
                         t match {
                             case arr_t @ ArrayTypeNode(at, dimension) => {
                                 // will always be 4 here, so not sure if necessary
-                                val arrayAddrSize = getTypeSize(t)
+                                val arrayAddrSize = getTypeSize(t.typeId.get)
                                 // r has to be an ArrayLiter for a new array assignment
                                 r match {
-                                    case ArrayLiterNode(es) =>  {
-                                        getArraySize(arr_t, es.length())
+                                    case ArrayLiterNode(es) => {
                                         collector.addStatement(
-                                            List(
-                                                MoveInstr(Reg(0),ImmOffset(getArraySize(arr_t, es.length()) + arrayAddrSize)),
-                                                BranchLinkInstr("malloc")
-                                                MoveInstr(Reg(3), Reg(0))
-                                            )
+                                          List(
+                                            MoveInstr(
+                                              Reg(0),
+                                              ImmOffset(
+                                                getArraySize(
+                                                  arr_t,
+                                                  es.length
+                                                ) + arrayAddrSize
+                                              )
+                                            ),
+                                            BranchLinkInstr("malloc"),
+                                            MoveInstr(Reg(3), RegOp(Reg(0)))
+                                          )
                                         )
-                                        val ofs = arrayAddrSize
-                                        es.foreach { e => {
-                                            transExpression(e, stackFrame)
-                                            collector.addStatement(
-                                                List(
+                                        val elemSize =
+                                            getTypeSize(at.typeId.get)
+                                        var ofs = arrayAddrSize
+                                        es.foreach { e =>
+                                            {
+                                                transExpression(e, stackFrame)
+                                                collector.addStatement(
+                                                  List(
                                                     StoreInstr(
-                                                    Reg(0),
-                                                    Reg(3),
-                                                    ImmOffset(ofs)
-                                                    )    
+                                                      Reg(0),
+                                                      Reg(3),
+                                                      ImmOffset(ofs)
+                                                    )
+                                                  )
                                                 )
-                                            )
-                                            ofs += at
-                                        }}
+                                                ofs = ofs + elemSize
+                                            }
+                                        }
                                         collector.addStatement(
-                                            List(
-                                                MoveInstr(Reg(0),ImmOffset(es.length())),
-                                                StoreInstr(
-                                                Reg(0),
-                                                Reg(3),
-                                                ImmOffset(0)
-                                                ),
-                                                MoveInstr(Reg(3), Reg(0)),
-                                                StoreInstr(
-                                                Reg(0),
-                                                StackPtrReg(),
-                                                ImmOffset(stackFrame.getOffset(i.s))
-                                                )
+                                          List(
+                                            MoveInstr(
+                                              Reg(0),
+                                              ImmOffset(es.length)
+                                            ),
+                                            StoreInstr(
+                                              Reg(0),
+                                              Reg(3),
+                                              ImmOffset(0)
+                                            ),
+                                            MoveInstr(Reg(3), RegOp(Reg(0))),
+                                            StoreInstr(
+                                              Reg(0),
+                                              StackPtrReg(),
+                                              ImmOffset(
+                                                stackFrame.getOffset(i.s)
+                                              )
                                             )
+                                          )
                                         )
 
                                     }
-                                    case _ => _
+                                    case _ =>
                                 }
                             }
                             case _ => {
                                 transRHS(r, stackFrame)
                                 collector.addStatement(
-                                List(
+                                  List(
                                     StoreInstr(
-                                    Reg(0),
-                                    StackPtrReg(),
-                                    ImmOffset(stackFrame.getOffset(i.s))
+                                      Reg(0),
+                                      StackPtrReg(),
+                                      ImmOffset(stackFrame.getOffset(i.s))
                                     )
-                                )
+                                  )
                                 )
                             }
                         }

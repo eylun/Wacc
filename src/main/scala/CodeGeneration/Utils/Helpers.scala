@@ -21,14 +21,16 @@ object Helpers {
         )
     }
 
-    def getArraySize(t: Identifier, size: Int): Int = {
+    def getArraySize(t: TypeNode, size: Int): Int = {
         t match {
-            case at @ ArrayType(elemType, dimension) => {
+            case at @ ArrayTypeNode(elemType, dimension) => {
                 dimension match {
-                    case 1 => getTypeSize(elemType) * size
+                    case 1 => getTypeSize(elemType.typeId.get) * size
                     case _ => 4 * size 
                 }
             }
+
+            // cannot be called on other types
             case _ => -1
         }
     }
