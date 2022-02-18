@@ -116,7 +116,6 @@ object transStatement {
                     case SecondPairElemNode(e) => // TODO complete for second
                 }
             }
-<<<<<<< HEAD
             case ite @ IfThenElseNode(e, s1, s2) => {
                 val labelFalse = s"ite_${collector.tickIte()}"
                 val labelTrue = s"ite_${collector.tickIte()}"
@@ -174,9 +173,6 @@ object transStatement {
                 )
             }
             case SkipNode() =>
-=======
-            case SkipNode() => { List[Instruction]() }
->>>>>>> feat: print statement case for pair literal
             case ExitNode(e) => {
                 transExpression(e, stackFrame)
                 collector.addStatement(
@@ -254,6 +250,11 @@ object transStatement {
             case _ =>
         }
 
+<<<<<<< HEAD
         collector.addStatement(stackFrame.tail)
+=======
+            case _ => List[Instruction]().empty
+        }
+>>>>>>> fix: rebase & minor refactor
     }
 }
