@@ -185,73 +185,27 @@ object transStatement {
                 e match {
                     case IntLiterNode(_) => {
 
-                        /** Add DataMsg for the Int literal */
-                        Int idx = collector.tickDataMsg()
-                        collector.addDataMsg(getPrintIntDirective(i, idx))
-
-                        /** Add p_print_int function */
-                        collector.addFunc(
-                          printIntLiterFunc(idx)
-                        )
-
                         /** Call transExpression and branch */
                         transExpression(e, stackFrame)
-                        collector.addStatement(
-                          List(BranchLinkInstr("p_print_int"))
-                        )
+                        printIntLiter()
                     }
-
                     case BoolLiterNode(_) => {
 
-                        /** Add DataMsg for Bool Literal true & false */
-                        Int idxTrue = collector.tickDataMsg()
-                        Int idxFalse = collector.tickDataMsg()
-                        collector.addDataMsg(
-                          getPrintTrueDirective(idxTrue)
-                        )
-                        collector.addDataMsg(
-                          getPrintFalseDirective(idxFalse)
-                        )
-
-                        /** Add p_print_bool function */
-                        collector.addFunc(
-                          printBoolLiterFunc(idxTrue, idxFalse)
-                        )
-
                         /** Call transExpression and branch */
                         transExpression(e, stackFrame)
-                        collector.addStatement(
-                          List(BranchLinkInstr("p_print_bool"))
-                        )
+                        printBoolLiter()
                     }
-
                     case CharLiterNode(_) => {
                         transExpression(e, stackFrame)
-                        collector.addStatement(
-                          List(
-                            BranchLinkInstr("putchar"),
-                            MoveInstr(Reg(0), ImmOffset(0)),
-                            PopInstr(pc)
-                          )
-                        )
+                        printCharLiter()
                     }
 
                     case StrLiterNode(_) || PairLiterNode() => {
 
-                        /** Add DataMsg for string formating */
-                        Int idx = collector.tickDataMsg()
-                        collector.addDataMsg(getPrintStrDirective(idx))
-
-                        /** Add p_print_string function */
-                        collector.addFunc(
-                          printStrLiterFunc(idx)
-                        )
-
-                        /** Append transedExpr and branch */
+                        /** call transExpression and branch */
                         transExpression(e, stackFrame)
-                        collector.addStatement(
-                          List(BranchLinkInstr("p_print_string"))
-                        )
+                        printStrLiter()
+
                     }
 
                     case IdentNode(s) => {
@@ -260,11 +214,24 @@ object transStatement {
                         Type nodeType =
                             (stackFrame.st.lookupAll(s)).get.getType()
 
+                        /** Load sp into Reg(0) */
                         collector.addStatement(
                           List(LoadRegMemInstr(Reg(0), sp))
                         )
 
-                        /** TODO: branch depending on type of the ident */
+                        /** Add dataMsgs, functions and branch according to type
+                          */
+                        nodeType match {
+                            case IntType()  => printIntLiter()
+                            case BoolType() => printBoolLiter()
+                            case CharType() => printCharLiter()
+                            case StringType() || NullPairType() =>
+                                printStrLiter()
+                            /** TODO: PairType & ArrayType case
+                              * ArrayType(elemType, dim) => _ case
+                              * PairType(fstType, sndType) => _
+                              */
+                        }
 
                         collector.addStatement(
                           List(
@@ -276,7 +243,6 @@ object transStatement {
                             PopInstr(pc)
                           )
                         )
-
                     }
                 }
             }

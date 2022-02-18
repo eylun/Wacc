@@ -74,7 +74,7 @@ object Helpers {
 
     /** PRINT STATEMENT HELPERS */
     /** Print Int Literal */
-    def getPrintIntDirective(i: Int, idx: Int): List[Instruction] = {
+    def getPrintIntDirective(idx: Int): List[Instruction] = {
         List(
           Label(s"msg_$idx:"),
           Directive(s".word 3"),
@@ -93,6 +93,23 @@ object Helpers {
           MoveInstr(Reg(0), ImmOffset(0)),
           BranchLinkInstr("fflush"),
           PopInstr(pc)
+        )
+    }
+
+    def printIntLiter() = {
+
+        /** Add DataMsg for the Int literal */
+        Int idx = collector.tickDataMsg()
+        collector.addDataMsg(getPrintIntDirective(idx))
+
+        /** Add p_print_int function */
+        collector.addFunc(
+          printIntLiterFunc(idx)
+        )
+
+        /** Add branch instruction Statement */
+        collector.addStatement(
+          List(BranchLinkInstr("p_print_int"))
         )
     }
 
@@ -128,6 +145,42 @@ object Helpers {
         )
     }
 
+    def printBoolLiter() = {
+
+        /** Add DataMsg for Bool Literal true & false */
+        Int idxTrue = collector.tickDataMsg()
+        Int idxFalse = collector.tickDataMsg()
+        collector.addDataMsg(
+          getPrintTrueDirective(idxTrue)
+        )
+        collector.addDataMsg(
+          getPrintFalseDirective(idxFalse)
+        )
+
+        /** Add p_print_bool function */
+        collector.addFunc(
+          printBoolLiterFunc(idxTrue, idxFalse)
+        )
+
+        /** Add branch instruction Statement */
+        collector.addStatement(
+          List(BranchLinkInstr("p_print_bool"))
+        )
+    }
+
+    /** Print Char Liter */
+    def printCharLiter() = {
+
+        /** Branch to putchar */
+        collector.addStatement(
+          List(
+            BranchLinkInstr("putchar"),
+            MoveInstr(Reg(0), ImmOffset(0)),
+            PopInstr(pc)
+          )
+        )
+    }
+
     /** Print String Literal */
     def getPrintStrDirective(idx: Int): List[Instruction] = {
         List(
@@ -160,4 +213,20 @@ object Helpers {
             PReadInt, PFreePair, PCheckNullPointer = Value
     }
 
+    def printStrLiter() = {
+
+        /** Add DataMsg for string formating */
+        Int idx = collector.tickDataMsg()
+        collector.addDataMsg(getPrintStrDirective(idx))
+
+        /** Add p_print_string function */
+        collector.addFunc(
+          printStrLiterFunc(idx)
+        )
+
+        /** Add branch instruction statement */
+        collector.addStatement(
+          List(BranchLinkInstr("p_print_string"))
+        )
+    }
 }
