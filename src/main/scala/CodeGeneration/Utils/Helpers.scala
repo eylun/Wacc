@@ -1,5 +1,6 @@
 import Condition._
 import constants._
+import transExpression._
 
 object Helpers {
     val WORD_SIZE = 4

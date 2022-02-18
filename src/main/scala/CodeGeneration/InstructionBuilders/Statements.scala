@@ -195,8 +195,10 @@ object transStatement {
                         )
 
                         /** Call transExpression and branch */
-                        transExpression(e) ++
-                            List(BranchLinkInstr("p_print_int"))
+                        transExpression(e, stackFrame)
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_print_int"))
+                        )
                     }
 
                     case BoolLiterNode(_) => {
@@ -217,17 +219,21 @@ object transStatement {
                         )
 
                         /** Call transExpression and branch */
-                        transExpression(e) ++
-                            List(BranchLinkInstr("p_print_bool"))
+                        transExpression(e, stackFrame)
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_print_bool"))
+                        )
                     }
 
                     case CharLiterNode(_) => {
-                        transExpression(e) ++
-                            List(
-                              BranchLinkInstr("putchar"),
-                              MoveInstr(Reg(0), ImmOffset(0)),
-                              PopInstr(pc)
-                            )
+                        transExpression(e, stackFrame)
+                        collector.addStatement(
+                          List(
+                            BranchLinkInstr("putchar"),
+                            MoveInstr(Reg(0), ImmOffset(0)),
+                            PopInstr(pc)
+                          )
+                        )
                     }
 
                     case StrLiterNode(_) || PairLiterNode() => {
@@ -242,8 +248,35 @@ object transStatement {
                         )
 
                         /** Append transedExpr and branch */
-                        transExpression(e) ++
-                            List(BranchLinkInstr("p_print_string"))
+                        transExpression(e, stackFrame)
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_print_string"))
+                        )
+                    }
+
+                    case IdentNode(s) => {
+
+                        /** Get Ident Node Type */
+                        Type nodeType =
+                            (stackFrame.st.lookupAll(s)).get.getType()
+
+                        collector.addStatement(
+                          List(LoadRegMemInstr(Reg(0), sp))
+                        )
+
+                        /** TODO: branch depending on type of the ident */
+
+                        collector.addStatement(
+                          List(
+                            AddInstr(sp, sp, ImmOffset(4)),
+                            MoveInstr(
+                              Reg(0),
+                              ImmOffset(4)
+                            ),
+                            PopInstr(pc)
+                          )
+                        )
+
                     }
                 }
             }
