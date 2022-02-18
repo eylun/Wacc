@@ -14,7 +14,7 @@ class WaccBuffer {
           Directive("text"),
           Directive("global main"),
           Label("main"),
-          PushInstr(lr)
+          PushInstr(List(lr))
         )
 
     private val functions: mutable.ListBuffer[Instruction] =

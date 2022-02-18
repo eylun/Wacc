@@ -34,4 +34,30 @@ object Helpers {
             case _ => -1
         }
     }
+
+    def addNewPairElem(e: ExprNode, stackFrame: StackFrame)(implicit
+        collector: WaccBuffer
+    ): Unit = {
+        transExpression(e, stackFrame)
+        val t = e.typeId.get
+        collector.addStatement(
+            List(
+                PushInstr(List(Reg(0))),
+                MoveInstr(Reg(0), ImmOffset(getTypeSize(t))),
+                BranchLinkInstr("malloc"),
+                PopInstr(List(Reg(1)))
+                )
+                )
+        t match {
+            case BoolType() | CharType() => 
+                collector.addStatement(
+                List(StoreByteInstr(Reg(1), Reg(0), ImmOffset(0)))
+                )
+            case _ =>
+                collector.addStatement(
+                List(StoreInstr(Reg(1), Reg(0), ImmOffset(0)))
+                )    
+        }        
+        collector.addStatement(List(PushInstr(List(Reg(0)))))
+    }
 }

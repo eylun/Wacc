@@ -9,7 +9,12 @@
 # Program:
 
 begin
+<<<<<<< HEAD
 	while 1 == 1 do
 		int x = 1
   done
+=======
+  int x = 3;
+  pair(int, int) a = newpair(x, 4)
+>>>>>>> feat: added code generation for new pair assignmentsand amended push and pop instructions
 end

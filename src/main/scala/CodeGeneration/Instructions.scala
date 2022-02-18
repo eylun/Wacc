@@ -60,6 +60,9 @@ case class LoadImmLabelInstr(dst: Register, label: String) extends Instruction
 case class StoreInstr(src: Register, dst: Register, offset: SecondOperand)
     extends Instruction
 
+case class StoreByteInstr(src: Register, dst: Register, offset: SecondOperand)
+    extends Instruction    
+
 case class MoveInstr(dst: Register, src: SecondOperand) extends Instruction
 
 /** Branch Instructions */
@@ -79,9 +82,9 @@ case class OrInstr(fstOp: Register, sndOp: Register) extends Instruction
 case class CmpInstr(reg: Register, sndOp: SecondOperand) extends Instruction
 
 /* Stack Manipulation Operation*/
-case class PushInstr(reg: Register) extends Instruction
+case class PushInstr(regList: List[Register]) extends Instruction
 
-case class PopInstr(reg: Register) extends Instruction
+case class PopInstr(regList: List[Register]) extends Instruction
 
 /** Second Operand */
 sealed trait SecondOperand {

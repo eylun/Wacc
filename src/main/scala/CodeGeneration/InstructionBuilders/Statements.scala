@@ -18,8 +18,9 @@ object transStatement {
                             case arr_t @ ArrayTypeNode(at, dimension) => {
                                 // will always be 4 here, so not sure if necessary
                                 val arrayAddrSize = getTypeSize(t.typeId.get)
-                                // r has to be an ArrayLiter for a new array assignment
                                 r match {
+                                    // TODO: possible to put this in assignRHS instead BUT
+                                    // the only way to get size is by getting type id of first element
                                     case ArrayLiterNode(es) => {
                                         collector.addStatement(
                                           List(
@@ -44,6 +45,7 @@ object transStatement {
                                                 transExpression(e, stackFrame)
                                                 collector.addStatement(
                                                   List(
+                                                    // set to store byte for char and bool
                                                     StoreInstr(
                                                       Reg(0),
                                                       Reg(3),
@@ -77,22 +79,24 @@ object transStatement {
                                         )
 
                                     }
-                                    case _ =>
+                                    case _ => transRHS(r, stackFrame)
                                 }
                             }
                             case _ => {
                                 transRHS(r, stackFrame)
-                                collector.addStatement(
-                                  List(
-                                    StoreInstr(
-                                      Reg(0),
-                                      StackPtrReg(),
-                                      ImmOffset(stackFrame.getOffset(i.s))
-                                    )
-                                  )
-                                )
                             }
                         }
+                        // all new assign code ends with storing reg 0 into stack
+                        collector.addStatement(
+                          List(
+                            StoreInstr(
+                              Reg(0),
+                              StackPtrReg(),
+                              ImmOffset(stackFrame.getOffset(i.s))
+                            )
+                          )
+                        )
+
                     }
                     case LRAssignNode(l, r) => {
                         l match {
