@@ -13,16 +13,69 @@ object transStatement {
             case StatListNode(l) => {
                 l.foreach {
                     case NewAssignNode(t, i, r) => {
-                        transRHS(r, stackFrame)
-                        collector.addStatement(
-                          List(
-                            StoreInstr(
-                              Reg(0),
-                              StackPtrReg(),
-                              ImmOffset(stackFrame.getOffset(i.s))
-                            )
-                          )
-                        )
+                        t match {
+                            case arr_t @ ArrayTypeNode(at, dimension) => {
+                                // will always be 4 here, so not sure if necessary
+                                val arrayAddrSize = getTypeSize(t)
+                                // r has to be an ArrayLiter for a new array assignment
+                                r match {
+                                    case ArrayLiterNode(es) =>  {
+                                        getArraySize(arr_t, es.length())
+                                        collector.addStatement(
+                                            List(
+                                                MoveInstr(Reg(0),ImmOffset(getArraySize(arr_t, es.length()) + arrayAddrSize)),
+                                                BranchLinkInstr("malloc")
+                                                MoveInstr(Reg(3), Reg(0))
+                                            )
+                                        )
+                                        val ofs = arrayAddrSize
+                                        es.foreach { e => {
+                                            transExpression(e, stackFrame)
+                                            collector.addStatement(
+                                                List(
+                                                    StoreInstr(
+                                                    Reg(0),
+                                                    Reg(3),
+                                                    ImmOffset(ofs)
+                                                    )    
+                                                )
+                                            )
+                                            ofs += at
+                                        }}
+                                        collector.addStatement(
+                                            List(
+                                                MoveInstr(Reg(0),ImmOffset(es.length())),
+                                                StoreInstr(
+                                                Reg(0),
+                                                Reg(3),
+                                                ImmOffset(0)
+                                                ),
+                                                MoveInstr(Reg(3), Reg(0)),
+                                                StoreInstr(
+                                                Reg(0),
+                                                StackPtrReg(),
+                                                ImmOffset(stackFrame.getOffset(i.s))
+                                                )
+                                            )
+                                        )
+
+                                    }
+                                    case _ => _
+                                }
+                            }
+                            case _ => {
+                                transRHS(r, stackFrame)
+                                collector.addStatement(
+                                List(
+                                    StoreInstr(
+                                    Reg(0),
+                                    StackPtrReg(),
+                                    ImmOffset(stackFrame.getOffset(i.s))
+                                    )
+                                )
+                                )
+                            }
+                        }
                     }
                     case LRAssignNode(l, r) => {
                         l match {
