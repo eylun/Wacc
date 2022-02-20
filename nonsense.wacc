@@ -9,9 +9,7 @@
 # Program:
 
 begin
-	int x = 5;
-	begin
-	int y = 10;
-	x = 10
-	end
+	while 1 == 1 do
+		int x = 1
+  done
 end

@@ -12,13 +12,20 @@ object Condition extends Enumeration {
   *
   * Labels are in the form <label>:
   */
-case class Label(labelName: String) extends Instruction {}
+case class Label(labelName: String) extends Instruction
 
 /** Directive
   *
   * Directives are in the form .<directive>
   */
 case class Directive(name: String) extends Instruction
+
+/** Compare */
+case class CompareInstr(
+    fstOp: Register,
+    sndOp: SecondOperand,
+    condition: Condition.Condition
+) extends Instruction
 
 /* Arithmetic Operations */
 case class AddInstr(dst: Register, fstOp: Register, sndOp: SecondOperand)

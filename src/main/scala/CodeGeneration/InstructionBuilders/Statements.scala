@@ -1,3 +1,5 @@
+import Condition._
+
 object transStatement {
     def apply(statList: StatNode, stackFrame: StackFrame)(implicit
         collector: WaccBuffer
@@ -40,19 +42,49 @@ object transStatement {
                         }
                     }
                     case ite @ IfThenElseNode(e, s1, s2) => {
+                        val labelTrue = s"ite_${collector.tickIte()}"
+                        val labelFalse = s"ite_${collector.tickIte()}"
+                        collector.addStatement(
+                          List(
+                            CompareInstr(Reg(0), ImmOffset(0), AL),
+                            BranchInstr(labelFalse, EQ)
+                          )
+                        )
                         transStatement(
                           s1,
-                          stackFrame.join(StackFrame(ite.newScopeST1))
+                          stackFrame.join(StackFrame(ite.trueST))
+                        )
+                        collector.addStatement(
+                          List(BranchInstr(labelTrue, AL), Label(labelFalse))
                         )
                         transStatement(
                           s2,
-                          stackFrame.join(StackFrame(ite.newScopeST2))
+                          stackFrame.join(StackFrame(ite.falseST))
                         )
+                        collector.addStatement(List(Label(labelTrue)))
                     }
                     case be @ BeginEndNode(s) => {
                         transStatement(
                           s,
                           stackFrame.join(StackFrame(be.newScopeST))
+                        )
+                    }
+                    case wd @ WhileDoNode(e, s) => {
+                        val labelCheck = s"wd_${collector.tickWd()}"
+                        val labelContent = s"wd_${collector.tickWd()}"
+                        collector.addStatement(
+                          List(BranchInstr(labelCheck, AL), Label(labelContent))
+                        )
+                        transStatement(s, stackFrame)
+                        collector.addStatement(List(Label(labelCheck)))
+                        transExpression(e, stackFrame)
+                        collector.addStatement(
+                          (
+                            List(
+                              CompareInstr(Reg(0), ImmOffset(1), AL),
+                              BranchInstr(labelContent, EQ)
+                            )
+                          )
                         )
                     }
                     case SkipNode() =>
