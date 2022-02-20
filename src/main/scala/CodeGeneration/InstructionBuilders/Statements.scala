@@ -126,21 +126,24 @@ object transStatement {
                         )
                         transStatement(
                           s1,
-                          stackFrame.join(StackFrame(ite.trueST))
+                          stackFrame.join(StackFrame(ite.trueST), ite.trueST)
                         )
                         collector.addStatement(
                           List(BranchInstr(labelTrue, AL), Label(labelFalse))
                         )
                         transStatement(
                           s2,
-                          stackFrame.join(StackFrame(ite.falseST))
+                          stackFrame.join(StackFrame(ite.falseST), ite.falseST)
                         )
                         collector.addStatement(List(Label(labelTrue)))
                     }
                     case be @ BeginEndNode(s) => {
                         transStatement(
                           s,
-                          stackFrame.join(StackFrame(be.newScopeST))
+                          stackFrame.join(
+                            StackFrame(be.newScopeST),
+                            be.newScopeST
+                          )
                         )
                     }
                     case wd @ WhileDoNode(e, s) => {
@@ -149,7 +152,13 @@ object transStatement {
                         collector.addStatement(
                           List(BranchInstr(labelCheck, AL), Label(labelContent))
                         )
-                        transStatement(s, stackFrame)
+                        transStatement(
+                          s,
+                          stackFrame.join(
+                            StackFrame(wd.newScopeST),
+                            wd.newScopeST
+                          )
+                        )
                         collector.addStatement(List(Label(labelCheck)))
                         transExpression(e, stackFrame)
                         collector.addStatement(
