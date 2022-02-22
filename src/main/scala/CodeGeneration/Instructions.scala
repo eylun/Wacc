@@ -61,7 +61,7 @@ case class StoreInstr(src: Register, dst: Register, offset: SecondOperand)
     extends Instruction
 
 case class StoreByteInstr(src: Register, dst: Register, offset: SecondOperand)
-    extends Instruction    
+    extends Instruction
 
 case class MoveInstr(dst: Register, src: SecondOperand) extends Instruction
 
@@ -69,7 +69,8 @@ case class MoveInstr(dst: Register, src: SecondOperand) extends Instruction
 case class BranchInstr(label: String, condition: Condition.Condition)
     extends Instruction
 
-case class BranchLinkInstr(label: String) extends Instruction
+case class BranchLinkInstr(label: String, condition: Condition.Condition)
+    extends Instruction
 
 /** Logic Operations */
 case class AndInstr(fstOp: Register, sndOp: Register) extends Instruction

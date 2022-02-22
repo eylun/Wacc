@@ -1,3 +1,5 @@
+import Condition._
+
 object Helpers {
     val WORD_SIZE = 4
     val BIT_SIZE = 1
@@ -7,7 +9,7 @@ object Helpers {
             case BoolType() | CharType() => BIT_SIZE
             case Variable(t)             => getTypeSize(t)
             /** Functions are not applicable for stack frame sizes */
-            case FunctionId(_, _, _) => 0 
+            case FunctionId(_, _, _) => 0
             case _                   => WORD_SIZE
         }
     }
@@ -26,7 +28,7 @@ object Helpers {
             case at @ ArrayTypeNode(elemType, dimension) => {
                 dimension match {
                     case 1 => getTypeSize(elemType.typeId.get) * size
-                    case _ => 4 * size 
+                    case _ => 4 * size
                 }
             }
 
@@ -41,23 +43,23 @@ object Helpers {
         transExpression(e, stackFrame)
         val t = e.typeId.get
         collector.addStatement(
-            List(
-                PushInstr(List(Reg(0))),
-                MoveInstr(Reg(0), ImmOffset(getTypeSize(t))),
-                BranchLinkInstr("malloc"),
-                PopInstr(List(Reg(1)))
-                )
-                )
+          List(
+            PushInstr(List(Reg(0))),
+            MoveInstr(Reg(0), ImmOffset(getTypeSize(t))),
+            BranchLinkInstr("malloc", AL),
+            PopInstr(List(Reg(1)))
+          )
+        )
         t match {
-            case BoolType() | CharType() => 
+            case BoolType() | CharType() =>
                 collector.addStatement(
-                List(StoreByteInstr(Reg(1), Reg(0), ImmOffset(0)))
+                  List(StoreByteInstr(Reg(1), Reg(0), ImmOffset(0)))
                 )
             case _ =>
                 collector.addStatement(
-                List(StoreInstr(Reg(1), Reg(0), ImmOffset(0)))
-                )    
-        }        
+                  List(StoreInstr(Reg(1), Reg(0), ImmOffset(0)))
+                )
+        }
         collector.addStatement(List(PushInstr(List(Reg(0)))))
     }
 }

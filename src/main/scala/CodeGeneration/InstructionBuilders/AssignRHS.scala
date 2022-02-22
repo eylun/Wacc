@@ -1,4 +1,5 @@
 import Helpers._
+import Condition._
 
 object transRHS {
     /* Returns a list of instructions evaluating the RHS of an assignment */
@@ -11,16 +12,16 @@ object transRHS {
                 addNewPairElem(e1, stackFrame)
                 addNewPairElem(e2, stackFrame)
                 collector.addStatement(
-                    List(
-                        MoveInstr(Reg(3), ImmOffset(8)),
-                        BranchLinkInstr("malloc"),
-                        PopInstr(List(Reg(1),Reg(2))),
-                        StoreInstr(Reg(2), Reg(0), ImmOffset(0)),
-                        StoreInstr(Reg(1), Reg(0), ImmOffset(4))
-                    )
+                  List(
+                    MoveInstr(Reg(3), ImmOffset(8)),
+                    BranchLinkInstr("malloc", AL),
+                    PopInstr(List(Reg(1), Reg(2))),
+                    StoreInstr(Reg(2), Reg(0), ImmOffset(0)),
+                    StoreInstr(Reg(1), Reg(0), ImmOffset(4))
+                  )
                 )
             }
-            case _           =>
+            case _ =>
         }
     }
 }
