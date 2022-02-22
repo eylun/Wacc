@@ -110,7 +110,10 @@ object transStatement {
                           )
                         )
                     }
-                    case _ => // TODO complete for array and pair elems
+                    case ArrayElemNode(i, es) =>
+                    // TODO complete for array and pair elems
+                    case FirstPairElemNode(e)  => // TODO complete for first
+                    case SecondPairElemNode(e) => // TODO complete for second
                 }
             }
             case ite @ IfThenElseNode(e, s1, s2) => {

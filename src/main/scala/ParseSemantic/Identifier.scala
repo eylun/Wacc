@@ -57,14 +57,14 @@ case class NestedPairType() extends Type {
   *
   * 2D arrays have a dimension of 2, 3D arrays have a dimension of 3, etc...
   */
-case class ArrayType(elemType: Type, length: Int, var dimension: Int)
+case class ArrayType(elemType: Type, length: List[Int], var dimension: Int)
     extends Type {
     override def toString(): String = elemType.toString() + "[]" * dimension
 }
 
 object ArrayType {
     def apply(elemType: Type, dimension: Int): ArrayType =
-        ArrayType(elemType, 0, dimension)
+        ArrayType(elemType, List(0), dimension)
 }
 
 /** Pair - Pair type that contains 2 types within */

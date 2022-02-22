@@ -1353,9 +1353,10 @@ case class ArrayLiterNode(es: List[ExprNode])(val pos: (Int, Int))
                 return ()
             }
             typeToCheck match {
-                case ArrayType(t, l, d) => typeId = Some(ArrayType(t, l, d + 1))
+                case ArrayType(t, l, d) =>
+                    typeId = Some(ArrayType(t, l ++ List(es.length), d + 1))
                 case _ =>
-                    typeId = Some(ArrayType(typeToCheck, es.length, 1))
+                    typeId = Some(ArrayType(typeToCheck, List(es.length), 1))
             }
         } else {
             typeId = Some(AnyType())
