@@ -443,16 +443,16 @@ object PrintlnNode {
 case class IfThenElseNode(e: ExprNode, s1: StatNode, s2: StatNode)(
     val pos: (Int, Int)
 ) extends StatNode {
-    val newScopeST1 = SymbolTable()
-    val newScopeST2 = SymbolTable()
+    val trueST = SymbolTable()
+    val falseST = SymbolTable()
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         e.check(st, errors)
 
         /** Ensure that expression has checked successfully. Expr must be a
           * conditional expr (boolean)
           */
-        newScopeST1.setParent(st)
-        newScopeST2.setParent(st)
+        trueST.setParent(st)
+        falseST.setParent(st)
         if (e.typeId.isDefined) {
             e.typeId.get.getType() match {
                 case BoolType() => ()
@@ -466,8 +466,8 @@ case class IfThenElseNode(e: ExprNode, s1: StatNode, s2: StatNode)(
             }
         }
 
-        s1.check(newScopeST1, errors)
-        s2.check(newScopeST2, errors)
+        s1.check(trueST, errors)
+        s2.check(falseST, errors)
     }
 }
 
