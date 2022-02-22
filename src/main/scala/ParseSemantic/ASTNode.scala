@@ -1,7 +1,6 @@
 import parsley.Parsley
 import parsley.Parsley._
 import parsley.implicits.zipped.{LazyZipped2, LazyZipped3, Zipped4}
-import scala.collection.mutable.Map
 import semantics.{
     typeCheckArithmeticBinOp,
     typeCheckOrderingBinOp,
@@ -310,7 +309,7 @@ case class FreeNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
         /** Ensure that expression has checked successfully */
         if (e.typeId.isEmpty) return ()
         e.typeId.get.getType() match {
-            case ArrayType(_, _) | PairType(_, _) => {}
+            case ArrayType(_, _, _) | PairType(_, _) => {}
             case _ =>
                 errors += WaccError(
                   pos,
@@ -852,7 +851,7 @@ case class Len(e: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
           */
         if (e.typeId.isEmpty) return ()
         e.typeId.get.getType() match {
-            case ArrayType(_, _) =>
+            case ArrayType(_, _, _) =>
                 this.typeId = Some(IntType())
             case _ =>
                 errors += WaccError(
@@ -1157,7 +1156,7 @@ case class ArrayElemNode(i: IdentNode, es: List[ExprNode])(val pos: (Int, Int))
         /** Ensure that identifier has checked successfully */
         if (i.typeId.isEmpty) return ()
         i.typeId.get.getType() match {
-            case ArrayType(t, d) => {
+            case ArrayType(t, l, d) => {
                 d.compare(es.length) match {
                     case -1 =>
                         errors += WaccError(
@@ -1168,7 +1167,7 @@ case class ArrayElemNode(i: IdentNode, es: List[ExprNode])(val pos: (Int, Int))
                               .replaceAll("\n", " ")
                         )
                     case 0 => this.typeId = Some(t)
-                    case 1 => this.typeId = Some(ArrayType(t, d - es.length))
+                    case 1 => this.typeId = Some(ArrayType(t, l, d - es.length))
                 }
             }
             case t => {
@@ -1354,9 +1353,10 @@ case class ArrayLiterNode(es: List[ExprNode])(val pos: (Int, Int))
                 return ()
             }
             typeToCheck match {
-                case ArrayType(t, d) => typeId = Some(ArrayType(t, d + 1))
+                case ArrayType(t, l, d) =>
+                    typeId = Some(ArrayType(t, l ++ List(es.length), d + 1))
                 case _ =>
-                    typeId = Some(ArrayType(typeToCheck, 1))
+                    typeId = Some(ArrayType(typeToCheck, List(es.length), 1))
             }
         } else {
             typeId = Some(AnyType())

@@ -9,7 +9,7 @@ object Utility {
     def lrTypeCheck(l: Type, r: Type): Boolean = {
         (l, r) match {
             case (_, AnyType()) => true
-            case (ArrayType(t1, n1), ArrayType(t2, n2)) =>
+            case (ArrayType(t1, l1, n1), ArrayType(t2, l2, n2)) =>
                 n1 == n2 && lrTypeCheck(t1, t2)
             case (PairType(_, _), NullPairType()) |
                 (PairType(_, _), NestedPairType()) |

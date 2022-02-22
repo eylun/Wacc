@@ -32,12 +32,12 @@ object transExpression {
             }
             case Add(e1, e2) => {
                 transExpression(e1, stackFrame)
-                collector.addStatement(List(PushInstr(Reg(0))))
+                collector.addStatement(List(PushInstr(List(Reg(0)))))
                 transExpression(e2, stackFrame)
                 collector.addStatement(
                   List(
                     MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(Reg(0)),
+                    PopInstr(List(Reg(0))),
                     AddInstr(Reg(0), Reg(0), RegOp(Reg(1)))
                   )
                 )

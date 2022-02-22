@@ -3,7 +3,11 @@ import Helpers._
 import scala.collection.mutable
 import scala.collection.immutable.Map
 
-class StackFrame(val offsetMap: Map[String, Int], val totalBytes: Int) {
+class StackFrame(
+    val offsetMap: Map[String, Int],
+    val totalBytes: Int,
+    val st: SymbolTable
+) {
 
     val head: List[Instruction] = totalBytes match {
         case 0 => List.empty
@@ -29,12 +33,12 @@ class StackFrame(val offsetMap: Map[String, Int], val totalBytes: Int) {
             )
     }
 
-    def join(sf: StackFrame): StackFrame = {
+    def join(sf: StackFrame, st: SymbolTable): StackFrame = {
         val newMap: mutable.Map[String, Int] = mutable.Map[String, Int]()
         offsetMap.foreach { case (k, v) =>
             newMap += (k -> (v + sf.totalBytes))
         }
-        StackFrame((newMap ++ sf.offsetMap).toMap, sf.totalBytes)
+        StackFrame((newMap ++ sf.offsetMap).toMap, sf.totalBytes, st)
     }
 
     def getOffset(ident: String): Int = {
@@ -47,10 +51,10 @@ class StackFrame(val offsetMap: Map[String, Int], val totalBytes: Int) {
 }
 object StackFrame {
     def apply(st: SymbolTable) =
-        new StackFrame(generateOffsetMap(st), totalBytes(st))
+        new StackFrame(generateOffsetMap(st), totalBytes(st), st)
 
-    def apply(offsetMap: Map[String, Int], totalBytes: Int) =
-        new StackFrame(offsetMap, totalBytes)
+    def apply(offsetMap: Map[String, Int], totalBytes: Int, st: SymbolTable) =
+        new StackFrame(offsetMap, totalBytes, st)
 
     private def totalBytes(st: SymbolTable) =
         st.dict.foldLeft(0)((p, n) => p + getTypeSize(n._2))
