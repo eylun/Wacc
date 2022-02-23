@@ -18,18 +18,19 @@ object ARMRepresentation extends Representation {
     // relevant assembly code
     def generateLine(instr: Instruction): String =
         s"${instr match {
-            case Label(labelName)              => s"$labelName:"
-            case Directive(name)               => s".$name"
-            case PushInstr(reg)                => s"\tPUSH {${reg.mkString}}"
-            case PopInstr(reg)                 => s"\tPOP {${reg.mkString}}"
-            case SubInstr(dst, fst, snd)       => s"\tSUB $dst, $fst, $snd"
-            case AddInstr(dst, fst, snd)       => s"\tADD $dst, $fst, $snd"
-            case MoveInstr(dst, src)           => s"\tMOV $dst, $src"
-            case LoadImmLabelInstr(dst, label) => s"\tLDR $dst, =$label"
-            case LoadImmIntInstr(dst, imm)     => s"\tLDR $dst, =$imm"
-            case LoadInstr(dst, src, ImmOffset(0)) => s"\tLDR $dst, [$src]"
-            case LoadInstr(dst, src, ImmOffset(offset)) =>
-                s"\tLDR $dst, [$src, #$offset]"
+            case Label(labelName)                 => s"$labelName:"
+            case Directive(name)                  => s".$name"
+            case PushInstr(reg)                   => s"\tPUSH {${reg.mkString}}"
+            case PopInstr(reg)                    => s"\tPOP {${reg.mkString}}"
+            case SubInstr(dst, fst, snd)          => s"\tSUB $dst, $fst, $snd"
+            case AddInstr(dst, fst, snd)          => s"\tADD $dst, $fst, $snd"
+            case MoveInstr(dst, src)              => s"\tMOV $dst, $src"
+            case LoadLabelInstr(dst, label, cond) => s"\tLDR$cond $dst, =$label"
+            case LoadImmIntInstr(dst, imm, cond)  => s"\tLDR$cond $dst, =$imm"
+            case LoadInstr(dst, src, ImmOffset(0), cond) =>
+                s"\tLDR$cond $dst, [$src]"
+            case LoadInstr(dst, src, ImmOffset(offset), cond) =>
+                s"\tLDR$cond $dst, [$src, #$offset]"
             case StoreInstr(src, dst, ImmOffset(0)) => s"\tSTR $src, [$dst]"
             case StoreInstr(src, dst, ImmOffset(offset)) =>
                 s"\tSTR $src [$dst, #$offset]"

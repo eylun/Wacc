@@ -27,7 +27,7 @@ object transExpression {
                   getStringDirective(str, msgCount)
                 )
                 collector.addStatement(
-                  List(LoadImmLabelInstr(Reg(0), s"msg_$msgCount"))
+                  List(LoadLabelInstr(Reg(0), s"msg_$msgCount"))
                 )
             }
             case Add(e1, e2) => {
@@ -41,12 +41,6 @@ object transExpression {
                     AddInstr(Reg(0), Reg(0), RegOp(Reg(1)))
                   )
                 )
-            }
-            case PairLiterNode() => {
-                collector.addDataMsg(
-                  getStringDirective("null", collector.tickDataMsg())
-                )
-                List(LoadLabelInstr(Reg(0), s"=$str"))
             }
             case _ => List[Instruction]().empty
         }

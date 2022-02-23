@@ -187,31 +187,31 @@ object transStatement {
 
                         /** Call transExpression and branch */
                         transExpression(e, stackFrame)
-                        printIntLiter()
+                        printIntLiter
                     }
                     case BoolLiterNode(_) => {
 
                         /** Call transExpression and branch */
                         transExpression(e, stackFrame)
-                        printBoolLiter()
+                        printBoolLiter
                     }
                     case CharLiterNode(_) => {
                         transExpression(e, stackFrame)
-                        printCharLiter()
+                        printCharLiter
                     }
 
-                    case StrLiterNode(_) || PairLiterNode() => {
+                    case StringLiterNode(_) | PairLiterNode() => {
 
                         /** call transExpression and branch */
                         transExpression(e, stackFrame)
-                        printStrLiter()
+                        printStrLiter
 
                     }
 
                     case IdentNode(s) => {
 
                         /** Get Ident Node Type */
-                        Type nodeType =
+                        val nodeType: Type =
                             (stackFrame.st.lookupAll(s)).get.getType()
 
                         /** Load sp into Reg(0) */
@@ -231,28 +231,28 @@ object transStatement {
 
                         /** Call transExpression and branch */
                         transExpression(e, stackFrame)
-                        printIntLiter()
-                        println()
+                        printIntLiter
+                        println
                     }
                     case BoolLiterNode(_) => {
 
                         /** Call transExpression and branch */
                         transExpression(e, stackFrame)
-                        printBoolLiter()
-                        println()
+                        printBoolLiter
+                        println
                     }
                     case CharLiterNode(_) => {
                         transExpression(e, stackFrame)
-                        printCharLiter()
-                        println()
+                        printCharLiter
+                        println
                     }
 
-                    case StrLiterNode(_) || PairLiterNode() => {
+                    case StringLiterNode(_) | PairLiterNode() => {
 
                         /** call transExpression and branch */
                         transExpression(e, stackFrame)
-                        printStrLiter()
-                        println()
+                        printStrLiter
+                        println
 
                     }
 
@@ -260,7 +260,7 @@ object transStatement {
                         {
 
                             /** Get Ident Node Type */
-                            Type nodeType =
+                            val nodeType: Type =
                                 (stackFrame.st.lookupAll(s)).get.getType()
 
                             /** Load sp into Reg(0) */
@@ -270,11 +270,11 @@ object transStatement {
                               */
                             printIdent(nodeType)
                         }
-                        println()
+                        println
                 }
 
             }
-            case _ => List[Instruction]().empty
+            case _ =>
         }
         collector.addStatement(stackFrame.tail)
     }

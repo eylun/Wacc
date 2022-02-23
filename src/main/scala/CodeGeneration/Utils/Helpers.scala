@@ -26,9 +26,9 @@ object Helpers {
     def getStringDirective(s: String, idx: Int): List[Instruction] = {
 
         List(
-          Label(s"msg_$idx:"),
-          Directive(s".word ${s.length()}"),
-          Directive(s".ascii \"$s\"")
+          Label(s"msg_$idx"),
+          Directive(s"word ${s.length()}"),
+          Directive(s"ascii \"$s\"")
         )
     }
 
@@ -76,30 +76,30 @@ object Helpers {
     /** Print Int Literal */
     def getPrintIntDirective(idx: Int): List[Instruction] = {
         List(
-          Label(s"msg_$idx:"),
-          Directive(s".word 3"),
-          Directive(s".ascii \"%d\\0\"")
+          Label(s"msg_$idx"),
+          Directive(s"word 3"),
+          Directive(s"ascii \"%d\\0\"")
         )
     }
 
     def printIntLiterFunc(idx: Int): List[Instruction] = {
         List(
           Label("p_print_int"),
-          PushInstr(lr),
+          PushInstr(List(lr)),
           MoveInstr(Reg(1), RegOp(Reg(0))),
-          LoadLabelInstr(Reg(0), s"msg_$idx:"),
+          LoadLabelInstr(Reg(0), s"msg_$idx"),
           AddInstr(Reg(0), Reg(0), ImmOffset(4)),
           BranchLinkInstr("printf"),
           MoveInstr(Reg(0), ImmOffset(0)),
           BranchLinkInstr("fflush"),
-          PopInstr(pc)
+          PopInstr(List(pc))
         )
     }
 
-    def printIntLiter() = {
+    def printIntLiter(implicit collector: WaccBuffer) = {
 
         /** Add DataMsg for the Int literal */
-        Int idx = collector.tickDataMsg()
+        val idx: Int = collector.tickDataMsg()
         collector.addDataMsg(getPrintIntDirective(idx))
 
         /** Add p_print_int function */
@@ -116,40 +116,40 @@ object Helpers {
     /** Print Bool Literal */
     def getPrintTrueDirective(idx: Int): List[Instruction] = {
         List(
-          Label(s"msg_$idx:"),
-          Directive(s".word 5"),
-          Directive(s".ascii \"true\\0\"")
+          Label(s"msg_$idx"),
+          Directive(s"word 5"),
+          Directive(s"ascii \"true\\0\"")
         )
     }
 
     def getPrintFalseDirective(idx: Int): List[Instruction] = {
         List(
-          Label(s"msg_$idx:"),
-          Directive(s".word 6"),
-          Directive(s".ascii \"false\\0\"")
+          Label(s"msg_$idx"),
+          Directive(s"word 6"),
+          Directive(s"ascii \"false\\0\"")
         )
     }
 
     def printBoolLiterFunc(idxTrue: Int, idxFalse: Int): List[Instruction] = {
         List(
           Label("p_print_bool"),
-          PushInstr(lr),
+          PushInstr(List(lr)),
           CmpInstr(Reg(0), ImmOffset(0)),
-          LoadLabelInstr(Reg(0), s"msg_$idxTrue:", Condition.NE),
-          LoadLabelInstr(Reg(0), s"msg_$idxFalse:", Condition.EQ),
+          LoadLabelInstr(Reg(0), s"msg_$idxTrue", Condition.NE),
+          LoadLabelInstr(Reg(0), s"msg_$idxFalse", Condition.EQ),
           AddInstr(Reg(0), Reg(0), ImmOffset(4)),
           BranchLinkInstr("printf"),
           MoveInstr(Reg(0), ImmOffset(0)),
           BranchLinkInstr("fflush"),
-          PopInstr(pc)
+          PopInstr(List(pc))
         )
     }
 
-    def printBoolLiter() = {
+    def printBoolLiter(implicit collector: WaccBuffer) = {
 
         /** Add DataMsg for Bool Literal true & false */
-        Int idxTrue = collector.tickDataMsg()
-        Int idxFalse = collector.tickDataMsg()
+        val idxTrue: Int = collector.tickDataMsg()
+        val idxFalse: Int = collector.tickDataMsg()
         collector.addDataMsg(
           getPrintTrueDirective(idxTrue)
         )
@@ -169,14 +169,14 @@ object Helpers {
     }
 
     /** Print Char Liter */
-    def printCharLiter() = {
+    def printCharLiter(implicit collector: WaccBuffer) = {
 
         /** Branch to putchar */
         collector.addStatement(
           List(
             BranchLinkInstr("putchar"),
             MoveInstr(Reg(0), ImmOffset(0)),
-            PopInstr(pc)
+            PopInstr(List(pc))
           )
         )
     }
@@ -184,31 +184,31 @@ object Helpers {
     /** Print String Literal */
     def getPrintStrDirective(idx: Int): List[Instruction] = {
         List(
-          Label(s"msg_$idx:"),
-          Directive(s".word 5"),
-          Directive(s".ascii \"%.*s\\0\"")
+          Label(s"msg_$idx"),
+          Directive(s"word 5"),
+          Directive(s"ascii \"%.*s\\0\"")
         )
     }
 
     def printStrLiterFunc(idx: Int): List[Instruction] = {
         List(
           Label("p_print_string"),
-          PushInstr(lr),
+          PushInstr(List(lr)),
           LoadRegMemInstr(Reg(1), Reg(0)),
           AddInstr(Reg(2), Reg(0), ImmOffset(4)),
-          LoadLabelInstr(Reg(0), s"msg_$idx:"),
+          LoadLabelInstr(Reg(0), s"msg_$idx"),
           AddInstr(Reg(0), Reg(0), ImmOffset(4)),
           BranchLinkInstr("printf"),
           MoveInstr(Reg(0), ImmOffset(0)),
           BranchLinkInstr("fflush"),
-          PopInstr(pc)
+          PopInstr(List(pc))
         )
     }
 
-    def printStrLiter() = {
+    def printStrLiter(implicit collector: WaccBuffer) = {
 
         /** Add DataMsg for string formating */
-        Int idx = collector.tickDataMsg()
+        val idx: Int = collector.tickDataMsg()
         collector.addDataMsg(getPrintStrDirective(idx))
 
         /** Add p_print_string function */
@@ -222,7 +222,7 @@ object Helpers {
         )
     }
 
-    def printIdent(nodeType: Type) = {
+    def printIdent(nodeType: Type)(implicit collector: WaccBuffer) = {
 
         /** Load sp into Reg(0) */
         collector.addStatement(
@@ -232,11 +232,11 @@ object Helpers {
         /** Add dataMsgs, functions and branch according to type
           */
         nodeType match {
-            case IntType()  => printIntLiter()
-            case BoolType() => printBoolLiter()
-            case CharType() => printCharLiter()
-            case StringType() || NullPairType() =>
-                printStrLiter()
+            case IntType()  => printIntLiter
+            case BoolType() => printBoolLiter
+            case CharType() => printCharLiter
+            case StringType() | NullPairType() =>
+                printStrLiter
             /** TODO: PairType & ArrayType case ArrayType(elemType, dim) => _
               * case PairType(fstType, sndType) => _
               */
@@ -253,29 +253,29 @@ object Helpers {
     /** PRINTLN STATEMENT HELPERS */
     def getPrintlnDirective(idx: Int): List[Instruction] = {
         List(
-          Label(s"msg_$idx:"),
-          Directive(s".word 1"),
-          Directive(s".ascii \"\\0\"")
+          Label(s"msg_$idx"),
+          Directive(s"word 1"),
+          Directive(s"ascii \"\\0\"")
         )
     }
 
     def printlnFunc(idx: Int): List[Instruction] = {
         List(
           Label("p_print_ln"),
-          PushInstr(lr),
-          LoadLabelInstr(Reg(0), s"msg_$idx:"),
+          PushInstr(List(lr)),
+          LoadLabelInstr(Reg(0), s"msg_$idx"),
           AddInstr(Reg(0), Reg(0), ImmOffset(4)),
           BranchLinkInstr("puts"),
           MoveInstr(Reg(0), ImmOffset(0)),
           BranchLinkInstr("fflush"),
-          PopInstr(pc)
+          PopInstr(List(pc))
         )
     }
 
-    def println() = {
+    def println(implicit collector: WaccBuffer) = {
 
         /** Add DataMsg for println newline escape char */
-        Int idx = collector.tickDataMsg()
+        val idx: Int = collector.tickDataMsg()
         collector.addDataMsg(getPrintlnDirective(idx))
 
         /** Add p_print_int function */

@@ -57,7 +57,7 @@ case class LoadInstr(
     condition: Condition.Condition = Condition.AL
 ) extends Instruction
 
-case class LoadImmOffsetInstr(
+case class LoadImmIntInstr(
     dst: Register,
     imm: Int,
     condition: Condition.Condition = Condition.AL
@@ -84,11 +84,15 @@ case class StoreByteInstr(src: Register, dst: Register, offset: SecondOperand)
 case class MoveInstr(dst: Register, src: SecondOperand) extends Instruction
 
 /** Branch Instructions */
-case class BranchInstr(label: String, condition: Condition.Condition)
-    extends Instruction
+case class BranchInstr(
+    label: String,
+    condition: Condition.Condition = Condition.AL
+) extends Instruction
 
-case class BranchLinkInstr(label: String, condition: Condition.Condition)
-    extends Instruction
+case class BranchLinkInstr(
+    label: String,
+    condition: Condition.Condition = Condition.AL
+) extends Instruction
 
 /** Logic Operations */
 case class AndInstr(fstOp: Register, sndOp: Register) extends Instruction
