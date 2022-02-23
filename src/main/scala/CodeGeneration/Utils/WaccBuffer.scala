@@ -1,12 +1,12 @@
 import scala.collection.mutable
-import constants._
-import Helpers.UtilFlag._
-import parsley.internal.machine.instructions.Pop
 
 class WaccBuffer {
     private var dataMsgCount = 0
     private var iteCount = 0
     private var wdCount = 0
+    import constants._
+    import Helpers._
+    import Helpers.UtilFlag._
 
     /** One-off Utility Pool
       *
@@ -64,10 +64,6 @@ class WaccBuffer {
 
     private val mainStatements: mutable.ListBuffer[Instruction] =
         mutable.ListBuffer[Instruction](
-          Directive("text"),
-          Directive("global main"),
-          Label("main"),
-          PushInstr(List(lr))
         )
 
     private val functions: mutable.ListBuffer[Instruction] =
@@ -75,6 +71,10 @@ class WaccBuffer {
 
     private val utilityStatements: mutable.ListBuffer[Instruction] =
         mutable.ListBuffer[Instruction]().empty
+
+    def setupMain(): Unit = {
+        mainStatements ++= mainSetup
+    }
 
     def tickDataMsg(): Int = {
         dataMsgCount += 1

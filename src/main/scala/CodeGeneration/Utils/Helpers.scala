@@ -1,8 +1,16 @@
 import Condition._
+import constants._
 
 object Helpers {
     val WORD_SIZE = 4
     val BIT_SIZE = 1
+
+    val mainSetup = List(
+      Directive("text"),
+      Directive("global main"),
+      Label("main"),
+      PushInstr(List(lr))
+    )
 
     def getTypeSize(t: Identifier): Int = {
         t match {
