@@ -62,4 +62,12 @@ object Helpers {
         }
         collector.addStatement(List(PushInstr(List(Reg(0)))))
     }
+
+    /** Enumerations: Condition Codes, Flags */
+    object UtilFlag extends Enumeration {
+        type UtilFlag = Value
+        val PPrintString, PPrintLn, PPrintInt, PPrintRef, PThrowOverflowError,
+            PRuntimeError, PDivisionByZeroError, PCheckArrayBounds, PReadChar,
+            PReadInt, PFreePair, PCheckNullPointer = Value
+    }
 }
