@@ -1,5 +1,6 @@
 import Condition._
 import Helpers._
+import Helpers.UtilFlag._
 import Condition._
 
 object transStatement {
@@ -187,7 +188,8 @@ object transStatement {
 
                         /** Call transExpression and branch */
                         transExpression(e, stackFrame)
-                        printIntLiter
+                        // printIntLiter
+                        collector.insertUtil(PPrintInt)
                     }
                     case BoolLiterNode(_) => {
 

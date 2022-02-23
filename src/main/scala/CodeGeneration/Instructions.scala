@@ -3,7 +3,8 @@ sealed trait Instruction
 /** Enumerations: Condition Codes, Flags */
 object Condition extends Enumeration {
     type Condition = Value
-    val EQ, NE, LE, LT, GE, GT, AL = Value
+    val EQ, NE, LE, LT, GE, GT = Value
+    val AL = Value("")
 }
 
 // TODO: Fill up all of this

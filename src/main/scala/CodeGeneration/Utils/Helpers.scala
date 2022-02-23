@@ -103,7 +103,7 @@ object Helpers {
         collector.addDataMsg(getPrintIntDirective(idx))
 
         /** Add p_print_int function */
-        collector.addFunc(
+        collector.addUtilStatement(
           printIntLiterFunc(idx)
         )
 

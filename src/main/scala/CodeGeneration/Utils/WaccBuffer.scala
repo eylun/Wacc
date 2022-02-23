@@ -46,7 +46,7 @@ class WaccBuffer {
                 dataMsgs ++= List() // Replace this with a helper function call
             }
             case PPrintLn             =>
-            case PPrintInt            => //
+            case PPrintInt            => printIntLiter(this)
             case PPrintRef            => //
             case PThrowOverflowError  => //
             case PRuntimeError        =>
@@ -71,6 +71,10 @@ class WaccBuffer {
 
     private val utilityStatements: mutable.ListBuffer[Instruction] =
         mutable.ListBuffer[Instruction]().empty
+
+    def addUtilStatement(utilStatement: List[Instruction]): Unit = {
+        utilityStatements ++= utilStatement
+    }
 
     def setupMain(): Unit = {
         mainStatements ++= mainSetup
@@ -101,6 +105,12 @@ class WaccBuffer {
         buffer.toList
 
     def emit(): List[Instruction] = toList(
-      dataMsgs ++ functions ++ mainStatements ++ utilityStatements
+      dataMsgs.length match {
+          case 0 => functions ++ mainStatements ++ utilityStatements
+          case _ =>
+              (Directive(
+                "data"
+              ) +=: dataMsgs) ++ functions ++ mainStatements ++ utilityStatements
+      }
     )
 }
