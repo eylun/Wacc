@@ -60,14 +60,14 @@ object StackFrame {
         st.dict.foldLeft(0)((p, n) => p + getTypeSize(n._2))
 
     private def generateOffsetMap(st: SymbolTable): Map[String, Int] = {
-        var acc = 0
+        var acc = totalBytes(st)
         val map = mutable.Map[String, Int]()
         st.dict.foreach {
             /** return is a only for semantic checking */
             case ("return", _) =>
             case (k, v) => {
+                acc -= getTypeSize(v)
                 map += (k -> acc)
-                acc += getTypeSize(v)
             }
         }
 

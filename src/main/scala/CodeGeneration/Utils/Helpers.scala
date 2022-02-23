@@ -1,8 +1,16 @@
 import Condition._
+import constants._
 
 object Helpers {
     val WORD_SIZE = 4
     val BIT_SIZE = 1
+
+    val mainSetup = List(
+      Directive("text"),
+      Directive("global main"),
+      Label("main"),
+      PushInstr(List(lr))
+    )
 
     def getTypeSize(t: Identifier): Int = {
         t match {
@@ -61,5 +69,13 @@ object Helpers {
                 )
         }
         collector.addStatement(List(PushInstr(List(Reg(0)))))
+    }
+
+    /** Enumerations: Condition Codes, Flags */
+    object UtilFlag extends Enumeration {
+        type UtilFlag = Value
+        val PPrintString, PPrintLn, PPrintInt, PPrintRef, PThrowOverflowError,
+            PRuntimeError, PDivisionByZeroError, PCheckArrayBounds, PReadChar,
+            PReadInt, PFreePair, PCheckNullPointer = Value
     }
 }
