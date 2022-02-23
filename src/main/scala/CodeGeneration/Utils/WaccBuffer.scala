@@ -30,21 +30,22 @@ class WaccBuffer {
         flag match {
             case PPrintString => {
                 val message = s"msg_${tickDataMsg()}"
-                utilityStatements ++= List(
-                  Label(s"p_print_string"),
-                  PushInstr(List(lr)),
-                  LoadInstr(r1, r0, ImmOffset(0)),
-                  AddInstr(r2, r0, ImmOffset(4)),
-                  LoadImmLabelInstr(r0, message),
-                  AddInstr(r0, r0, ImmOffset(4)),
-                  BranchLinkInstr("printf", Condition.AL),
-                  MoveInstr(r0, ImmOffset(0)),
-                  BranchLinkInstr("fflush", Condition.AL),
-                  PopInstr(List(pc))
-                ) // Put this code into helpers
-                dataMsgs ++= List() // Data Msgs
+                utilityStatements ++= List() // Replace this with a helper function call
+                // List(
+                //   Label(s"p_print_string"),
+                //   PushInstr(List(lr)),
+                //   LoadInstr(r1, r0, ImmOffset(0)),
+                //   AddInstr(r2, r0, ImmOffset(4)),
+                //   LoadImmLabelInstr(r0, message),
+                //   AddInstr(r0, r0, ImmOffset(4)),
+                //   BranchLinkInstr("printf", Condition.AL),
+                //   MoveInstr(r0, ImmOffset(0)),
+                //   BranchLinkInstr("fflush", Condition.AL),
+                //   PopInstr(List(pc))
+                // )
+                dataMsgs ++= List() // Replace this with a helper function call
             }
-            case PPrintLn             => //
+            case PPrintLn             =>
             case PPrintInt            => //
             case PPrintRef            => //
             case PThrowOverflowError  => //
