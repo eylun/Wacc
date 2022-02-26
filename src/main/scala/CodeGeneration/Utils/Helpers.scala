@@ -282,7 +282,7 @@ object Helpers {
     /** Enumerations: Condition Codes, Flags */
     object UtilFlag extends Enumeration {
         type UtilFlag = Value
-        val PPrintString, PPrintLn, PPrintInt, PPrintBool, PPrintChar,
+        val PPrintLn, PPrintInt, PPrintBool, PPrintChar, PPrintString,
             PPrintRef, PPrintNewLine, PThrowOverflowError, PRuntimeError,
             PDivisionByZeroError, PCheckArrayBounds, PReadChar, PReadInt,
             PFreePair, PCheckNullPointer = Value
