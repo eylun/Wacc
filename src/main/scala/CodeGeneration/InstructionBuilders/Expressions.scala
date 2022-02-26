@@ -10,6 +10,8 @@ object transExpression {
             case IdentNode(s) =>
                 collector.addStatement(
                   List(
+                    // TODO: Check this again in the future when people reply on edstem
+                    // For some reason ImmOffset for pairs should have 4 added to it
                     LoadInstr(Reg(0), sp, ImmOffset(stackFrame.getOffset(s)))
                   )
                 )

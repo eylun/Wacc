@@ -13,7 +13,7 @@ object transRHS {
                 addNewPairElem(e2, stackFrame)
                 collector.addStatement(
                   List(
-                    MoveInstr(Reg(3), ImmOffset(8)),
+                    MoveInstr(Reg(0), ImmOffset(8)),
                     BranchLinkInstr("malloc", AL),
                     PopInstr(List(Reg(1), Reg(2))),
                     StoreInstr(Reg(2), Reg(0), ImmOffset(0)),

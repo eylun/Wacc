@@ -18,67 +18,60 @@ object transStatement {
                     case arr_t @ ArrayTypeNode(at, dimension) => {
                         // will always be 4 here, so not sure if necessary
                         val arrayAddrSize = getTypeSize(t.typeId.get)
-                        r match {
-                            // TODO: possible to put this in assignRHS instead BUT
-                            // the only way to get size is by getting type id of first element
-                            case ArrayLiterNode(es) => {
+                        val ArrayLiterNode(es) = r
+                        collector.addStatement(
+                          List(
+                            MoveInstr(
+                              Reg(0),
+                              ImmOffset(
+                                getArraySize(
+                                  arr_t,
+                                  es.length
+                                ) + arrayAddrSize
+                              )
+                            ),
+                            BranchLinkInstr("malloc", Condition.AL),
+                            MoveInstr(Reg(3), RegOp(Reg(0)))
+                          )
+                        )
+                        val elemSize =
+                            getTypeSize(at.typeId.get)
+                        var ofs = arrayAddrSize
+                        es.foreach { e =>
+                            {
+                                transExpression(e, stackFrame)
                                 collector.addStatement(
                                   List(
-                                    MoveInstr(
-                                      Reg(0),
-                                      ImmOffset(
-                                        getArraySize(
-                                          arr_t,
-                                          es.length
-                                        ) + arrayAddrSize
-                                      )
-                                    ),
-                                    BranchLinkInstr("malloc", Condition.AL),
-                                    MoveInstr(Reg(3), RegOp(Reg(0)))
-                                  )
-                                )
-                                val elemSize =
-                                    getTypeSize(at.typeId.get)
-                                var ofs = arrayAddrSize
-                                es.foreach { e =>
-                                    {
-                                        transExpression(e, stackFrame)
-                                        collector.addStatement(
-                                          List(
-                                            // set to store byte for char and bool
-                                            StoreInstr(
-                                              Reg(0),
-                                              Reg(3),
-                                              ImmOffset(ofs)
-                                            )
-                                          )
-                                        )
-                                        ofs = ofs + elemSize
-                                    }
-                                }
-                                collector.addStatement(
-                                  List(
-                                    MoveInstr(
-                                      Reg(0),
-                                      ImmOffset(es.length)
-                                    ),
+                                    // set to store byte for char and bool
                                     StoreInstr(
                                       Reg(0),
                                       Reg(3),
-                                      ImmOffset(0)
-                                    ),
-                                    MoveInstr(
-                                      Reg(0),
-                                      RegOp(
-                                        Reg(3)
-                                      )
+                                      ImmOffset(ofs)
                                     )
                                   )
                                 )
-
+                                ofs = ofs + elemSize
                             }
-                            case _ => transRHS(r, stackFrame)
                         }
+                        collector.addStatement(
+                          List(
+                            MoveInstr(
+                              Reg(0),
+                              ImmOffset(es.length)
+                            ),
+                            StoreInstr(
+                              Reg(0),
+                              Reg(3),
+                              ImmOffset(0)
+                            ),
+                            MoveInstr(
+                              Reg(0),
+                              RegOp(
+                                Reg(3)
+                              )
+                            )
+                          )
+                        )
                     }
                     case _ => {
                         transRHS(r, stackFrame)

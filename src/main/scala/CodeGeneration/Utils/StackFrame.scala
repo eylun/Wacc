@@ -35,8 +35,10 @@ class StackFrame(
 
     def join(sf: StackFrame, st: SymbolTable): StackFrame = {
         val newMap: mutable.Map[String, Int] = mutable.Map[String, Int]()
-        offsetMap.foreach { case (k, v) =>
-            newMap += (k -> (v + sf.totalBytes))
+        offsetMap.foreach {
+            case (k, v) => {
+                newMap += (k -> (v + sf.totalBytes))
+            }
         }
         StackFrame((newMap ++ sf.offsetMap).toMap, sf.totalBytes, st)
     }
