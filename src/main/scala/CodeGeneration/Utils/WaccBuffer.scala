@@ -30,7 +30,6 @@ class WaccBuffer {
         flag match {
             case PPrintInt            => printIntLiter(this)
             case PPrintBool           => printBoolLiter(this)
-            case PPrintChar           => printCharLiter(this)
             case PPrintString         => printStrLiter(this)
             case PPrintRef            => printRef(this)
             case PPrintNewLine        => printNewLine(this)
@@ -92,11 +91,11 @@ class WaccBuffer {
 
     def emit(): List[Instruction] = toList(
       dataMsgs.length match {
-          case 0 => functions ++ mainStatements ++ utilityStatements
+          case 0 => mainStatements ++ functions ++ utilityStatements
           case _ =>
               (Directive(
                 "data"
-              ) +=: dataMsgs) ++ functions ++ mainStatements ++ utilityStatements
+              ) +=: dataMsgs) ++ mainStatements ++ functions ++ utilityStatements
       }
     )
 }

@@ -20,6 +20,7 @@ object transRHS {
                     StoreInstr(Reg(1), Reg(0), ImmOffset(4))
                   )
                 )
+                stackFrame.dropTempOffset(WORD_SIZE * 2)
             }
             case _ =>
         }

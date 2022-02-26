@@ -1,4 +1,3 @@
-import Condition._
 import constants._
 import transExpression._
 
@@ -55,7 +54,7 @@ object Helpers {
           List(
             PushInstr(List(Reg(0))),
             MoveInstr(Reg(0), ImmOffset(getTypeSize(t))),
-            BranchLinkInstr("malloc", AL),
+            BranchLinkInstr("malloc", Condition.AL),
             PopInstr(List(Reg(1)))
           )
         )
@@ -70,6 +69,7 @@ object Helpers {
                 )
         }
         collector.addStatement(List(PushInstr(List(Reg(0)))))
+        stackFrame.addTempOffset(WORD_SIZE)
     }
 
     /** PRINT STATEMENT HELPERS */
@@ -130,7 +130,7 @@ object Helpers {
         List(
           Label("p_print_bool"),
           PushInstr(List(lr)),
-          CmpInstr(Reg(0), ImmOffset(0)),
+          CompareInstr(Reg(0), ImmOffset(0), Condition.AL),
           LoadLabelInstr(Reg(0), s"msg_$idxTrue", Condition.NE),
           LoadLabelInstr(Reg(0), s"msg_$idxFalse", Condition.EQ),
           AddInstr(Reg(0), Reg(0), ImmOffset(4)),
@@ -154,23 +154,10 @@ object Helpers {
         )
 
         /** Add p_print_bool function */
-        collector.addFunc(
+        collector.addUtilStatement(
           printBoolLiterFunc(idxTrue, idxFalse)
         )
 
-    }
-
-    /** Print Char Liter */
-    def printCharLiter(implicit collector: WaccBuffer) = {
-
-        /** Branch to putchar */
-        collector.addStatement(
-          List(
-            BranchLinkInstr("putchar"),
-            MoveInstr(Reg(0), ImmOffset(0)),
-            PopInstr(List(pc))
-          )
-        )
     }
 
     /** Print String Literal */
@@ -186,7 +173,7 @@ object Helpers {
         List(
           Label("p_print_string"),
           PushInstr(List(lr)),
-          LoadRegMemInstr(Reg(1), Reg(0)),
+          LoadInstr(Reg(1), Reg(0), ImmOffset(0)),
           AddInstr(Reg(2), Reg(0), ImmOffset(4)),
           LoadLabelInstr(Reg(0), s"msg_$idx"),
           AddInstr(Reg(0), Reg(0), ImmOffset(4)),
@@ -204,7 +191,7 @@ object Helpers {
         collector.addDataMsg(getPrintStrDirective(idx))
 
         /** Add p_print_string function */
-        collector.addFunc(
+        collector.addUtilStatement(
           printStrLiterFunc(idx)
         )
 
@@ -239,7 +226,7 @@ object Helpers {
         collector.addDataMsg(getPrintRefDirective(idx))
 
         /** Add p_print_string function */
-        collector.addFunc(
+        collector.addUtilStatement(
           printRefFunc(idx)
         )
 
@@ -274,7 +261,7 @@ object Helpers {
         collector.addDataMsg(getPrintNewLineDirective(idx))
 
         /** Add p_print_int function */
-        collector.addFunc(
+        collector.addUtilStatement(
           printNewLineFunc(idx)
         )
     }

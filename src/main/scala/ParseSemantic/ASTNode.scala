@@ -1193,7 +1193,7 @@ object ArrayElemNode {
 }
 
 /** PAIR ELEMENT NODES */
-sealed trait PairElemNode extends ExprNode with AssignLHSNode with AssignRHSNode
+sealed trait PairElemNode extends AssignLHSNode with AssignRHSNode
 
 case class FirstPairElemNode(e: ExprNode)(val pos: (Int, Int))
     extends PairElemNode {

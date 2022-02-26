@@ -70,12 +70,6 @@ case class LoadLabelInstr(
     condition: Condition.Condition = Condition.AL
 ) extends Instruction
 
-case class LoadRegMemInstr(
-    dst: Register,
-    memory: Register,
-    condition: Condition.Condition = Condition.AL
-) extends Instruction
-
 case class StoreInstr(src: Register, dst: Register, offset: SecondOperand)
     extends Instruction
 
@@ -101,9 +95,6 @@ case class AndInstr(fstOp: Register, sndOp: Register) extends Instruction
 case class XorInstr(fstOp: Register, sndOp: Register) extends Instruction
 
 case class OrInstr(fstOp: Register, sndOp: Register) extends Instruction
-
-/** Comparison Operation */
-case class CmpInstr(reg: Register, sndOp: SecondOperand) extends Instruction
 
 /* Stack Manipulation Operation*/
 case class PushInstr(regList: List[Register]) extends Instruction

@@ -8,6 +8,7 @@ class StackFrame(
     val totalBytes: Int,
     val st: SymbolTable
 ) {
+    var tempOffset = 0;
 
     val head: List[Instruction] = totalBytes match {
         case 0 => List.empty
@@ -33,6 +34,10 @@ class StackFrame(
             )
     }
 
+    def addTempOffset(amount: Int): Unit = tempOffset += amount
+
+    def dropTempOffset(amount: Int): Unit = tempOffset -= amount
+
     def join(sf: StackFrame, st: SymbolTable): StackFrame = {
         val newMap: mutable.Map[String, Int] = mutable.Map[String, Int]()
         offsetMap.foreach {
@@ -45,7 +50,7 @@ class StackFrame(
 
     def getOffset(ident: String): Int = {
         offsetMap.get(ident) match {
-            case Some(x) => x
+            case Some(x) => x + tempOffset
             case None =>
                 throw new RuntimeException("ident should exist in stack frame")
         }
