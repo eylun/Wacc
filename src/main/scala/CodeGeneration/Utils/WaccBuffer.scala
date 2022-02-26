@@ -34,7 +34,7 @@ class WaccBuffer {
             case PPrintString         => printStrLiter(this)
             case PPrintRef            => printRef(this)
             case PPrintNewLine        => printNewLine(this)
-            case PThrowOverflowError  => //
+            case PThrowOverflowError  =>
             case PRuntimeError        =>
             case PDivisionByZeroError =>
             case PCheckArrayBounds    =>

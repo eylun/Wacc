@@ -273,19 +273,8 @@ object transStatement {
                                   List(BranchLinkInstr("p_print_string"))
                                 )
                             }
-                            case NullPairType() => {
-                                collector.insertUtil(UtilFlag.PPrintRef)
-
-                                /** Add branch instruction statement */
-                                collector.addStatement(
-                                  List(BranchLinkInstr("p_print_reference"))
-                                )
-                            }
-                            /** TODO: PairType & ArrayType case
-                              * ArrayType(elemType, dim) => _ case
-                              * PairType(fstType, sndType) => _
-                              */
-                            case PairType(e1, e2) => {
+                            case NullPairType() | PairType(_, _) |
+                                ArrayType(_, _, _) => {
                                 collector.insertUtil(UtilFlag.PPrintRef)
 
                                 /** Add branch instruction statement */
@@ -294,15 +283,6 @@ object transStatement {
                                 )
                             }
                         }
-
-                        collector.addStatement(
-                          List(
-                            AddInstr(sp, sp, ImmOffset(4)),
-                            MoveInstr(Reg(0), ImmOffset(0)),
-                            PopInstr(List(pc))
-                          )
-                        )
-
                     }
                 }
             }
@@ -431,19 +411,8 @@ object transStatement {
                                   List(BranchLinkInstr("p_print_string"))
                                 )
                             }
-                            case NullPairType() => {
-                                collector.insertUtil(UtilFlag.PPrintRef)
-
-                                /** Add branch instruction statement */
-                                collector.addStatement(
-                                  List(BranchLinkInstr("p_print_reference"))
-                                )
-                            }
-                            /** TODO: PairType & ArrayType case
-                              * ArrayType(elemType, dim) => _ case
-                              * PairType(fstType, sndType) => _
-                              */
-                            case PairType(e1, e2) => {
+                            case NullPairType() | PairType(_, _) |
+                                ArrayType(_, _, _) => {
                                 collector.insertUtil(UtilFlag.PPrintRef)
 
                                 /** Add branch instruction statement */
@@ -458,14 +427,6 @@ object transStatement {
                         /** Add branch instruction Statement */
                         collector.addStatement(
                           List(BranchLinkInstr("p_print_ln"))
-                        )
-
-                        collector.addStatement(
-                          List(
-                            AddInstr(sp, sp, ImmOffset(4)),
-                            MoveInstr(Reg(0), ImmOffset(0)),
-                            PopInstr(List(pc))
-                          )
                         )
                     }
                 }
