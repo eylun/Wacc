@@ -4,6 +4,7 @@
 
 SOURCE_DIR := src
 OUTPUT := wacccompiler
+ASSEMBLY := *.s
 
 # Project tools
 
@@ -20,6 +21,7 @@ all:
 # clean up all of the compiled files
 clean:
 	$(RM) $(OUTPUT)
+	$(RM) $(ASSEMBLY)
 	$(SBT) clean
 
 .PHONY: all clean

@@ -56,3 +56,8 @@ bin/
 
 #general
 *.class
+
+# generated assembly files
+*.s
+nonsense.*
+nonsense

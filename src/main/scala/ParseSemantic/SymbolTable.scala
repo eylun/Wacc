@@ -1,15 +1,18 @@
-import scala.collection.mutable.Map
+import scala.collection.immutable.Map
 
 class SymbolTable(
-    val encSymTable: Option[SymbolTable],
-    dict: Map[String, Identifier]
+    var encSymTable: Option[SymbolTable],
+    var dict: Map[String, Identifier]
 ) {
+
+    /** Sets the parent of this symbol table. */
+    def setParent(parent: SymbolTable): Unit = encSymTable = Some(parent)
 
     /** Adds an identifier string to the current symbol table, mapped to an
       * identifier object.
       */
     def add(name: String, obj: Identifier): Unit = {
-        dict.addOne(name -> obj)
+        dict = dict + (name -> obj)
     }
 
     /** Looks up an identifier string in the current symbol table. Returns a

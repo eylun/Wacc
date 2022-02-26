@@ -1,7 +1,6 @@
 import parsley.Parsley
 import parsley.Parsley._
 import parsley.implicits.zipped.{LazyZipped2, LazyZipped3, Zipped4}
-import scala.collection.mutable.Map
 import semantics.{
     typeCheckArithmeticBinOp,
     typeCheckOrderingBinOp,
@@ -310,7 +309,7 @@ case class FreeNode(e: ExprNode)(val pos: (Int, Int)) extends StatNode {
         /** Ensure that expression has checked successfully */
         if (e.typeId.isEmpty) return ()
         e.typeId.get.getType() match {
-            case ArrayType(_, _) | PairType(_, _) => {}
+            case ArrayType(_, _, _) | PairType(_, _) => {}
             case _ =>
                 errors += WaccError(
                   pos,
@@ -443,14 +442,16 @@ object PrintlnNode {
 case class IfThenElseNode(e: ExprNode, s1: StatNode, s2: StatNode)(
     val pos: (Int, Int)
 ) extends StatNode {
+    val trueST = SymbolTable()
+    val falseST = SymbolTable()
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         e.check(st, errors)
 
         /** Ensure that expression has checked successfully. Expr must be a
           * conditional expr (boolean)
           */
-        val newScopeST1 = SymbolTable(st)
-        val newScopeST2 = SymbolTable(st)
+        trueST.setParent(st)
+        falseST.setParent(st)
         if (e.typeId.isDefined) {
             e.typeId.get.getType() match {
                 case BoolType() => ()
@@ -464,8 +465,8 @@ case class IfThenElseNode(e: ExprNode, s1: StatNode, s2: StatNode)(
             }
         }
 
-        s1.check(newScopeST1, errors)
-        s2.check(newScopeST2, errors)
+        s1.check(trueST, errors)
+        s2.check(falseST, errors)
     }
 }
 
@@ -479,13 +480,14 @@ object IfThenElseNode {
 }
 case class WhileDoNode(e: ExprNode, s: StatNode)(val pos: (Int, Int))
     extends StatNode {
+    val newScopeST = SymbolTable()
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         e.check(st, errors)
 
         /** Ensure that expression has checked successfully. Expr must be a
           * conditional expr (boolean)
           */
-        val newScopeST = SymbolTable(st)
+        newScopeST.setParent(st)
         if (e.typeId.isDefined) {
             e.typeId.get.getType() match {
                 case BoolType() => ()
@@ -511,10 +513,11 @@ object WhileDoNode {
 }
 
 case class BeginEndNode(s: StatNode)(val pos: (Int, Int)) extends StatNode {
+    val newScopeST = SymbolTable()
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
 
         /** Creates new symbol table and link with outer scope */
-        val newScopeST = SymbolTable(st)
+        newScopeST.setParent(st)
         s.check(newScopeST, errors)
     }
 }
@@ -848,7 +851,7 @@ case class Len(e: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
           */
         if (e.typeId.isEmpty) return ()
         e.typeId.get.getType() match {
-            case ArrayType(_, _) =>
+            case ArrayType(_, _, _) =>
                 this.typeId = Some(IntType())
             case _ =>
                 errors += WaccError(
@@ -1153,7 +1156,7 @@ case class ArrayElemNode(i: IdentNode, es: List[ExprNode])(val pos: (Int, Int))
         /** Ensure that identifier has checked successfully */
         if (i.typeId.isEmpty) return ()
         i.typeId.get.getType() match {
-            case ArrayType(t, d) => {
+            case ArrayType(t, l, d) => {
                 d.compare(es.length) match {
                     case -1 =>
                         errors += WaccError(
@@ -1164,7 +1167,7 @@ case class ArrayElemNode(i: IdentNode, es: List[ExprNode])(val pos: (Int, Int))
                               .replaceAll("\n", " ")
                         )
                     case 0 => this.typeId = Some(t)
-                    case 1 => this.typeId = Some(ArrayType(t, d - es.length))
+                    case 1 => this.typeId = Some(ArrayType(t, l, d - es.length))
                 }
             }
             case t => {
@@ -1190,7 +1193,7 @@ object ArrayElemNode {
 }
 
 /** PAIR ELEMENT NODES */
-sealed trait PairElemNode extends ExprNode with AssignLHSNode with AssignRHSNode
+sealed trait PairElemNode extends AssignLHSNode with AssignRHSNode
 
 case class FirstPairElemNode(e: ExprNode)(val pos: (Int, Int))
     extends PairElemNode {
@@ -1350,9 +1353,10 @@ case class ArrayLiterNode(es: List[ExprNode])(val pos: (Int, Int))
                 return ()
             }
             typeToCheck match {
-                case ArrayType(t, d) => typeId = Some(ArrayType(t, d + 1))
+                case ArrayType(t, l, d) =>
+                    typeId = Some(ArrayType(t, l ++ List(es.length), d + 1))
                 case _ =>
-                    typeId = Some(ArrayType(typeToCheck, 1))
+                    typeId = Some(ArrayType(typeToCheck, List(es.length), 1))
             }
         } else {
             typeId = Some(AnyType())

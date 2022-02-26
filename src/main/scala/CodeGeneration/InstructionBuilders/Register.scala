@@ -1,12 +1,20 @@
 sealed trait Register
 
-case class StackPtrReg() extends Register
+case class StackPtrReg() extends Register {
+    override def toString(): String = "sp"
+}
 
-case class LinkReg() extends Register
+case class LinkReg() extends Register {
+    override def toString(): String = "lr"
+}
 
-case class PCReg() extends Register
+case class PCReg() extends Register {
+    override def toString(): String = "pc"
+}
 
-case class Reg(n: Int) extends Register
+case class Reg(n: Int) extends Register {
+    override def toString(): String = s"r$n"
+}
 
 object constants {
     /* General Purpose Registers */
