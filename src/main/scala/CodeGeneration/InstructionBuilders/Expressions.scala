@@ -10,6 +10,8 @@ object transExpression {
             case IdentNode(s) =>
                 collector.addStatement(
                   List(
+                    // TODO: Check this again in the future when people reply on edstem
+                    // For some reason ImmOffset for pairs should have 4 added to it
                     LoadInstr(Reg(0), sp, ImmOffset(stackFrame.getOffset(s)))
                   )
                 )
@@ -27,7 +29,7 @@ object transExpression {
                   getStringDirective(str, msgCount)
                 )
                 collector.addStatement(
-                  List(LoadImmLabelInstr(Reg(0), s"msg_$msgCount"))
+                  List(LoadLabelInstr(Reg(0), s"msg_$msgCount"))
                 )
             }
             case Add(e1, e2) => {
@@ -42,6 +44,6 @@ object transExpression {
                   )
                 )
             }
-            case _ =>
+            case _ => List[Instruction]().empty
         }
 }

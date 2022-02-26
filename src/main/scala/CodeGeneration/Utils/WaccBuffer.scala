@@ -28,27 +28,12 @@ class WaccBuffer {
         if (utilpool.contains(flag)) return
         utilpool += flag
         flag match {
-            case PPrintString => {
-                val message = s"msg_${tickDataMsg()}"
-                utilityStatements ++= List() // Replace this with a helper function call
-                // List(
-                //   Label(s"p_print_string"),
-                //   PushInstr(List(lr)),
-                //   LoadInstr(r1, r0, ImmOffset(0)),
-                //   AddInstr(r2, r0, ImmOffset(4)),
-                //   LoadImmLabelInstr(r0, message),
-                //   AddInstr(r0, r0, ImmOffset(4)),
-                //   BranchLinkInstr("printf", Condition.AL),
-                //   MoveInstr(r0, ImmOffset(0)),
-                //   BranchLinkInstr("fflush", Condition.AL),
-                //   PopInstr(List(pc))
-                // )
-                dataMsgs ++= List() // Replace this with a helper function call
-            }
-            case PPrintLn             =>
-            case PPrintInt            => //
-            case PPrintRef            => //
-            case PThrowOverflowError  => //
+            case PPrintInt            => printIntLiter(this)
+            case PPrintBool           => printBoolLiter(this)
+            case PPrintString         => printStrLiter(this)
+            case PPrintRef            => printRef(this)
+            case PPrintNewLine        => printNewLine(this)
+            case PThrowOverflowError  =>
             case PRuntimeError        =>
             case PDivisionByZeroError =>
             case PCheckArrayBounds    =>
@@ -71,6 +56,10 @@ class WaccBuffer {
 
     private val utilityStatements: mutable.ListBuffer[Instruction] =
         mutable.ListBuffer[Instruction]().empty
+
+    def addUtilStatement(utilStatement: List[Instruction]): Unit = {
+        utilityStatements ++= utilStatement
+    }
 
     def setupMain(): Unit = {
         mainStatements ++= mainSetup
@@ -101,6 +90,12 @@ class WaccBuffer {
         buffer.toList
 
     def emit(): List[Instruction] = toList(
-      dataMsgs ++ functions ++ mainStatements ++ utilityStatements
+      dataMsgs.length match {
+          case 0 => mainStatements ++ functions ++ utilityStatements
+          case _ =>
+              (Directive(
+                "data"
+              ) +=: dataMsgs) ++ mainStatements ++ functions ++ utilityStatements
+      }
     )
 }

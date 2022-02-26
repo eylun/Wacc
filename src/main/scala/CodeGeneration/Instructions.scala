@@ -3,7 +3,8 @@ sealed trait Instruction
 /** Enumerations: Condition Codes, Flags */
 object Condition extends Enumeration {
     type Condition = Value
-    val EQ, NE, LE, LT, GE, GT, AL = Value
+    val EQ, NE, LE, LT, GE, GT = Value
+    val AL = Value("")
 }
 
 // TODO: Fill up all of this
@@ -50,12 +51,24 @@ case class DivInstr(
 
 /** Loading and Storing Instructions */
 /** Load from: memory */
-case class LoadInstr(dst: Register, src: Register, offset: SecondOperand)
-    extends Instruction
+case class LoadInstr(
+    dst: Register,
+    src: Register,
+    offset: SecondOperand,
+    condition: Condition.Condition = Condition.AL
+) extends Instruction
 
-case class LoadImmIntInstr(dst: Register, imm: Int) extends Instruction
+case class LoadImmIntInstr(
+    dst: Register,
+    imm: Int,
+    condition: Condition.Condition = Condition.AL
+) extends Instruction
 
-case class LoadImmLabelInstr(dst: Register, label: String) extends Instruction
+case class LoadLabelInstr(
+    dst: Register,
+    label: String,
+    condition: Condition.Condition = Condition.AL
+) extends Instruction
 
 case class StoreInstr(src: Register, dst: Register, offset: SecondOperand)
     extends Instruction
@@ -66,11 +79,15 @@ case class StoreByteInstr(src: Register, dst: Register, offset: SecondOperand)
 case class MoveInstr(dst: Register, src: SecondOperand) extends Instruction
 
 /** Branch Instructions */
-case class BranchInstr(label: String, condition: Condition.Condition)
-    extends Instruction
+case class BranchInstr(
+    label: String,
+    condition: Condition.Condition = Condition.AL
+) extends Instruction
 
-case class BranchLinkInstr(label: String, condition: Condition.Condition)
-    extends Instruction
+case class BranchLinkInstr(
+    label: String,
+    condition: Condition.Condition = Condition.AL
+) extends Instruction
 
 /** Logic Operations */
 case class AndInstr(fstOp: Register, sndOp: Register) extends Instruction
@@ -78,9 +95,6 @@ case class AndInstr(fstOp: Register, sndOp: Register) extends Instruction
 case class XorInstr(fstOp: Register, sndOp: Register) extends Instruction
 
 case class OrInstr(fstOp: Register, sndOp: Register) extends Instruction
-
-/** Comparison Operation */
-case class CmpInstr(reg: Register, sndOp: SecondOperand) extends Instruction
 
 /* Stack Manipulation Operation*/
 case class PushInstr(regList: List[Register]) extends Instruction
