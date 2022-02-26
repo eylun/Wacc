@@ -107,10 +107,6 @@ object Helpers {
           printIntLiterFunc(idx)
         )
 
-        /** Add branch instruction Statement */
-        collector.addStatement(
-          List(BranchLinkInstr("p_print_int"))
-        )
     }
 
     /** Print Bool Literal */
@@ -162,10 +158,6 @@ object Helpers {
           printBoolLiterFunc(idxTrue, idxFalse)
         )
 
-        /** Add branch instruction Statement */
-        collector.addStatement(
-          List(BranchLinkInstr("p_print_bool"))
-        )
     }
 
     /** Print Char Liter */
@@ -216,42 +208,45 @@ object Helpers {
           printStrLiterFunc(idx)
         )
 
-        /** Add branch instruction statement */
-        collector.addStatement(
-          List(BranchLinkInstr("p_print_string"))
+    }
+
+    def getPrintRefDirective(idx: Int): List[Instruction] = {
+        List(
+          Label(s"msg_$idx"),
+          Directive(s"word 3"),
+          Directive(s"ascii \"%p\\0\"")
         )
     }
 
-    def printIdent(nodeType: Type)(implicit collector: WaccBuffer) = {
-
-        /** Load sp into Reg(0) */
-        collector.addStatement(
-          List(LoadRegMemInstr(Reg(0), sp))
+    def printRefFunc(idx: Int): List[Instruction] = {
+        List(
+          Label("p_print_reference"),
+          PushInstr(List(lr)),
+          MoveInstr(Reg(1), RegOp(Reg(0))),
+          LoadLabelInstr(Reg(0), s"msg_$idx"),
+          AddInstr(Reg(0), Reg(0), ImmOffset(4)),
+          BranchLinkInstr("printf"),
+          MoveInstr(Reg(0), ImmOffset(0)),
+          BranchLinkInstr("fflush"),
+          PopInstr(List(pc))
         )
+    }
 
-        /** Add dataMsgs, functions and branch according to type
-          */
-        nodeType match {
-            case IntType()  => printIntLiter
-            case BoolType() => printBoolLiter
-            case CharType() => printCharLiter
-            case StringType() | NullPairType() =>
-                printStrLiter
-            /** TODO: PairType & ArrayType case ArrayType(elemType, dim) => _
-              * case PairType(fstType, sndType) => _
-              */
-        }
+    def printRef(implicit collector: WaccBuffer) = {
 
-        collector.addStatement(
-          List(
-            AddInstr(sp, sp, ImmOffset(4))
-          )
+        /** Add DataMsg for string formating */
+        val idx: Int = collector.tickDataMsg()
+        collector.addDataMsg(getPrintRefDirective(idx))
+
+        /** Add p_print_string function */
+        collector.addFunc(
+          printRefFunc(idx)
         )
 
     }
 
     /** PRINTLN STATEMENT HELPERS */
-    def getPrintlnDirective(idx: Int): List[Instruction] = {
+    def getPrintNewLineDirective(idx: Int): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
           Directive(s"word 1"),
@@ -259,7 +254,7 @@ object Helpers {
         )
     }
 
-    def printlnFunc(idx: Int): List[Instruction] = {
+    def printNewLineFunc(idx: Int): List[Instruction] = {
         List(
           Label("p_print_ln"),
           PushInstr(List(lr)),
@@ -272,29 +267,25 @@ object Helpers {
         )
     }
 
-    def println(implicit collector: WaccBuffer) = {
+    def printNewLine(implicit collector: WaccBuffer) = {
 
         /** Add DataMsg for println newline escape char */
         val idx: Int = collector.tickDataMsg()
-        collector.addDataMsg(getPrintlnDirective(idx))
+        collector.addDataMsg(getPrintNewLineDirective(idx))
 
         /** Add p_print_int function */
         collector.addFunc(
-          printlnFunc(idx)
-        )
-
-        /** Add branch instruction Statement */
-        collector.addStatement(
-          List(BranchLinkInstr("p_print_ln"))
+          printNewLineFunc(idx)
         )
     }
 
     /** Enumerations: Condition Codes, Flags */
     object UtilFlag extends Enumeration {
         type UtilFlag = Value
-        val PPrintString, PPrintLn, PPrintInt, PPrintRef, PThrowOverflowError,
-            PRuntimeError, PDivisionByZeroError, PCheckArrayBounds, PReadChar,
-            PReadInt, PFreePair, PCheckNullPointer = Value
+        val PPrintString, PPrintLn, PPrintInt, PPrintBool, PPrintChar,
+            PPrintRef, PPrintNewLine, PThrowOverflowError, PRuntimeError,
+            PDivisionByZeroError, PCheckArrayBounds, PReadChar, PReadInt,
+            PFreePair, PCheckNullPointer = Value
     }
 
 }

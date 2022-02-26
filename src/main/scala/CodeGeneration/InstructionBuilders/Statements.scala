@@ -1,7 +1,7 @@
 import Condition._
 import Helpers._
 import Helpers.UtilFlag._
-import Condition._
+import constants._
 
 object transStatement {
     def apply(statList: StatNode, stackFrame: StackFrame)(implicit
@@ -188,40 +188,120 @@ object transStatement {
 
                         /** Call transExpression and branch */
                         transExpression(e, stackFrame)
-                        // printIntLiter
+
                         collector.insertUtil(PPrintInt)
+
+                        /** Add branch instruction Statement */
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_print_int"))
+                        )
                     }
                     case BoolLiterNode(_) => {
 
                         /** Call transExpression and branch */
                         transExpression(e, stackFrame)
-                        printBoolLiter
+                        collector.insertUtil(PPrintBool)
+
+                        /** Add branch instruction Statement */
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_print_bool"))
+                        )
                     }
                     case CharLiterNode(_) => {
                         transExpression(e, stackFrame)
-                        printCharLiter
+                        collector.insertUtil(PPrintChar)
+
                     }
 
-                    case StringLiterNode(_) | PairLiterNode() => {
+                    case StringLiterNode(_) => {
 
                         /** call transExpression and branch */
                         transExpression(e, stackFrame)
-                        printStrLiter
+                        collector.insertUtil(PPrintString)
+
+                        /** Add branch instruction statement */
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_print_string"))
+                        )
 
                     }
 
+                    case PairLiterNode() => {
+                        transExpression(e, stackFrame)
+                        collector.insertUtil(PPrintRef)
+
+                        /** Add branch instruction statement */
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_print_reference"))
+                        )
+                    }
+
                     case IdentNode(s) => {
+
+                        /** Loads sp into Reg(0) */
+                        transExpression(e, stackFrame)
 
                         /** Get Ident Node Type */
                         val nodeType: Type =
                             (stackFrame.st.lookupAll(s)).get.getType()
 
-                        /** Load sp into Reg(0) */
-                        /** TODO: add into printIdent: PairType & ArrayType case
-                          * ArrayType(elemType, dim) => _ case PairType(fstType,
-                          * sndType) => _
-                          */
-                        printIdent(nodeType)
+                        nodeType match {
+                            case IntType() => {
+                                collector.insertUtil(UtilFlag.PPrintInt)
+
+                                /** Add branch instruction Statement */
+                                collector.addStatement(
+                                  List(BranchLinkInstr("p_print_int"))
+                                )
+                            }
+                            case BoolType() => {
+                                collector.insertUtil(UtilFlag.PPrintBool)
+
+                                /** Add branch instruction Statement */
+                                collector.addStatement(
+                                  List(BranchLinkInstr("p_print_bool"))
+                                )
+                            }
+                            case CharType() => {
+                                collector.insertUtil(UtilFlag.PPrintChar)
+                            }
+                            case StringType() => {
+                                collector.insertUtil(UtilFlag.PPrintString)
+
+                                /** Add branch instruction statement */
+                                collector.addStatement(
+                                  List(BranchLinkInstr("p_print_string"))
+                                )
+                            }
+                            case NullPairType() => {
+                                collector.insertUtil(UtilFlag.PPrintRef)
+
+                                /** Add branch instruction statement */
+                                collector.addStatement(
+                                  List(BranchLinkInstr("p_print_reference"))
+                                )
+                            }
+                            /** TODO: PairType & ArrayType case
+                              * ArrayType(elemType, dim) => _ case
+                              * PairType(fstType, sndType) => _
+                              */
+                            case PairType(e1, e2) => {
+                                collector.insertUtil(UtilFlag.PPrintRef)
+
+                                /** Add branch instruction statement */
+                                collector.addStatement(
+                                  List(BranchLinkInstr("p_print_reference"))
+                                )
+                            }
+                        }
+
+                        collector.addStatement(
+                          List(
+                            AddInstr(sp, sp, ImmOffset(4)),
+                            MoveInstr(Reg(0), ImmOffset(0)),
+                            PopInstr(List(pc))
+                          )
+                        )
 
                     }
                 }
@@ -233,46 +313,161 @@ object transStatement {
 
                         /** Call transExpression and branch */
                         transExpression(e, stackFrame)
-                        printIntLiter
-                        println
+
+                        collector.insertUtil(PPrintInt)
+
+                        /** Add branch instruction Statement */
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_print_int"))
+                        )
+
+                        collector.insertUtil(PPrintNewLine)
+
+                        /** Add branch instruction Statement */
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_print_ln"))
+                        )
                     }
                     case BoolLiterNode(_) => {
 
                         /** Call transExpression and branch */
                         transExpression(e, stackFrame)
-                        printBoolLiter
-                        println
+                        collector.insertUtil(PPrintBool)
+
+                        /** Add branch instruction Statement */
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_print_bool"))
+                        )
+
+                        collector.insertUtil(PPrintNewLine)
+
+                        /** Add branch instruction Statement */
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_print_ln"))
+                        )
                     }
                     case CharLiterNode(_) => {
                         transExpression(e, stackFrame)
-                        printCharLiter
-                        println
+                        collector.insertUtil(PPrintChar)
+                        collector.insertUtil(PPrintNewLine)
+
+                        /** Add branch instruction Statement */
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_print_ln"))
+                        )
                     }
 
-                    case StringLiterNode(_) | PairLiterNode() => {
+                    case StringLiterNode(_) => {
 
                         /** call transExpression and branch */
                         transExpression(e, stackFrame)
-                        printStrLiter
-                        println
+                        collector.insertUtil(PPrintString)
+
+                        /** Add branch instruction statement */
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_print_string"))
+                        )
+                        collector.insertUtil(PPrintNewLine)
+
+                        /** Add branch instruction Statement */
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_print_ln"))
+                        )
 
                     }
 
-                    case IdentNode(s) =>
-                        {
+                    case PairLiterNode() => {
+                        transExpression(e, stackFrame)
+                        collector.insertUtil(PPrintRef)
 
-                            /** Get Ident Node Type */
-                            val nodeType: Type =
-                                (stackFrame.st.lookupAll(s)).get.getType()
+                        /** Add branch instruction statement */
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_print_reference"))
+                        )
 
-                            /** Load sp into Reg(0) */
-                            /** TODO: add into printIdent: PairType & ArrayType
-                              * case ArrayType(elemType, dim) => _ case
+                        collector.insertUtil(PPrintNewLine)
+
+                        /** Add branch instruction Statement */
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_print_ln"))
+                        )
+
+                    }
+
+                    case IdentNode(s) => {
+
+                        /** Loads sp into Reg(0) */
+                        transExpression(e, stackFrame)
+
+                        /** Get Ident Node Type */
+                        val nodeType: Type =
+                            (stackFrame.st.lookupAll(s)).get.getType()
+
+                        nodeType match {
+                            case IntType() => {
+                                collector.insertUtil(UtilFlag.PPrintInt)
+
+                                /** Add branch instruction Statement */
+                                collector.addStatement(
+                                  List(BranchLinkInstr("p_print_int"))
+                                )
+                            }
+                            case BoolType() => {
+                                collector.insertUtil(UtilFlag.PPrintBool)
+
+                                /** Add branch instruction Statement */
+                                collector.addStatement(
+                                  List(BranchLinkInstr("p_print_bool"))
+                                )
+                            }
+                            case CharType() => {
+                                collector.insertUtil(UtilFlag.PPrintChar)
+                            }
+                            case StringType() => {
+                                collector.insertUtil(UtilFlag.PPrintString)
+
+                                /** Add branch instruction statement */
+                                collector.addStatement(
+                                  List(BranchLinkInstr("p_print_string"))
+                                )
+                            }
+                            case NullPairType() => {
+                                collector.insertUtil(UtilFlag.PPrintRef)
+
+                                /** Add branch instruction statement */
+                                collector.addStatement(
+                                  List(BranchLinkInstr("p_print_reference"))
+                                )
+                            }
+                            /** TODO: PairType & ArrayType case
+                              * ArrayType(elemType, dim) => _ case
                               * PairType(fstType, sndType) => _
                               */
-                            printIdent(nodeType)
+                            case PairType(e1, e2) => {
+                                collector.insertUtil(UtilFlag.PPrintRef)
+
+                                /** Add branch instruction statement */
+                                collector.addStatement(
+                                  List(BranchLinkInstr("p_print_reference"))
+                                )
+                            }
                         }
-                        println
+
+                        collector.insertUtil(PPrintNewLine)
+
+                        /** Add branch instruction Statement */
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_print_ln"))
+                        )
+
+                        collector.addStatement(
+                          List(
+                            AddInstr(sp, sp, ImmOffset(4)),
+                            MoveInstr(Reg(0), ImmOffset(0)),
+                            PopInstr(List(pc))
+                          )
+                        )
+                    }
                 }
 
             }

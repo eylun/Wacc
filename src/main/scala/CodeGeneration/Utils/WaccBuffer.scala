@@ -45,9 +45,13 @@ class WaccBuffer {
                 // )
                 dataMsgs ++= List() // Replace this with a helper function call
             }
-            case PPrintLn             =>
+            case PPrintLn             => println(this)
             case PPrintInt            => printIntLiter(this)
-            case PPrintRef            => //
+            case PPrintBool           => printBoolLiter(this)
+            case PPrintChar           => printCharLiter(this)
+            case PPrintString         => printStrLiter(this)
+            case PPrintRef            => printRef(this)
+            case PPrintNewLine        => printNewLine(this)
             case PThrowOverflowError  => //
             case PRuntimeError        =>
             case PDivisionByZeroError =>
