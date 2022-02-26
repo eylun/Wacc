@@ -1,4 +1,3 @@
-import Condition._
 import Helpers._
 import Helpers.UtilFlag._
 import constants._
@@ -34,7 +33,7 @@ object transStatement {
                                         ) + arrayAddrSize
                                       )
                                     ),
-                                    BranchLinkInstr("malloc", AL),
+                                    BranchLinkInstr("malloc", Condition.AL),
                                     MoveInstr(Reg(3), RegOp(Reg(0)))
                                   )
                                 )
@@ -123,8 +122,8 @@ object transStatement {
                 transExpression(e, stackFrame)
                 collector.addStatement(
                   List(
-                    CompareInstr(Reg(0), ImmOffset(0), AL),
-                    BranchInstr(labelFalse, EQ)
+                    CompareInstr(Reg(0), ImmOffset(0), Condition.AL),
+                    BranchInstr(labelFalse, Condition.EQ)
                   )
                 )
                 transStatement(
@@ -132,7 +131,7 @@ object transStatement {
                   stackFrame.join(StackFrame(ite.trueST), ite.trueST)
                 )
                 collector.addStatement(
-                  List(BranchInstr(labelTrue, AL), Label(labelFalse))
+                  List(BranchInstr(labelTrue, Condition.AL), Label(labelFalse))
                 )
                 transStatement(
                   s2,
@@ -153,7 +152,10 @@ object transStatement {
                 val labelContent = s"wd_${collector.tickWd()}"
                 val labelCheck = s"wd_${collector.tickWd()}"
                 collector.addStatement(
-                  List(BranchInstr(labelCheck, AL), Label(labelContent))
+                  List(
+                    BranchInstr(labelCheck, Condition.AL),
+                    Label(labelContent)
+                  )
                 )
                 transStatement(
                   s,
@@ -167,8 +169,8 @@ object transStatement {
                 collector.addStatement(
                   (
                     List(
-                      CompareInstr(Reg(0), ImmOffset(1), AL),
-                      BranchInstr(labelContent, EQ)
+                      CompareInstr(Reg(0), ImmOffset(1), Condition.AL),
+                      BranchInstr(labelContent, Condition.EQ)
                     )
                   )
                 )
@@ -178,13 +180,15 @@ object transStatement {
                 transExpression(e, stackFrame)
                 collector.addStatement(
                   List(
-                    BranchLinkInstr("exit", AL)
+                    BranchLinkInstr("exit", Condition.AL)
                   )
                 )
             }
             case PrintNode(e) => {
                 e match {
-                    case IntLiterNode(_) => {
+                    case IntLiterNode(_) | Neg(_) | Len(_) | Ord(_) |
+                        Mult(_, _) | Div(_, _) | Mod(_, _) | Add(_, _) |
+                        Sub(_, _) => {
 
                         /** Call transExpression and branch */
                         transExpression(e, stackFrame)
@@ -196,7 +200,9 @@ object transStatement {
                           List(BranchLinkInstr("p_print_int"))
                         )
                     }
-                    case BoolLiterNode(_) => {
+                    case BoolLiterNode(_) | Not(_) | GT(_, _) | GTE(_, _) |
+                        LT(_, _) | LTE(_, _) | Equal(_, _) | NotEqual(_, _) |
+                        And(_, _) | Or(_, _) => {
 
                         /** Call transExpression and branch */
                         transExpression(e, stackFrame)
@@ -207,7 +213,7 @@ object transStatement {
                           List(BranchLinkInstr("p_print_bool"))
                         )
                     }
-                    case CharLiterNode(_) => {
+                    case CharLiterNode(_) | Chr(_) => {
                         transExpression(e, stackFrame)
                         collector.insertUtil(PPrintChar)
 
@@ -289,7 +295,9 @@ object transStatement {
 
             case PrintlnNode(e) => {
                 e match {
-                    case IntLiterNode(_) => {
+                    case IntLiterNode(_) | Neg(_) | Len(_) | Ord(_) |
+                        Mult(_, _) | Div(_, _) | Mod(_, _) | Add(_, _) |
+                        Sub(_, _) => {
 
                         /** Call transExpression and branch */
                         transExpression(e, stackFrame)
@@ -308,7 +316,9 @@ object transStatement {
                           List(BranchLinkInstr("p_print_ln"))
                         )
                     }
-                    case BoolLiterNode(_) => {
+                    case BoolLiterNode(_) | Not(_) | GT(_, _) | GTE(_, _) |
+                        LT(_, _) | LTE(_, _) | Equal(_, _) | NotEqual(_, _) |
+                        And(_, _) | Or(_, _) => {
 
                         /** Call transExpression and branch */
                         transExpression(e, stackFrame)
