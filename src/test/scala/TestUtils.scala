@@ -32,7 +32,15 @@ object testUtils {
             fail(
               s"Instructions do not match\nexpected: $expected, actual: $actual."
             )
+    }
 
+    /* Compares the output of an executed program and the expected output */
+    def assertExecuteEquals(
+        expected: List[String],
+        actual: List[String]
+    ): Unit = {
+        if (expected.length != actual.length)
+            fail("Expected and Actual values have varying lengths")
     }
 
     /* Compares the expected Result object to the actual output produced by a
@@ -121,5 +129,23 @@ object testUtils {
                 }
             }
         }
+    }
+
+    /** Extracts the output segment of a wacc file provided in the test cases */
+    def extractOutput(f: File): List[String] = {
+        import scala.io.Source
+        import scala.collection.mutable
+        val result: mutable.ListBuffer[String] =
+            mutable.ListBuffer[String]().empty
+        var addFlag = false
+        Source.fromFile(f.getPath()).getLines().foreach { line =>
+            line match {
+                case "# Output:"             => addFlag = true
+                case "# Input:"              => addFlag = false
+                case s"# $output" if addFlag => result += output
+                case _                       => addFlag = false
+            }
+        }
+        result.toList
     }
 }

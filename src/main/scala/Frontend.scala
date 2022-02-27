@@ -5,6 +5,7 @@ import scala.collection.mutable.ListBuffer
 
 object frontend {
     import parsley.{Success, Failure}
+    import Helpers.cleanFilename
     def main(args: Array[String]): Unit = {
         assert(args.length == 1, "Usage: ./compile <wacc filename>")
         val fn = args(0)
@@ -25,7 +26,7 @@ object frontend {
                     ARMRepresentation(
                       result,
                       topLevelST,
-                      cleanFilename(fn)
+                      cleanFilename(fn) + ".s"
                     )
                 }
 
@@ -39,6 +40,4 @@ object frontend {
         }
 
     }
-
-    def cleanFilename(fn: String): String = fn.take(fn.lastIndexOf(".")) + ".s"
 }

@@ -275,4 +275,5 @@ object Helpers {
             PFreePair, PCheckNullPointer = Value
     }
 
+    def cleanFilename(fn: String): String = fn.take(fn.lastIndexOf("."))
 }
