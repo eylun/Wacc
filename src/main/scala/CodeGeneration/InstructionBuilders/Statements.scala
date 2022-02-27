@@ -195,6 +195,7 @@ object transStatement {
             case StatListNode(_) =>
                 throw new RuntimeException("Invalid Statement List Node")
         }
+        collector.addStatement(stackFrame.tail)
     }
 
     def printExpr(e: ExprNode, stackFrame: StackFrame)(implicit
@@ -293,6 +294,16 @@ object transStatement {
                         collector.addStatement(
                           List(BranchLinkInstr("p_print_string"))
                         )
+                    }
+                    case ArrayType(CharType(), _, _) => {
+                        collector.insertUtil(UtilFlag.PPrintString)
+
+                        /** Add branch instruction statement */
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_print_string"))
+                        )
+
+                        collector.insertUtil(UtilFlag.PPrintNewLine)
                     }
                     case NullPairType() | PairType(_, _) |
                         ArrayType(_, _, _) => {
