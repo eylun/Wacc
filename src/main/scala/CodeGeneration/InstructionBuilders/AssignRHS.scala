@@ -53,7 +53,7 @@ object transRHS {
                 collector.addStatement(
                   List(
                     BranchLinkInstr(s"f_${i.s}", Condition.AL),
-                    AddInstr(sp, sp, ImmOffset(offset))
+                    AddInstr(sp, sp, ImmOffset(offset), false)
                   )
                 )
 
