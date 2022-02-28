@@ -228,7 +228,42 @@ object transStatement {
                 }
             }
             case ReturnNode(e) => transExpression(e, stackFrame)
-            case ReadNode(l)   =>
+            case ReadNode(l) => {
+
+                collector.addStatement(
+                  List(AddInstr(Reg(0), sp, ImmOffset(0), false))
+                )
+
+                l.typeId.get.getType() match {
+                    case CharType() => {
+                        collector.insertUtil(UtilFlag.PReadChar)
+                        collector.addStatement(
+                          List(
+                            BranchLinkInstr("p_read_char"),
+                            LoadRegSignedByte(Reg(0), sp)
+                          )
+                        )
+
+                    }
+
+                    case IntType() => {
+                        collector.insertUtil(UtilFlag.PReadInt)
+                        collector.addStatement(
+                          List(
+                            BranchLinkInstr("p_read_int"),
+                            LoadInstr(Reg(0), sp, ImmOffset(0))
+                          )
+                        )
+                    }
+
+                    case _ =>
+                        // Note: Read statement only takes character or int input
+                        throw new RuntimeException(
+                          "Invalid Target Type for Read Statement"
+                        )
+                }
+
+            }
             case StatListNode(_) =>
                 throw new RuntimeException("Invalid Statement List Node")
         }

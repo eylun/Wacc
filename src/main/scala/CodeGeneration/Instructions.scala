@@ -78,6 +78,12 @@ case class LoadLabelInstr(
     condition: Condition.Condition = Condition.AL
 ) extends Instruction
 
+case class LoadRegSignedByte(
+    dst: Register,
+    src: Register,
+    condition: Condition.Condition = Condition.AL
+) extends Instruction
+
 case class StoreInstr(
     src: Register,
     dst: Register,
