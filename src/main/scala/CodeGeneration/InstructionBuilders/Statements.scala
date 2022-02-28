@@ -1,6 +1,7 @@
 import Helpers._
 import Helpers.UtilFlag._
 import constants._
+import javax.management.RuntimeErrorException
 
 object transStatement {
     def apply(statList: StatNode, stackFrame: StackFrame)(implicit
@@ -42,11 +43,18 @@ object transStatement {
                                 collector.addStatement(
                                   List(
                                     // set to store byte for char and bool
-                                    StoreInstr(
-                                      Reg(0),
-                                      Reg(3),
-                                      ImmOffset(ofs)
-                                    )
+                                    getArraySize(arr_t, 1) match {
+                                        case WORD_SIZE => StoreInstr(
+                                                            Reg(0),
+                                                            Reg(3),
+                                                            ImmOffset(ofs)
+                                                         )
+                                        case BIT_SIZE => StoreByteInstr(
+                                                            Reg(0),
+                                                            Reg(3),
+                                                            ImmOffset(ofs)
+                                                        )
+                                    }
                                   )
                                 )
                                 ofs = ofs + elemSize
@@ -81,7 +89,7 @@ object transStatement {
                   List(
                     StoreInstr(
                       Reg(0),
-                      StackPtrReg(),
+                      sp,
                       ImmOffset(stackFrame.getOffset(i.s))
                     )
                   )
@@ -97,19 +105,63 @@ object transStatement {
                               case CharType() | BoolType() =>
                                   StoreByteInstr(
                                     Reg(0),
-                                    StackPtrReg(),
+                                    sp,
                                     ImmOffset(stackFrame.getOffset(s))
                                   )
                               case _ =>
                                   StoreInstr(
                                     Reg(0),
-                                    StackPtrReg(),
+                                    sp,
                                     ImmOffset(stackFrame.getOffset(s))
                                   )
                           })
                         )
                     }
-                    case ArrayElemNode(i, es) =>
+                    case ArrayElemNode(IdentNode(s), es) => {
+                        collector.insertUtil(UtilFlag.PCheckArrayBounds)
+                        transRHS(r, stackFrame)
+                        collector.addStatement(
+                            List(
+                              PushInstr(List(Reg(0),Reg(4))),
+                              LoadInstr(
+                                Reg(4), 
+                                sp, 
+                                // TODO: figure out where this 8 came from
+                                ImmOffset(stackFrame.getOffset(s) + 8)
+                              )
+                            )
+                        )
+                        var count = 0
+                        es.foreach { e =>
+                            { 
+                                transExpression(e, stackFrame)
+                                collector.addStatement(
+                                    List(
+                                        BranchLinkInstr("p_check_array_bounds", Condition.AL),
+                                        AddInstr(Reg(4), Reg(4), ImmOffset(4), false),
+                                        AddInstr(Reg(4), Reg(4), LSLRegOp(Reg(0), ShiftImm(2)), true),
+                                        
+                                    )
+                                )
+                                count = count + 1
+                                collector.addStatement(
+                                    if (count == es.length) {
+                                        List(MoveInstr(Reg(1), RegOp(Reg(4))))
+                                    } else {
+                                        List(LoadInstr(Reg(4), Reg(4), ImmOffset(0)))
+                                    }
+                                )
+                            }
+                        }
+
+                        collector.addStatement(
+                            List(
+                                PopInstr(List(Reg(0), Reg(4))),
+                                StoreInstr(Reg(0), Reg(1), ImmOffset(0))
+                                )
+                        ) 
+
+                    }
                     // TODO complete for array and pair elems
                     case l: PairElemNode => {
 
@@ -148,6 +200,9 @@ object transStatement {
                               )
                         )
                     }
+                    
+                    case FirstPairElemNode(e)  => // TODO complete for first
+                    case SecondPairElemNode(e) => // TODO complete for second
                 }
             }
             case ite @ IfThenElseNode(e, s1, s2) => {
@@ -244,24 +299,7 @@ object transStatement {
                 /** Add branch instruction Statement */
                 collector.addStatement(List(BranchLinkInstr("p_print_ln")))
             }
-            case FreeNode(e) => {
-                transExpression(e, stackFrame)
-                e.typeId.get.getType() match {
-                    case PairType(_, _) => {
-
-                        collector.insertUtil(UtilFlag.PFreePair)
-                        collector.addStatement(
-                          List(BranchLinkInstr("p_free_pair"))
-                        )
-                    }
-                    case ArrayType(_, _, _) =>
-                        collector.addStatement(List(BranchLinkInstr("free")))
-                    case _ =>
-                        throw new RuntimeException(
-                          "Can only free arrays and pairs"
-                        )
-                }
-            }
+            case FreeNode(e)   =>
             case ReturnNode(e) => transExpression(e, stackFrame)
             case ReadNode(l) => {
 

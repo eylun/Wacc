@@ -30,6 +30,7 @@ object Helpers {
         )
     }
 
+    //TODO: only take ArrayTypeNode
     def getArraySize(t: TypeNode, size: Int): Int = {
         t match {
             case at @ ArrayTypeNode(elemType, dimension) => {
