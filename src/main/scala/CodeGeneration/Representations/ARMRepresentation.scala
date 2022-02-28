@@ -17,14 +17,14 @@ object ARMRepresentation extends Representation {
     // relevant assembly code
     def generateLine(instr: Instruction): String =
         s"${instr match {
-            case Label(labelName)        => s"$labelName:"
-            case Directive(name)         => s".$name"
-            case PushInstr(reg)          => s"\tPUSH {${reg.mkString(", ")}}"
-            case PopInstr(reg)           => s"\tPOP {${reg.mkString(", ")}}"
+            case Label(labelName) => s"$labelName:"
+            case Directive(name)  => s".$name"
+            case PushInstr(reg)   => s"\tPUSH {${reg.mkString(", ")}}"
+            case PopInstr(reg)    => s"\tPOP {${reg.mkString(", ")}}"
             case SubInstr(dst, fst, snd, true)    => s"\tSUBS $dst $fst $snd"
             case SubInstr(dst, fst, snd, false)   => s"\tSUB $dst $fst $snd"
             case AddInstr(dst, fst, snd, true)    => s"\tADDS $dst $fst $snd"
-            case AddInstr(dst, fst, snd, false)   => s"\tADDS $dst $fst $snd"
+            case AddInstr(dst, fst, snd, false)   => s"\tADD $dst $fst $snd"
             case MoveInstr(dst, src)              => s"\tMOV $dst, $src"
             case LoadLabelInstr(dst, label, cond) => s"\tLDR$cond $dst, =$label"
             case LoadImmIntInstr(dst, imm, cond)  => s"\tLDR$cond $dst, =$imm"
@@ -32,6 +32,8 @@ object ARMRepresentation extends Representation {
                 s"\tLDR$cond $dst, [$src]"
             case LoadInstr(dst, src, ImmOffset(offset), cond) =>
                 s"\tLDR$cond $dst, [$src, #$offset]"
+            case LoadRegSignedByte(dst, src, cond) =>
+                s"\tLDRSB$cond $dst, [$src]"
             /** Store Instructions */
             case StoreInstr(src, dst, ImmOffset(0), true) =>
                 s"\tSTR $src, [$dst]!"
