@@ -250,8 +250,7 @@ object transStatement {
                         collector.insertUtil(UtilFlag.PReadInt)
                         collector.addStatement(
                           List(
-                            BranchLinkInstr("p_read_int"),
-                            LoadInstr(Reg(0), sp, ImmOffset(0))
+                            BranchLinkInstr("p_read_int")
                           )
                         )
                     }
