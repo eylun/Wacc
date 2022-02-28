@@ -111,8 +111,43 @@ object transStatement {
                     }
                     case ArrayElemNode(i, es) =>
                     // TODO complete for array and pair elems
-                    case FirstPairElemNode(e)  => // TODO complete for first
-                    case SecondPairElemNode(e) => // TODO complete for second
+                    case l: PairElemNode => {
+
+                        collector.insertUtil(UtilFlag.PCheckNullPointer)
+                        collector.addStatement(List(PushInstr(List(r0))))
+                        transRHS(r, stackFrame)
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_check_null_pointer")) ++
+                              (l match {
+                                  case FirstPairElemNode(e) => {
+                                      List(
+                                        AddInstr(r0, r0, ImmOffset(0), false)
+                                      )
+                                  }
+                                  case SecondPairElemNode(e) => {
+                                      List(
+                                        AddInstr(
+                                          r0,
+                                          r0,
+                                          ImmOffset(WORD_SIZE),
+                                          false
+                                        )
+                                      )
+                                  }
+                              }) ++ List(
+                                LoadInstr(r0, r0, ImmOffset(0)),
+                                PushInstr(List(r0)),
+                                BranchLinkInstr("free"),
+                                MoveInstr(r0, ImmOffset(WORD_SIZE)),
+                                BranchLinkInstr("malloc"),
+                                PopInstr(List(r1)),
+                                StoreInstr(r0, r1, ImmOffset(0)),
+                                MoveInstr(r1, RegOp(r0)),
+                                PopInstr(List(r0)),
+                                StoreInstr(r0, r1, ImmOffset(0))
+                              )
+                        )
+                    }
                 }
             }
             case ite @ IfThenElseNode(e, s1, s2) => {
