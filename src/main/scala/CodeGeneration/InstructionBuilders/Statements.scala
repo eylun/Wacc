@@ -1,7 +1,6 @@
 import Helpers._
 import Helpers.UtilFlag._
 import constants._
-import javax.management.RuntimeErrorException
 
 object transStatement {
     def apply(statList: StatNode, stackFrame: StackFrame)(implicit
@@ -210,7 +209,24 @@ object transStatement {
                 /** Add branch instruction Statement */
                 collector.addStatement(List(BranchLinkInstr("p_print_ln")))
             }
-            case FreeNode(e)   =>
+            case FreeNode(e) => {
+                transExpression(e, stackFrame)
+                e.typeId.get.getType() match {
+                    case PairType(_, _) => {
+
+                        collector.insertUtil(UtilFlag.PFreePair)
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_free_pair"))
+                        )
+                    }
+                    case ArrayType(_, _, _) =>
+                        collector.addStatement(List(BranchLinkInstr("free")))
+                    case _ =>
+                        throw new RuntimeException(
+                          "Can only free arrays and pairs"
+                        )
+                }
+            }
             case ReturnNode(e) => transExpression(e, stackFrame)
             case ReadNode(l)   =>
             case StatListNode(_) =>
