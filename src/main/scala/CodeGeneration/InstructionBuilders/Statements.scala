@@ -210,7 +210,11 @@ object transStatement {
                 /** Add branch instruction Statement */
                 collector.addStatement(List(BranchLinkInstr("p_print_ln")))
             }
-            case FreeNode(e)   =>
+            case FreeNode(e) => {
+                transExpression(e, stackFrame)
+                collector.insertUtil(UtilFlag.PFreePair)
+                collector.addStatement(List(BranchLinkInstr("p_free_pair")))
+            }
             case ReturnNode(e) => transExpression(e, stackFrame)
             case ReadNode(l)   =>
             case StatListNode(_) =>

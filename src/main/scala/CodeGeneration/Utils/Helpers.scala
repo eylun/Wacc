@@ -474,6 +474,7 @@ object Helpers {
         List(
           Label("p_free_pair"),
           PushInstr(List(lr)),
+          CompareInstr(r0, ImmOffset(0)),
           LoadLabelInstr(r0, s"msg_$idx", Condition.EQ),
           BranchInstr("p_throw_runtime_error", Condition.EQ),
           PushInstr(List(r0)),
