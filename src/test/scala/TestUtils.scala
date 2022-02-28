@@ -34,6 +34,18 @@ object testUtils {
             )
     }
 
+    /* Compares the expected output string and actual output string */
+    def assertExecuteEquals(expected: String, actual: String): Unit = {
+        (expected, actual) match {
+            case (s"${exFront}0x$_ $exBack", s"${actFront}0x$_ $actBack")
+                if exFront != actFront || exBack != exBack =>
+                fail(s"Expected: $expected, Actual: $actual")
+            case (_, _) if expected != actual =>
+                fail(s"Expected: $expected, Actual: $actual")
+
+        }
+    }
+
     /* Compares the expected Result object to the actual output produced by a
        parse() call on a Parsley object. */
     def assertResultEquals[A](
@@ -141,6 +153,55 @@ object testUtils {
         )
     }
 
-    val outputIndicator =
-        "==========================================================="
+    def executeAndCompare(f: File): Unit = {
+
+        import sys.process._
+        import scala.language.postfixOps
+        import parsley.{Success, Failure}
+        import Helpers.cleanFilename
+        import java.io.PrintWriter
+        import scala.io.Source
+        if (!new File(s"expected/${cleanFilename(f.getName())}").exists()) {
+            println("Caching outputs...")
+            // s"touch expected/${cleanFilename(f.getName())}" !
+
+            val output = (s"./refCompile -x ${f.getPath()}" #< new File(
+              "input.txt"
+            )) !!
+
+            println("-----------------")
+            output match {
+                case s"$_===========================================================$o===$_" => {
+                    new PrintWriter(
+                      s"expected/${cleanFilename(f.getName())}"
+                      /** Left trim */
+                    ) { write(o.replaceAll("^\\s+", "")); close }
+                }
+                case _ =>
+                    new PrintWriter(
+                      s"expected/${cleanFilename(f.getName())}"
+                    ) { write(""); close }
+            }
+        }
+        this.testCodegen(f)
+
+        s"arm-linux-gnueabi-gcc -o ${cleanFilename(f.getPath())} -mcpu=arm1176jzf-s -mtune=arm1176jzf-s ${cleanFilename(f.getPath())}.s" !
+
+        val actual =
+            (s"qemu-arm -L /usr/arm-linux-gnueabi/ ${cleanFilename(f.getPath())} < input.txt" !!).trim()
+
+        val expected =
+            Source
+                .fromFile(s"expected/${cleanFilename(f.getName())}")
+                .getLines()
+                .mkString("\n")
+        s"rm ${cleanFilename(f.getPath())}.s" !
+
+        s"rm ${cleanFilename(f.getPath())}" !
+
+        if (expected == actual) succeed
+        else fail(s"Expected: $expected, Actual: $actual")
+
+        "rm input.txt" !
+    }
 }

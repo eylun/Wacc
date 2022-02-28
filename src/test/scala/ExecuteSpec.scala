@@ -15,7 +15,7 @@ class ExecuteSpec extends AnyFlatSpec {
     import sys.process._
     import scala.language.postfixOps
     import parsley.{Success, Failure}
-    import testUtils.{waccProgramsInDir, testCodegen, outputIndicator}
+    import testUtils.{waccProgramsInDir, executeAndCompare}
     import Helpers.cleanFilename
     import java.io.PrintWriter
     import scala.io.Source
@@ -23,55 +23,20 @@ class ExecuteSpec extends AnyFlatSpec {
     if (!new File("/expected").exists()) {
         "mkdir -p expected" !
     }
-    behavior of "print programs"
-    it should "execute print programs" in {
-        val syntaxValid =
-            waccProgramsInDir(new File("./programs/valid/IO/print"))
-        "touch input.txt" !
+    // behavior of "print programs"
+    // it should "execute print programs" in {
+    //     val printValid =
+    //         waccProgramsInDir(new File("./programs/valid/IO/print"))
+    //     "touch input.txt" !
 
-        syntaxValid.foreach { f =>
-            if (!new File(s"expected/${cleanFilename(f.getName())}").exists()) {
-                println("Caching outputs...")
-                // s"touch expected/${cleanFilename(f.getName())}" !
+    //     printValid.foreach(executeAndCompare(_))
+    // }
 
-                val output = (s"./refCompile -x ${f.getPath()}" #< new File(
-                  "input.txt"
-                )) !!
+    // behavior of "array programs"
+    // it should "execute array programs" in {
+    //     val arrayValid = waccProgramsInDir(new File("./programs/valid/array"))
+    //     "touch input.txt" !
 
-                println("-----------------")
-                output match {
-                    case s"$_===========================================================$o===$_" => {
-                        new PrintWriter(
-                          s"expected/${cleanFilename(f.getName())}"
-                          /** Left trim */
-                        ) { write(o.replaceAll("^\\s+", "")); close }
-                    }
-                    case _ =>
-                        new PrintWriter(
-                          s"expected/${cleanFilename(f.getName())}"
-                        ) { write(""); close }
-                }
-            }
-            testCodegen(f)
-
-            s"arm-linux-gnueabi-gcc -o ${cleanFilename(f.getPath())} -mcpu=arm1176jzf-s -mtune=arm1176jzf-s ${cleanFilename(f.getPath())}.s" !
-
-            val actual =
-                (s"qemu-arm -L /usr/arm-linux-gnueabi/ ${cleanFilename(f.getPath())} < input.txt" !!).trim()
-
-            val expected =
-                Source
-                    .fromFile(s"expected/${cleanFilename(f.getName())}")
-                    .getLines()
-                    .mkString("\n")
-            s"rm ${cleanFilename(f.getPath())}.s" !
-
-            s"rm ${cleanFilename(f.getPath())}" !
-
-            if (expected == actual) succeed
-            else fail(s"Expected: $expected, Actual: $actual")
-        }
-        "rm input.txt" !
-
-    }
+    //     arrayValid.foreach(executeAndCompare(_))
+    // }
 }
