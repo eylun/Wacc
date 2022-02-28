@@ -72,11 +72,19 @@ case class LoadLabelInstr(
     condition: Condition.Condition = Condition.AL
 ) extends Instruction
 
-case class StoreInstr(src: Register, dst: Register, offset: SecondOperand)
-    extends Instruction
+case class StoreInstr(
+    src: Register,
+    dst: Register,
+    offset: SecondOperand,
+    writeBack: Boolean = false
+) extends Instruction
 
-case class StoreByteInstr(src: Register, dst: Register, offset: SecondOperand)
-    extends Instruction
+case class StoreByteInstr(
+    src: Register,
+    dst: Register,
+    offset: SecondOperand,
+    writeBack: Boolean = false
+) extends Instruction
 
 case class MoveInstr(dst: Register, src: SecondOperand) extends Instruction
 
