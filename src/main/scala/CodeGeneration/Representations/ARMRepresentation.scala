@@ -37,10 +37,18 @@ object ARMRepresentation extends Representation {
                 s"\tORR${cond}S $dst, $fst, $snd"
             
             /* Arithmetic Instructions*/
-            case SubInstr(dst, fst, snd, true)    => s"\tSUBS $dst $fst $snd"
-            case SubInstr(dst, fst, snd, false)   => s"\tSUB $dst $fst $snd"
-            case AddInstr(dst, fst, snd, true)    => s"\tADDS $dst $fst $snd"
-            case AddInstr(dst, fst, snd, false)   => s"\tADDS $dst $fst $snd"
+            case AddInstr(dst, fst, snd, true)    => s"\tADDS $dst, $fst, $snd"
+            case AddInstr(dst, fst, snd, false)   => s"\tADD $dst $fst $snd"
+            case SubInstr(dst, fst, snd, true)    => s"\tSUBS $dst, $fst, $snd"
+            case SubInstr(dst, fst, snd, false)   => s"\tSUB $dst, $fst, $snd"
+            case ReverseSubInstr(dst, fst, snd, true) =>
+                s"\tRSBS $dst, $fst, $snd"
+            case ReverseSubInstr(dst, fst, snd, false) =>
+                s"\tRSB $dst, $fst, $snd"
+            case SMullInstr(rdLo, rdHi, fst, snd, true) => 
+                s"\tSMULLS $rdLo, $rdHi, $fst, $snd"
+            case SMullInstr(rdLo, rdHi, fst, snd, false) => 
+                s"\tSMULL $rdLo, $rdHi, $fst, $snd"
 
             case MoveInstr(dst, src)              => s"\tMOV $dst, $src"
 

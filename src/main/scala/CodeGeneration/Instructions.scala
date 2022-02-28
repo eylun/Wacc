@@ -45,14 +45,8 @@ case class SMullInstr(
     regLo: Register,
     regHi: Register,
     fstOp: Register,
-    sndOp: Register
-) extends Instruction
-
-case class DivInstr(
-    regLo: Register,
-    regHi: Register,
-    fstOp: Register,
-    sndOp: Register
+    sndOp: Register,
+    setFlags: Boolean
 ) extends Instruction
 
 /** Loading and Storing Instructions */

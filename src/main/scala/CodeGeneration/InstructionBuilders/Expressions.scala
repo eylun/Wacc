@@ -108,7 +108,7 @@ object transExpression {
                     List(
                         MoveInstr(Reg(1), RegOp(Reg(0))),
                         PopInstr(List(Reg(0))),
-                        SMullInstr(Reg(0), Reg(1), Reg(0), Reg(1)),
+                        SMullInstr(Reg(0), Reg(1), Reg(0), Reg(1), false),
                         CompareInstr(Reg(0), ASRRegOp(Reg(0), ShiftImm(31)), 
                                     Condition.AL),
                         BranchLinkInstr("p_throw_overflow_error", Condition.NE),
@@ -128,7 +128,6 @@ object transExpression {
                         PopInstr(List(Reg(0))),
                         BranchLinkInstr("p_check_divide_by_zero", Condition.AL),
                         BranchLinkInstr("__aeabi_idiv", Condition.AL),
-                        BranchLinkInstr("exit", Condition.AL)
                     )
                 )
             }
