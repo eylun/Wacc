@@ -112,7 +112,6 @@ object transExpression {
                         CompareInstr(Reg(0), ASRRegOp(Reg(0), ShiftImm(31)), 
                                     Condition.AL),
                         BranchLinkInstr("p_throw_overflow_error", Condition.NE),
-                        BranchLinkInstr("exit", Condition.AL)
                     )
                 )
             }
