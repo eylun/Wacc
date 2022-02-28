@@ -76,16 +76,31 @@ object transStatement {
                         transRHS(r, stackFrame)
                     }
                 }
+
+                t match {
+                    case CharTypeNode() | BoolTypeNode() => {
+                        collector.addStatement(
+                          List(
+                            StoreByteInstr(
+                              Reg(0),
+                              StackPtrReg(),
+                              ImmOffset(stackFrame.getOffset(i.s))
+                            )
+                          )
+                        )
+                    }
+                    case _ =>
+                        collector.addStatement(
+                          List(
+                            StoreInstr(
+                              Reg(0),
+                              StackPtrReg(),
+                              ImmOffset(stackFrame.getOffset(i.s))
+                            )
+                          )
+                        )
+                }
                 // all new assign code ends with storing reg 0 into stack
-                collector.addStatement(
-                  List(
-                    StoreInstr(
-                      Reg(0),
-                      StackPtrReg(),
-                      ImmOffset(stackFrame.getOffset(i.s))
-                    )
-                  )
-                )
 
             }
             case LRAssignNode(l, r) => {
