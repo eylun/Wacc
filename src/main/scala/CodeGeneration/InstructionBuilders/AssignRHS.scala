@@ -61,16 +61,18 @@ object transRHS {
             case e: PairElemNode => {
                 collector.insertUtil(UtilFlag.PCheckNullPointer)
                 collector.addStatement(
-                  List(BranchLinkInstr("p_check_null_pointer")) ++
+                  List(
+                    BranchLinkInstr("p_check_null_pointer")
+                  ) ++
                       (e match {
-                          case FirstPairElemNode(e) => {
-                              transExpression(e, stackFrame)
+                          case FirstPairElemNode(f) => {
+                              transExpression(f, stackFrame)
                               List(
                                 LoadInstr(r0, r0, ImmOffset(0))
                               )
                           }
-                          case SecondPairElemNode(e) => {
-                              transExpression(e, stackFrame)
+                          case SecondPairElemNode(s) => {
+                              transExpression(s, stackFrame)
                               List(
                                 LoadInstr(
                                   r0,

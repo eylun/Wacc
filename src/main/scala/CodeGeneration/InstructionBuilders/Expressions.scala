@@ -9,13 +9,33 @@ object transExpression {
         // TODO: Each ExprNode match should return a list of instructions
         exprNode match {
             case IdentNode(s) =>
-                collector.addStatement(
-                  List(
-                    // TODO: Check this again in the future when people reply on edstem
-                    // For some reason ImmOffset for pairs should have 4 added to it
-                    LoadInstr(Reg(0), sp, ImmOffset(stackFrame.getOffset(s)))
-                  )
-                )
+                stackFrame.st.lookupAll(s).get.getType() match {
+                    case CharType() => {
+                        collector.addStatement(
+                          List(
+                            LoadRegSignedByte(
+                              Reg(0),
+                              sp,
+                              ImmOffset(stackFrame.getOffset(s))
+                            )
+                          )
+                        )
+                    }
+                    case _ => {
+                        collector.addStatement(
+                          List(
+                            // TODO: Check this again in the future when people reply on edstem
+                            // For some reason ImmOffset for pairs should have 4 added to it
+                            LoadInstr(
+                              Reg(0),
+                              sp,
+                              ImmOffset(stackFrame.getOffset(s))
+                            )
+                          )
+                        )
+                    }
+                }
+
             case IntLiterNode(n) =>
                 collector.addStatement(List(LoadImmIntInstr(Reg(0), n)))
             case CharLiterNode(c) =>
