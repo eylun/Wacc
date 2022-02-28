@@ -239,11 +239,9 @@ object transStatement {
                         collector.insertUtil(UtilFlag.PReadChar)
                         collector.addStatement(
                           List(
-                            BranchLinkInstr("p_read_char"),
-                            LoadRegSignedByte(Reg(0), sp)
+                            BranchLinkInstr("p_read_char")
                           )
                         )
-
                     }
 
                     case IntType() => {
@@ -355,7 +353,9 @@ object transStatement {
                         )
                     }
                     case CharType() => {
-                        collector.insertUtil(UtilFlag.PPrintChar)
+                        collector.addStatement(
+                          List(BranchLinkInstr("putchar"))
+                        )
                     }
                     case StringType() => {
                         collector.insertUtil(UtilFlag.PPrintString)

@@ -24,7 +24,7 @@ object ARMRepresentation extends Representation {
             case SubInstr(dst, fst, snd, true)    => s"\tSUBS $dst $fst $snd"
             case SubInstr(dst, fst, snd, false)   => s"\tSUB $dst $fst $snd"
             case AddInstr(dst, fst, snd, true)    => s"\tADDS $dst $fst $snd"
-            case AddInstr(dst, fst, snd, false)   => s"\tADDS $dst $fst $snd"
+            case AddInstr(dst, fst, snd, false)   => s"\tADD $dst $fst $snd"
             case MoveInstr(dst, src)              => s"\tMOV $dst, $src"
             case LoadLabelInstr(dst, label, cond) => s"\tLDR$cond $dst, =$label"
             case LoadImmIntInstr(dst, imm, cond)  => s"\tLDR$cond $dst, =$imm"
