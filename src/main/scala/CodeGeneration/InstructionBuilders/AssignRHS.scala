@@ -1,5 +1,6 @@
 import Helpers._
 import Condition._
+import constants._
 
 object transRHS {
     /* Returns a list of instructions evaluating the RHS of an assignment */
@@ -16,11 +17,70 @@ object transRHS {
                     MoveInstr(Reg(0), ImmOffset(8)),
                     BranchLinkInstr("malloc", AL),
                     PopInstr(List(Reg(1), Reg(2))),
-                    StoreInstr(Reg(2), Reg(0), ImmOffset(0)),
-                    StoreInstr(Reg(1), Reg(0), ImmOffset(4))
+                    StoreInstr(Reg(2), Reg(0), ImmOffset(0), false),
+                    StoreInstr(Reg(1), Reg(0), ImmOffset(4), false)
                   )
                 )
                 stackFrame.dropTempOffset(WORD_SIZE * 2)
+            }
+            case CallNode(i, args) => {
+                val FunctionId(t, plist, _) = stackFrame.st.lookupAll(i.s).get
+                var offset = 0
+
+                /** Push params into stack */
+                (plist zip args).reverse.foreach {
+                    case (p, e) => {
+                        transExpression(e, stackFrame)
+                        collector.addStatement(List(p match {
+                            case Param(CharType()) | Param(BoolType()) => {
+                                offset += BIT_SIZE
+                                StoreByteInstr(
+                                  r0,
+                                  sp,
+                                  ImmOffset(-BIT_SIZE),
+                                  true
+                                )
+                            }
+                            case _ => {
+                                offset += WORD_SIZE
+                                StoreInstr(r0, sp, ImmOffset(-WORD_SIZE), true)
+                            }
+                        }))
+                    }
+                }
+
+                /** Branch to function and recover stack */
+                collector.addStatement(
+                  List(
+                    BranchLinkInstr(s"f_${i.s}", Condition.AL),
+                    AddInstr(sp, sp, ImmOffset(offset), false)
+                  )
+                )
+
+            }
+            case e: PairElemNode => {
+                collector.insertUtil(UtilFlag.PCheckNullPointer)
+                collector.addStatement(
+                  List(BranchLinkInstr("p_check_null_pointer")) ++
+                      (e match {
+                          case FirstPairElemNode(e) => {
+                              transExpression(e, stackFrame)
+                              List(
+                                LoadInstr(r0, r0, ImmOffset(0))
+                              )
+                          }
+                          case SecondPairElemNode(e) => {
+                              transExpression(e, stackFrame)
+                              List(
+                                LoadInstr(
+                                  r0,
+                                  r0,
+                                  ImmOffset(WORD_SIZE)
+                                )
+                              )
+                          }
+                      }) ++ List(LoadInstr(r0, r0, ImmOffset(0)))
+                )
             }
             case _ =>
         }

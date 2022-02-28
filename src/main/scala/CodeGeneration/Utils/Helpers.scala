@@ -7,15 +7,14 @@ object Helpers {
 
     val mainSetup = List(
       Directive("text"),
-      Directive("global main"),
-      Label("main"),
-      PushInstr(List(lr))
+      Directive("global main")
     )
 
     def getTypeSize(t: Identifier): Int = {
         t match {
             case BoolType() | CharType() => BIT_SIZE
             case Variable(t)             => getTypeSize(t)
+            case Param(t)                => getTypeSize(t)
             /** Functions are not applicable for stack frame sizes */
             case FunctionId(_, _, _) => 0
             case _                   => WORD_SIZE
@@ -109,7 +108,7 @@ object Helpers {
           PushInstr(List(lr)),
           MoveInstr(Reg(1), RegOp(Reg(0))),
           LoadLabelInstr(Reg(0), s"msg_$idx"),
-          AddInstr(Reg(0), Reg(0), ImmOffset(4)),
+          AddInstr(Reg(0), Reg(0), ImmOffset(4), false),
           BranchLinkInstr("printf"),
           MoveInstr(Reg(0), ImmOffset(0)),
           BranchLinkInstr("fflush"),
@@ -154,7 +153,7 @@ object Helpers {
           CompareInstr(Reg(0), ImmOffset(0), Condition.AL),
           LoadLabelInstr(Reg(0), s"msg_$idxTrue", Condition.NE),
           LoadLabelInstr(Reg(0), s"msg_$idxFalse", Condition.EQ),
-          AddInstr(Reg(0), Reg(0), ImmOffset(4)),
+          AddInstr(Reg(0), Reg(0), ImmOffset(4), false),
           BranchLinkInstr("printf"),
           MoveInstr(Reg(0), ImmOffset(0)),
           BranchLinkInstr("fflush"),
@@ -195,9 +194,9 @@ object Helpers {
           Label("p_print_string"),
           PushInstr(List(lr)),
           LoadInstr(Reg(1), Reg(0), ImmOffset(0)),
-          AddInstr(Reg(2), Reg(0), ImmOffset(4)),
+          AddInstr(Reg(2), Reg(0), ImmOffset(4), false),
           LoadLabelInstr(Reg(0), s"msg_$idx"),
-          AddInstr(Reg(0), Reg(0), ImmOffset(4)),
+          AddInstr(Reg(0), Reg(0), ImmOffset(4), false),
           BranchLinkInstr("printf"),
           MoveInstr(Reg(0), ImmOffset(0)),
           BranchLinkInstr("fflush"),
@@ -218,6 +217,7 @@ object Helpers {
 
     }
 
+    /** Print Reference */
     def getPrintRefDirective(idx: Int): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
@@ -232,7 +232,7 @@ object Helpers {
           PushInstr(List(lr)),
           MoveInstr(Reg(1), RegOp(Reg(0))),
           LoadLabelInstr(Reg(0), s"msg_$idx"),
-          AddInstr(Reg(0), Reg(0), ImmOffset(4)),
+          AddInstr(Reg(0), Reg(0), ImmOffset(4), false),
           BranchLinkInstr("printf"),
           MoveInstr(Reg(0), ImmOffset(0)),
           BranchLinkInstr("fflush"),
@@ -253,7 +253,7 @@ object Helpers {
 
     }
 
-    /** PRINTLN STATEMENT HELPERS */
+    /** Print Newline */
     def getPrintNewLineDirective(idx: Int): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
@@ -267,7 +267,7 @@ object Helpers {
           Label("p_print_ln"),
           PushInstr(List(lr)),
           LoadLabelInstr(Reg(0), s"msg_$idx"),
-          AddInstr(Reg(0), Reg(0), ImmOffset(4)),
+          AddInstr(Reg(0), Reg(0), ImmOffset(4), false),
           BranchLinkInstr("puts"),
           MoveInstr(Reg(0), ImmOffset(0)),
           BranchLinkInstr("fflush"),
@@ -281,10 +281,278 @@ object Helpers {
         val idx: Int = collector.tickDataMsg()
         collector.addDataMsg(getPrintNewLineDirective(idx))
 
-        /** Add p_print_int function */
+        /** Add p_print_ln function */
         collector.addUtilStatement(
           printNewLineFunc(idx)
         )
+    }
+
+    /** Print Throw Overflow */
+    def getPrintOverflowErrorDirective(idx: Int): List[Instruction] = {
+        List(
+          Label(s"msg_$idx"),
+          Directive(s"word 83"),
+          Directive(
+            s"ascii \"OverflowError: the result is too small/large to store in a 4-byte signed-integer.\\n\\0"
+          )
+        )
+    }
+    def printOverflowErrorFunc(idx: Int): List[Instruction] = {
+        List(
+          Label("p_throw_overflow_error"),
+          LoadLabelInstr(r0, s"msg_$idx"),
+          BranchLinkInstr("p_throw_runtime_error")
+        )
+    }
+    def printOverflowError(implicit collector: WaccBuffer) = {
+
+        /** Add DataMsg for print overflow error */
+        val idx: Int = collector.tickDataMsg()
+        collector.addDataMsg(getPrintOverflowErrorDirective(idx))
+
+        /** Add p_throw_overflow_error function */
+        collector.addUtilStatement(
+          printOverflowErrorFunc(idx)
+        )
+
+        /** Add p_throw_runtime_error to the asm file */
+        collector.insertUtil(UtilFlag.PRuntimeError)
+    }
+
+    /** Print Runtime Error */
+    def printRuntimeErrorFunc(): List[Instruction] = {
+        List(
+          Label("p_throw_runtime_error"),
+          BranchLinkInstr("p_print_string"),
+          MoveInstr(r0, ImmOffset(-1)),
+          BranchLinkInstr("exit")
+        )
+    }
+    def printRuntimeError(implicit collector: WaccBuffer) = {
+
+        /** Add p_throw_runtime_error function */
+        collector.addUtilStatement(printRuntimeErrorFunc())
+
+        /** Add p_print_string to the asm file */
+        collector.insertUtil(UtilFlag.PPrintString)
+    }
+
+    /** Print Check Divide By Zero */
+    def printCheckDivideByZeroDirective(idx: Int): List[Instruction] = {
+        List(
+          Label(s"msg_$idx"),
+          Directive(s"word 45"),
+          Directive(
+            s"ascii \"DivideByZeroError: divide or modulo by zero\\n\\0"
+          )
+        )
+    }
+    def printCheckDivideByZeroFunc(idx: Int): List[Instruction] = {
+        List(
+          Label("p_check_divide_by_zero"),
+          PushInstr(List(lr)),
+          CompareInstr(r1, ImmOffset(0)),
+          LoadLabelInstr(r0, s"msg_$idx", Condition.EQ),
+          BranchLinkInstr("p_throw_runtime_error", Condition.EQ),
+          PopInstr(List(pc))
+        )
+    }
+    def printCheckDivideByZero(implicit collector: WaccBuffer) = {
+
+        /** Add DataMsg for check divide by zero */
+        val idx: Int = collector.tickDataMsg()
+        collector.addDataMsg(printCheckDivideByZeroDirective(idx))
+
+        /** Add p_check_divide_by_zero error function */
+        collector.addUtilStatement(
+          printCheckDivideByZeroFunc(idx)
+        )
+
+        /** Add p_throw_runtime_error to the asm file */
+        collector.insertUtil(UtilFlag.PRuntimeError)
+    }
+
+    /** Print Check Array Bounds */
+    def printCheckArrayBoundsDirective(
+        largeIdx: Int,
+        negIdx: Int
+    ): List[Instruction] = {
+        List(
+          /** Negative Index Data Message */
+          Label(s"msg_$negIdx"),
+          Directive(s"word 44"),
+          Directive(
+            s"ascii \"ArrayIndexOutOfBoundsError: negative index\\n\\0"
+          ),
+          /** Index Too Large Data Message */
+          Label(s"msg_$largeIdx"),
+          Directive(s"word 45"),
+          Directive(
+            s"ascii \"ArrayIndexOutOfBoundsError: index too large\\n\\0"
+          )
+        )
+    }
+    def printCheckArrayBoundsFunc(
+        largeIdx: Int,
+        negIdx: Int
+    ): List[Instruction] = {
+        List(
+          Label("p_check_array_bounds"),
+          PushInstr(List(lr)),
+          CompareInstr(r0, ImmOffset(0)),
+          LoadLabelInstr(r0, s"msg_$negIdx", Condition.LT),
+          BranchLinkInstr("p_throw_runtime_error", Condition.LT),
+          LoadInstr(r1, r4, ImmOffset(0)),
+          CompareInstr(r0, RegOp(r1)),
+          LoadLabelInstr(r0, s"msg_$largeIdx", Condition.CS),
+          BranchLinkInstr("p_throw_runetime_error", Condition.CS),
+          PopInstr(List(pc))
+        )
+    }
+    def printCheckArrayBounds(implicit collector: WaccBuffer) = {
+
+        /** Add DataMsg for index too large and negative index errors */
+        val largeIdx: Int = collector.tickDataMsg()
+        val negIdx: Int = collector.tickDataMsg()
+        collector.addDataMsg(printCheckArrayBoundsDirective(largeIdx, negIdx))
+
+        /** Add p_check_array_bounds function */
+        collector.addUtilStatement(printCheckArrayBoundsFunc(largeIdx, negIdx))
+
+        /** Add p_throw_runtime_error to the asm file */
+        collector.insertUtil(UtilFlag.PRuntimeError)
+    }
+
+    /** Print Read Int */
+    def printReadIntDirective(idx: Int): List[Instruction] = {
+        List(
+          Label(s"msg_$idx"),
+          Directive(s"word 3"),
+          Directive(s"ascii \"%d\\0\"")
+        )
+    }
+    def printReadIntFunc(idx: Int): List[Instruction] = {
+        List(
+          Label("p_read_int"),
+          PushInstr(List(lr)),
+          MoveInstr(r1, RegOp(r0)),
+          LoadLabelInstr(r0, s"msg_$idx"),
+          AddInstr(r0, r0, ImmOffset(4), false),
+          BranchLinkInstr("scanf"),
+          PopInstr(List(pc))
+        )
+    }
+    def printReadInt(implicit collector: WaccBuffer) = {
+
+        /** Add DataMsg for ReadInt Directive */
+        val idx: Int = collector.tickDataMsg()
+        collector.addDataMsg(printReadIntDirective(idx))
+
+        /** Add p_read_int function */
+        collector.addUtilStatement(printReadIntFunc(idx))
+    }
+
+    /** Print Read Char */
+    def printReadCharDirective(idx: Int): List[Instruction] = {
+        List(
+          Label(s"msg_$idx"),
+          Directive(s"word 4"),
+          Directive(s"ascii \"%c\\0\"")
+        )
+    }
+    def printReadCharFunc(idx: Int): List[Instruction] = {
+        List(
+          Label("p_read_char"),
+          PushInstr(List(lr)),
+          MoveInstr(r1, RegOp(r0)),
+          LoadLabelInstr(r0, s"msg_$idx"),
+          AddInstr(r0, r0, ImmOffset(4), false),
+          BranchLinkInstr("scanf"),
+          PopInstr(List(pc))
+        )
+    }
+    def printReadChar(implicit collector: WaccBuffer) = {
+
+        /** Add DataMsg for ReadChar Directive */
+        val idx: Int = collector.tickDataMsg()
+        collector.addDataMsg(printReadCharDirective(idx))
+
+        /** Add p_read_char function */
+        collector.addUtilStatement(printReadCharFunc(idx))
+    }
+
+    /** Print Free Pair */
+    def printFreePairDirective(idx: Int): List[Instruction] = {
+        List(
+          Label(s"msg_$idx"),
+          Directive(s"word 50"),
+          Directive(
+            s"ascii \"NullReferenceError: dereference a null reference\\n\\0\""
+          )
+        )
+    }
+    def printFreePairFunc(idx: Int): List[Instruction] = {
+        List(
+          Label("p_free_pair"),
+          PushInstr(List(lr)),
+          CompareInstr(r0, ImmOffset(0)),
+          LoadLabelInstr(r0, s"msg_$idx", Condition.EQ),
+          BranchInstr("p_throw_runtime_error", Condition.EQ),
+          PushInstr(List(r0)),
+          LoadInstr(r0, r0, ImmOffset(0)),
+          BranchLinkInstr("free"),
+          LoadInstr(r0, sp, ImmOffset(0)),
+          LoadInstr(r0, r0, ImmOffset(WORD_SIZE)),
+          BranchLinkInstr("free"),
+          PopInstr(List(r0)),
+          BranchLinkInstr("free"),
+          PopInstr(List(pc))
+        )
+    }
+    def printFreePair(implicit collector: WaccBuffer) = {
+
+        /** Add DataMsg for FreePair Directive */
+        val idx: Int = collector.tickDataMsg()
+        collector.addDataMsg(printFreePairDirective(idx))
+
+        /** Add p_free_pair function */
+        collector.addUtilStatement(printFreePairFunc(idx))
+
+        /** Add p_throw_runtime_error to the asm file */
+        collector.insertUtil(UtilFlag.PRuntimeError)
+    }
+
+    /** Print Check Null Pointer */
+    def printCheckNullPointerDirective(idx: Int): List[Instruction] = {
+        List(
+          Label(s"msg_$idx"),
+          Directive(s"word 50"),
+          Directive(
+            s"ascii \"NullReferenceError: dereference a null reference\\n\\0\""
+          )
+        )
+    }
+    def printCheckNullPointerFunc(idx: Int): List[Instruction] = {
+        List(
+          Label("p_check_null_pointer"),
+          PushInstr(List(lr)),
+          CompareInstr(r0, ImmOffset(0)),
+          LoadLabelInstr(r0, s"msg_$idx", Condition.EQ),
+          BranchLinkInstr("p_throw_runtime_error", Condition.EQ),
+          PopInstr(List(pc))
+        )
+    }
+    def printCheckNullPointer(implicit collector: WaccBuffer) = {
+
+        /** Add DataMsg for CheckNullPointer Directive */
+        val idx: Int = collector.tickDataMsg()
+        collector.addDataMsg(printCheckNullPointerDirective(idx))
+
+        /** Add p_check_null_pointer */
+        collector.addUtilStatement(printCheckNullPointerFunc(idx))
+
+        /** Add p_throw_runtime_error to the asm file */
+        collector.insertUtil(UtilFlag.PRuntimeError)
     }
 
     /** Enumerations: Condition Codes, Flags */
@@ -292,7 +560,7 @@ object Helpers {
         type UtilFlag = Value
         val PPrintInt, PPrintBool, PPrintChar, PPrintString, PPrintRef,
             PPrintNewLine, PThrowOverflowError, PRuntimeError,
-            PDivisionByZeroError, PCheckArrayBounds, PReadChar, PReadInt,
+            PCheckDivideByZero, PCheckArrayBounds, PReadChar, PReadInt,
             PFreePair, PCheckNullPointer = Value
     }
 

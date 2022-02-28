@@ -28,19 +28,19 @@ class WaccBuffer {
         if (utilpool.contains(flag)) return
         utilpool += flag
         flag match {
-            case PPrintInt            => printIntLiter(this)
-            case PPrintBool           => printBoolLiter(this)
-            case PPrintString         => printStrLiter(this)
-            case PPrintRef            => printRef(this)
-            case PPrintNewLine        => printNewLine(this)
-            case PThrowOverflowError  =>
-            case PRuntimeError        =>
-            case PDivisionByZeroError =>
-            case PCheckArrayBounds    =>
-            case PReadChar            =>
-            case PReadInt             =>
-            case PFreePair            =>
-            case PCheckNullPointer    =>
+            case PPrintInt           => printIntLiter(this)
+            case PPrintBool          => printBoolLiter(this)
+            case PPrintString        => printStrLiter(this)
+            case PPrintRef           => printRef(this)
+            case PPrintNewLine       => printNewLine(this)
+            case PThrowOverflowError => printOverflowError(this)
+            case PRuntimeError       => printRuntimeError(this)
+            case PCheckDivideByZero  => printCheckDivideByZero(this)
+            case PCheckArrayBounds   => printCheckArrayBounds(this)
+            case PReadChar           => printReadChar(this)
+            case PReadInt            => printReadInt(this)
+            case PFreePair           => printFreePair(this)
+            case PCheckNullPointer   => printCheckNullPointer(this)
         }
     }
 
@@ -50,9 +50,6 @@ class WaccBuffer {
     private val mainStatements: mutable.ListBuffer[Instruction] =
         mutable.ListBuffer[Instruction](
         )
-
-    private val functions: mutable.ListBuffer[Instruction] =
-        mutable.ListBuffer[Instruction]().empty
 
     private val utilityStatements: mutable.ListBuffer[Instruction] =
         mutable.ListBuffer[Instruction]().empty
@@ -84,18 +81,16 @@ class WaccBuffer {
         wdCount - 1
     }
 
-    def addFunc(func: List[Instruction]): Unit = functions ++= func
-
     def toList(buffer: mutable.ListBuffer[Instruction]): List[Instruction] =
         buffer.toList
 
     def emit(): List[Instruction] = toList(
       dataMsgs.length match {
-          case 0 => mainStatements ++ functions ++ utilityStatements
+          case 0 => mainStatements ++ utilityStatements
           case _ =>
               (Directive(
                 "data"
-              ) +=: dataMsgs) ++ mainStatements ++ functions ++ utilityStatements
+              ) +=: dataMsgs) ++ mainStatements ++ utilityStatements
       }
     )
 }

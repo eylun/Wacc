@@ -17,7 +17,8 @@ class StackFrame(
               SubInstr(
                 sp,
                 sp,
-                ImmOffset(totalBytes)
+                ImmOffset(totalBytes),
+                false
               )
             )
     }
@@ -29,7 +30,8 @@ class StackFrame(
               AddInstr(
                 sp,
                 sp,
-                ImmOffset(totalBytes)
+                ImmOffset(totalBytes),
+                false
               )
             )
     }
@@ -42,7 +44,7 @@ class StackFrame(
         val newMap: mutable.Map[String, Int] = mutable.Map[String, Int]()
         offsetMap.foreach {
             case (k, v) => {
-                newMap += (k -> (v + sf.totalBytes))
+                newMap += (k -> (v + sf.totalBytes + tempOffset))
             }
         }
         StackFrame((newMap ++ sf.offsetMap).toMap, sf.totalBytes, st)
@@ -63,8 +65,14 @@ object StackFrame {
     def apply(offsetMap: Map[String, Int], totalBytes: Int, st: SymbolTable) =
         new StackFrame(offsetMap, totalBytes, st)
 
-    private def totalBytes(st: SymbolTable) =
-        st.dict.foldLeft(0)((p, n) => p + getTypeSize(n._2))
+    private def totalBytes(st: SymbolTable) = {
+        var sum = 0
+        st.dict.foreach {
+            case ("return", _) => 0
+            case (k, v)        => sum += getTypeSize(v)
+        }
+        sum
+    }
 
     private def generateOffsetMap(st: SymbolTable): Map[String, Int] = {
         var acc = totalBytes(st)

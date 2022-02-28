@@ -3,7 +3,7 @@ sealed trait Instruction
 /** Enumerations: Condition Codes, Flags */
 object Condition extends Enumeration {
     type Condition = Value
-    val EQ, NE, LE, LT, GE, GT = Value
+    val EQ, NE, LE, LT, GE, GT, HS, LO, MI, PL, VS, VC, HI, LS, CS = Value
     val AL = Value("")
 }
 
@@ -25,15 +25,23 @@ case class Directive(name: String) extends Instruction
 case class CompareInstr(
     fstOp: Register,
     sndOp: SecondOperand,
-    condition: Condition.Condition
+    condition: Condition.Condition = Condition.AL
 ) extends Instruction
 
 /* Arithmetic Operations */
-case class AddInstr(dst: Register, fstOp: Register, sndOp: SecondOperand)
-    extends Instruction
+case class AddInstr(
+    dst: Register,
+    fstOp: Register,
+    sndOp: SecondOperand,
+    setFlags: Boolean
+) extends Instruction
 
-case class SubInstr(dst: Register, fstOp: Register, sndOp: SecondOperand)
-    extends Instruction
+case class SubInstr(
+    dst: Register,
+    fstOp: Register,
+    sndOp: SecondOperand,
+    setFlags: Boolean
+) extends Instruction
 
 case class SMullInstr(
     regLo: Register,
@@ -70,11 +78,19 @@ case class LoadLabelInstr(
     condition: Condition.Condition = Condition.AL
 ) extends Instruction
 
-case class StoreInstr(src: Register, dst: Register, offset: SecondOperand)
-    extends Instruction
+case class StoreInstr(
+    src: Register,
+    dst: Register,
+    offset: SecondOperand,
+    writeBack: Boolean = false
+) extends Instruction
 
-case class StoreByteInstr(src: Register, dst: Register, offset: SecondOperand)
-    extends Instruction
+case class StoreByteInstr(
+    src: Register,
+    dst: Register,
+    offset: SecondOperand,
+    writeBack: Boolean = false
+) extends Instruction
 
 case class MoveInstr(dst: Register, src: SecondOperand) extends Instruction
 
@@ -107,6 +123,10 @@ sealed trait SecondOperand {
         this match {
             case ImmOffset(immOffset) => s"#$immOffset"
             case RegOp(regOp)         => regOp.toString()
+            case LSLRegOp(r, s)       => s"${r.toString()} LSL ${s.toString()}"
+            case LSRRegOp(r, s)       => s"${r.toString()} LSR ${s.toString()}"
+            case ASRRegOp(r, s)       => s"${r.toString()} ASR ${s.toString()}"
+            case RORRegOp(r, s)       => s"${r.toString()} ROR ${s.toString()}"
         }
     }
 }
@@ -114,3 +134,24 @@ sealed trait SecondOperand {
 case class ImmOffset(immOffset: Int) extends SecondOperand
 
 case class RegOp(regOp: Register) extends SecondOperand
+
+case class LSLRegOp(regOp: Register, shift: Shift) extends SecondOperand
+
+case class LSRRegOp(regOp: Register, shift: Shift) extends SecondOperand
+
+case class ASRRegOp(regOp: Register, shift: Shift) extends SecondOperand
+
+case class RORRegOp(regOp: Register, shift: Shift) extends SecondOperand
+
+sealed trait Shift {
+    override def toString: String = {
+        this match {
+            case ShiftReg(reg) => reg.toString()
+            case ShiftImm(imm) => s"#$imm"
+        }
+    }
+}
+
+case class ShiftReg(reg: Register) extends Shift
+
+case class ShiftImm(imm: Int) extends Shift
