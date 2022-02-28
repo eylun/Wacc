@@ -34,15 +34,6 @@ object testUtils {
             )
     }
 
-    /* Compares the output of an executed program and the expected output */
-    def assertExecuteEquals(
-        expected: List[String],
-        actual: List[String]
-    ): Unit = {
-        if (expected.length != actual.length)
-            fail("Expected and Actual values have varying lengths")
-    }
-
     /* Compares the expected Result object to the actual output produced by a
        parse() call on a Parsley object. */
     def assertResultEquals[A](
@@ -131,21 +122,25 @@ object testUtils {
         }
     }
 
-    /** Extracts the output segment of a wacc file provided in the test cases */
-    def extractOutput(f: File): List[String] = {
-        import scala.io.Source
-        import scala.collection.mutable
-        val result: mutable.ListBuffer[String] =
-            mutable.ListBuffer[String]().empty
-        var addFlag = false
-        Source.fromFile(f.getPath()).getLines().foreach { line =>
-            line match {
-                case "# Output:"             => addFlag = true
-                case "# Input:"              => addFlag = false
-                case s"# $output" if addFlag => result += output
-                case _                       => addFlag = false
-            }
-        }
-        result.toList
+    /** Generate assembly file through test suite
+      *
+      * Assumptions are made here that there are no syntax errors and no
+      * semantic errors
+      */
+    def testCodegen(f: File): Unit = {
+        import parsley.io.{ParseFromIO}
+        import Helpers.cleanFilename
+        val result = syntax.parse.parseFromFile(f).get
+        val topLevelST = SymbolTable()
+        val errorLog = ListBuffer[WaccError]()
+        result.get.check(topLevelST, errorLog)
+        ARMRepresentation(
+          result.get,
+          topLevelST,
+          cleanFilename(f.getPath()) + ".s"
+        )
     }
+
+    val outputIndicator =
+        "==========================================================="
 }

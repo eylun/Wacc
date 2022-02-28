@@ -1,13 +1,12 @@
 import java.io.{File, BufferedWriter, FileWriter}
 object ARMRepresentation extends Representation {
 
-    implicit val collector: WaccBuffer = new WaccBuffer
-
     def apply(
         progNode: ProgramNode,
         st: SymbolTable,
         filename: String
     ): Unit = {
+        implicit val collector: WaccBuffer = new WaccBuffer
         collector.setupMain()
         val bw = new BufferedWriter(new FileWriter(new File(filename)))
         CodeGenerator(progNode, st).foreach(l => bw.write(generateLine(l)))

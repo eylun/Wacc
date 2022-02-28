@@ -5,6 +5,7 @@
 SOURCE_DIR := src
 OUTPUT := wacccompiler
 ASSEMBLY := *.s
+EXPECTED := expected
 
 # Project tools
 
@@ -22,6 +23,7 @@ all:
 clean:
 	$(RM) $(OUTPUT)
 	$(RM) $(ASSEMBLY)
+	$(RM) $(EXPECTED)
 	$(SBT) clean
 
 .PHONY: all clean

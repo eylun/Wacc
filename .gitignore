@@ -65,3 +65,4 @@ nonsense
 # generated expected and actual directories from testing
 expected
 actual
+input.txt

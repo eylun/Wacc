@@ -15,26 +15,63 @@ class ExecuteSpec extends AnyFlatSpec {
     import sys.process._
     import scala.language.postfixOps
     import parsley.{Success, Failure}
-    import testUtils.{waccProgramsInDir, extractOutput}
+    import testUtils.{waccProgramsInDir, testCodegen, outputIndicator}
     import Helpers.cleanFilename
-    behavior of "array programs"
-    it should "execute aray programs" in {
+    import java.io.PrintWriter
+    import scala.io.Source
+
+    if (!new File("/expected").exists()) {
+        "mkdir -p expected" !
+    }
+    behavior of "print programs"
+    it should "execute print programs" in {
         val syntaxValid =
             waccProgramsInDir(new File("./programs/valid/IO/print"))
         "touch input.txt" !
 
         syntaxValid.foreach { f =>
-            val output = extractOutput(f)
-            // println(output)
-            s"./compile ${f.getPath()}" !
+            if (!new File(s"expected/${cleanFilename(f.getName())}").exists()) {
+                println("Caching outputs...")
+                // s"touch expected/${cleanFilename(f.getName())}" !
+
+                val output = (s"./refCompile -x ${f.getPath()}" #< new File(
+                  "input.txt"
+                )) !!
+
+                println("-----------------")
+                output match {
+                    case s"$_===========================================================$o===$_" => {
+                        new PrintWriter(
+                          s"expected/${cleanFilename(f.getName())}"
+                          /** Left trim */
+                        ) { write(o.replaceAll("^\\s+", "")); close }
+                    }
+                    case _ =>
+                        new PrintWriter(
+                          s"expected/${cleanFilename(f.getName())}"
+                        ) { write(""); close }
+                }
+            }
+            testCodegen(f)
 
             s"arm-linux-gnueabi-gcc -o ${cleanFilename(f.getPath())} -mcpu=arm1176jzf-s -mtune=arm1176jzf-s ${cleanFilename(f.getPath())}.s" !
 
-            val result =
-                s"qemu-arm -L /usr/arm-linux-gnueabi/ ${cleanFilename(f.getPath())} < input.txt" !!
+            val actual =
+                (s"qemu-arm -L /usr/arm-linux-gnueabi/ ${cleanFilename(f.getPath())} < input.txt" !!).trim()
 
-            println(s"HAHAHAHA $result")
+            val expected =
+                Source
+                    .fromFile(s"expected/${cleanFilename(f.getName())}")
+                    .getLines()
+                    .mkString("\n")
+            s"rm ${cleanFilename(f.getPath())}.s" !
+
+            s"rm ${cleanFilename(f.getPath())}" !
+
+            if (expected == actual) succeed
+            else fail(s"Expected: $expected, Actual: $actual")
         }
+        "rm input.txt" !
 
     }
 }
