@@ -58,6 +58,25 @@ object transRHS {
                 )
 
             }
+            case e: PairElemNode => {
+                collector.addStatement(
+                  List(BranchLinkInstr("p_null_check_pointer")) ++
+                      (e match {
+                          case FirstPairElemNode(e) =>
+                              List(
+                                LoadInstr(r0, r0, ImmOffset(0))
+                              )
+                          case SecondPairElemNode(e) =>
+                              List(
+                                LoadInstr(
+                                  r0,
+                                  r0,
+                                  ImmOffset(WORD_SIZE)
+                                )
+                              )
+                      }) ++ List(LoadInstr(r0, r0, 0, Condition.S))
+                )
+            }
             case _ =>
         }
     }
