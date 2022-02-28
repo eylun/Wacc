@@ -11,7 +11,6 @@ object transStatement {
         // it should call translation functions on all appropriate parts of
         // the statement, this also means that it should call transStatement
         // on nested statements (like in if-then-else, while-do, begin-end)
-        collector.addStatement(stackFrame.head)
         val StatListNode(l) = statList
         l.foreach {
             case NewAssignNode(t, i, r) => {
@@ -92,16 +91,23 @@ object transStatement {
             }
             case LRAssignNode(l, r) => {
                 l match {
-                    case IdentNode(i) => {
+                    case IdentNode(s) => {
                         transRHS(r, stackFrame)
                         collector.addStatement(
-                          List(
-                            StoreInstr(
-                              Reg(0),
-                              StackPtrReg(),
-                              ImmOffset(stackFrame.getOffset(i))
-                            )
-                          )
+                          List(stackFrame.st.lookup(s).get.getType() match {
+                              case CharType() | BoolType() =>
+                                  StoreByteInstr(
+                                    Reg(0),
+                                    StackPtrReg(),
+                                    ImmOffset(stackFrame.getOffset(s))
+                                  )
+                              case _ =>
+                                  StoreInstr(
+                                    Reg(0),
+                                    StackPtrReg(),
+                                    ImmOffset(stackFrame.getOffset(s))
+                                  )
+                          })
                         )
                     }
                     case ArrayElemNode(i, es) =>
@@ -113,34 +119,45 @@ object transStatement {
             case ite @ IfThenElseNode(e, s1, s2) => {
                 val labelFalse = s"ite_${collector.tickIte()}"
                 val labelTrue = s"ite_${collector.tickIte()}"
+                val trueSF = stackFrame.join(StackFrame(ite.trueST), ite.trueST)
+                val falseSF =
+                    stackFrame.join(StackFrame(ite.falseST), ite.falseST)
                 transExpression(e, stackFrame)
                 collector.addStatement(
                   List(
                     CompareInstr(Reg(0), ImmOffset(0), Condition.AL),
                     BranchInstr(labelFalse, Condition.EQ)
-                  )
+                  ) ++ trueSF.head
                 )
                 transStatement(
                   s1,
-                  stackFrame.join(StackFrame(ite.trueST), ite.trueST)
+                  trueSF
                 )
                 collector.addStatement(
-                  List(BranchInstr(labelTrue, Condition.AL), Label(labelFalse))
+                  trueSF.tail ++
+                      List(
+                        BranchInstr(labelTrue, Condition.AL),
+                        Label(labelFalse)
+                      )
+                      ++ falseSF.head
                 )
                 transStatement(
                   s2,
-                  stackFrame.join(StackFrame(ite.falseST), ite.falseST)
+                  falseSF
                 )
-                collector.addStatement(List(Label(labelTrue)))
+                collector.addStatement(falseSF.tail ++ List(Label(labelTrue)))
             }
             case be @ BeginEndNode(s) => {
+                val beSF = stackFrame.join(
+                  StackFrame(be.newScopeST),
+                  be.newScopeST
+                )
+                collector.addStatement(beSF.head)
                 transStatement(
                   s,
-                  stackFrame.join(
-                    StackFrame(be.newScopeST),
-                    be.newScopeST
-                  )
+                  beSF
                 )
+                collector.addStatement(beSF.tail)
             }
             case wd @ WhileDoNode(e, s) => {
                 val labelContent = s"wd_${collector.tickWd()}"
@@ -151,13 +168,17 @@ object transStatement {
                     Label(labelContent)
                   )
                 )
+                val wdSF = stackFrame.join(
+                  StackFrame(wd.newScopeST),
+                  wd.newScopeST
+                )
+                collector.addStatement(wdSF.head)
                 transStatement(
                   s,
-                  stackFrame.join(
-                    StackFrame(wd.newScopeST),
-                    wd.newScopeST
-                  )
+                  wdSF
                 )
+                collector.addStatement(wdSF.tail)
+
                 collector.addStatement(List(Label(labelCheck)))
                 transExpression(e, stackFrame)
                 collector.addStatement(
@@ -190,12 +211,11 @@ object transStatement {
                 collector.addStatement(List(BranchLinkInstr("p_print_ln")))
             }
             case FreeNode(e)   =>
-            case ReturnNode(e) =>
+            case ReturnNode(e) => transExpression(e, stackFrame)
             case ReadNode(l)   =>
             case StatListNode(_) =>
                 throw new RuntimeException("Invalid Statement List Node")
         }
-        collector.addStatement(stackFrame.tail)
     }
 
     def printExpr(e: ExprNode, stackFrame: StackFrame)(implicit
