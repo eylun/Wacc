@@ -3,7 +3,7 @@ sealed trait Instruction
 /** Enumerations: Condition Codes, Flags */
 object Condition extends Enumeration {
     type Condition = Value
-    val EQ, NE, LE, LT, GE, GT, HS, LO, MI, PL, VS, VC, HI, LS = Value
+    val EQ, NE, LE, LT, GE, GT, HS, LO, MI, PL, VS, VC, HI, LS, CS = Value
     val AL = Value("")
 }
 
@@ -25,17 +25,23 @@ case class Directive(name: String) extends Instruction
 case class CompareInstr(
     fstOp: Register,
     sndOp: SecondOperand,
-    condition: Condition.Condition
+    condition: Condition.Condition = Condition.AL
 ) extends Instruction
 
 /* Arithmetic Operations */
-case class AddInstr(dst: Register, fstOp: Register, sndOp: SecondOperand, 
-                    setFlags: Boolean)
-    extends Instruction
+case class AddInstr(
+    dst: Register,
+    fstOp: Register,
+    sndOp: SecondOperand,
+    setFlags: Boolean
+) extends Instruction
 
-case class SubInstr(dst: Register, fstOp: Register, sndOp: SecondOperand,
-                    setFlags: Boolean)
-    extends Instruction
+case class SubInstr(
+    dst: Register,
+    fstOp: Register,
+    sndOp: SecondOperand,
+    setFlags: Boolean
+) extends Instruction
 
 case class SMullInstr(
     regLo: Register,
@@ -117,10 +123,10 @@ sealed trait SecondOperand {
         this match {
             case ImmOffset(immOffset) => s"#$immOffset"
             case RegOp(regOp)         => regOp.toString()
-            case LSLRegOp(r, s) => s"${r.toString()} LSL ${s.toString()}"
-            case LSRRegOp(r, s) => s"${r.toString()} LSR ${s.toString()}"
-            case ASRRegOp(r, s) => s"${r.toString()} ASR ${s.toString()}"
-            case RORRegOp(r, s) => s"${r.toString()} ROR ${s.toString()}"
+            case LSLRegOp(r, s)       => s"${r.toString()} LSL ${s.toString()}"
+            case LSRRegOp(r, s)       => s"${r.toString()} LSR ${s.toString()}"
+            case ASRRegOp(r, s)       => s"${r.toString()} ASR ${s.toString()}"
+            case RORRegOp(r, s)       => s"${r.toString()} ROR ${s.toString()}"
         }
     }
 }

@@ -28,19 +28,19 @@ class WaccBuffer {
         if (utilpool.contains(flag)) return
         utilpool += flag
         flag match {
-            case PPrintInt            => printIntLiter(this)
-            case PPrintBool           => printBoolLiter(this)
-            case PPrintString         => printStrLiter(this)
-            case PPrintRef            => printRef(this)
-            case PPrintNewLine        => printNewLine(this)
-            case PThrowOverflowError  =>
-            case PRuntimeError        =>
-            case PDivisionByZeroError =>
-            case PCheckArrayBounds    =>
-            case PReadChar            =>
-            case PReadInt             =>
-            case PFreePair            =>
-            case PCheckNullPointer    =>
+            case PPrintInt           => printIntLiter(this)
+            case PPrintBool          => printBoolLiter(this)
+            case PPrintString        => printStrLiter(this)
+            case PPrintRef           => printRef(this)
+            case PPrintNewLine       => printNewLine(this)
+            case PThrowOverflowError => printOverflowError(this)
+            case PRuntimeError       => printRuntimeError(this)
+            case PCheckDivideByZero  => printCheckDivideByZero(this)
+            case PCheckArrayBounds   => printCheckArrayBounds(this)
+            case PReadChar           => printReadChar(this)
+            case PReadInt            => printReadInt(this)
+            case PFreePair           => printFreePair(this)
+            case PCheckNullPointer   => printCheckNullPointer(this)
         }
     }
 
