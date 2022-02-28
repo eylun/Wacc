@@ -59,7 +59,11 @@ object ARMRepresentation extends Representation {
                 s"\tLDR$cond $dst, [$src]"
             case LoadInstr(dst, src, ImmOffset(offset), cond) =>
                 s"\tLDR$cond $dst, [$src, #$offset]"
-
+            case LoadRegSignedByte(dst, src, ImmOffset(0), cond) =>
+                s"\tLDRSB$cond $dst, [$src]"
+            case LoadRegSignedByte(dst, src, ImmOffset(offset), cond) =>
+                s"\tLDRSB$cond $dst, [$src, #$offset]"
+                
             /** Store Instructions */
             case StoreInstr(src, dst, ImmOffset(0), true) =>
                 s"\tSTR $src, [$dst]!"

@@ -1,7 +1,6 @@
 import Helpers._
 import Helpers.UtilFlag._
 import constants._
-import javax.management.RuntimeErrorException
 
 object transStatement {
     def apply(statList: StatNode, stackFrame: StackFrame)(implicit
@@ -42,12 +41,20 @@ object transStatement {
                                 transExpression(e, stackFrame)
                                 collector.addStatement(
                                   List(
-                                    // set to store byte for char and bool
-                                    StoreInstr(
-                                      Reg(0),
-                                      Reg(3),
-                                      ImmOffset(ofs)
-                                    )
+                                    e.typeId.get.getType() match {
+                                        case CharType() | BoolType() =>
+                                            StoreByteInstr(
+                                              Reg(0),
+                                              Reg(3),
+                                              ImmOffset(ofs)
+                                            )
+                                        case _ =>
+                                            StoreInstr(
+                                              Reg(0),
+                                              Reg(3),
+                                              ImmOffset(ofs)
+                                            )
+                                    }
                                   )
                                 )
                                 ofs = ofs + elemSize
@@ -77,16 +84,31 @@ object transStatement {
                         transRHS(r, stackFrame)
                     }
                 }
+
+                t match {
+                    case CharTypeNode() | BoolTypeNode() => {
+                        collector.addStatement(
+                          List(
+                            StoreByteInstr(
+                              Reg(0),
+                              StackPtrReg(),
+                              ImmOffset(stackFrame.getOffset(i.s))
+                            )
+                          )
+                        )
+                    }
+                    case _ =>
+                        collector.addStatement(
+                          List(
+                            StoreInstr(
+                              Reg(0),
+                              StackPtrReg(),
+                              ImmOffset(stackFrame.getOffset(i.s))
+                            )
+                          )
+                        )
+                }
                 // all new assign code ends with storing reg 0 into stack
-                collector.addStatement(
-                  List(
-                    StoreInstr(
-                      Reg(0),
-                      StackPtrReg(),
-                      ImmOffset(stackFrame.getOffset(i.s))
-                    )
-                  )
-                )
 
             }
             case LRAssignNode(l, r) => {
@@ -112,8 +134,43 @@ object transStatement {
                     }
                     case ArrayElemNode(i, es) =>
                     // TODO complete for array and pair elems
-                    case FirstPairElemNode(e)  => // TODO complete for first
-                    case SecondPairElemNode(e) => // TODO complete for second
+                    case l: PairElemNode => {
+
+                        collector.insertUtil(UtilFlag.PCheckNullPointer)
+                        collector.addStatement(List(PushInstr(List(r0))))
+                        transRHS(r, stackFrame)
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_check_null_pointer")) ++
+                              (l match {
+                                  case FirstPairElemNode(e) => {
+                                      List(
+                                        AddInstr(r0, r0, ImmOffset(0), false)
+                                      )
+                                  }
+                                  case SecondPairElemNode(e) => {
+                                      List(
+                                        AddInstr(
+                                          r0,
+                                          r0,
+                                          ImmOffset(WORD_SIZE),
+                                          false
+                                        )
+                                      )
+                                  }
+                              }) ++ List(
+                                LoadInstr(r0, r0, ImmOffset(0)),
+                                PushInstr(List(r0)),
+                                BranchLinkInstr("free"),
+                                MoveInstr(r0, ImmOffset(WORD_SIZE)),
+                                BranchLinkInstr("malloc"),
+                                PopInstr(List(r1)),
+                                StoreInstr(r0, r1, ImmOffset(0)),
+                                MoveInstr(r1, RegOp(r0)),
+                                PopInstr(List(r0)),
+                                StoreInstr(r0, r1, ImmOffset(0))
+                              )
+                        )
+                    }
                 }
             }
             case ite @ IfThenElseNode(e, s1, s2) => {
@@ -210,9 +267,58 @@ object transStatement {
                 /** Add branch instruction Statement */
                 collector.addStatement(List(BranchLinkInstr("p_print_ln")))
             }
-            case FreeNode(e)   =>
+            case FreeNode(e) => {
+                transExpression(e, stackFrame)
+                e.typeId.get.getType() match {
+                    case PairType(_, _) => {
+
+                        collector.insertUtil(UtilFlag.PFreePair)
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_free_pair"))
+                        )
+                    }
+                    case ArrayType(_, _, _) =>
+                        collector.addStatement(List(BranchLinkInstr("free")))
+                    case _ =>
+                        throw new RuntimeException(
+                          "Can only free arrays and pairs"
+                        )
+                }
+            }
             case ReturnNode(e) => transExpression(e, stackFrame)
-            case ReadNode(l)   =>
+            case ReadNode(l) => {
+
+                collector.addStatement(
+                  List(AddInstr(Reg(0), sp, ImmOffset(0), false))
+                )
+
+                l.typeId.get.getType() match {
+                    case CharType() => {
+                        collector.insertUtil(UtilFlag.PReadChar)
+                        collector.addStatement(
+                          List(
+                            BranchLinkInstr("p_read_char")
+                          )
+                        )
+                    }
+
+                    case IntType() => {
+                        collector.insertUtil(UtilFlag.PReadInt)
+                        collector.addStatement(
+                          List(
+                            BranchLinkInstr("p_read_int")
+                          )
+                        )
+                    }
+
+                    case _ =>
+                        // Note: Read statement only takes character or int input
+                        throw new RuntimeException(
+                          "Invalid Target Type for Read Statement"
+                        )
+                }
+
+            }
             case StatListNode(_) =>
                 throw new RuntimeException("Invalid Statement List Node")
         }
@@ -305,7 +411,9 @@ object transStatement {
                         )
                     }
                     case CharType() => {
-                        collector.insertUtil(UtilFlag.PPrintChar)
+                        collector.addStatement(
+                          List(BranchLinkInstr("putchar"))
+                        )
                     }
                     case StringType() => {
                         collector.insertUtil(UtilFlag.PPrintString)
@@ -315,7 +423,7 @@ object transStatement {
                           List(BranchLinkInstr("p_print_string"))
                         )
                     }
-                    case ArrayType(CharType(), _, _) => {
+                    case ArrayType(CharType(), _, 1) => {
                         collector.insertUtil(UtilFlag.PPrintString)
 
                         /** Add branch instruction statement */
