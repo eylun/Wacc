@@ -14,6 +14,7 @@ object Helpers {
         t match {
             case BoolType() | CharType() => BIT_SIZE
             case Variable(t)             => getTypeSize(t)
+            case Param(t)                => getTypeSize(t)
             /** Functions are not applicable for stack frame sizes */
             case FunctionId(_, _, _) => 0
             case _                   => WORD_SIZE

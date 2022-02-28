@@ -32,12 +32,23 @@ object ARMRepresentation extends Representation {
                 s"\tLDR$cond $dst, [$src]"
             case LoadInstr(dst, src, ImmOffset(offset), cond) =>
                 s"\tLDR$cond $dst, [$src, #$offset]"
-            case StoreInstr(src, dst, ImmOffset(0)) => s"\tSTR $src, [$dst]"
-            case StoreInstr(src, dst, ImmOffset(offset)) =>
+            /** Store Instructions */
+            case StoreInstr(src, dst, ImmOffset(0), true) =>
+                s"\tSTR $src, [$dst]!"
+            case StoreInstr(src, dst, ImmOffset(offset), true) =>
+                s"\tSTR $src, [$dst, #$offset]!"
+            case StoreInstr(src, dst, ImmOffset(0), false) =>
+                s"\tSTR $src, [$dst]"
+            case StoreInstr(src, dst, ImmOffset(offset), false) =>
                 s"\tSTR $src, [$dst, #$offset]"
-            case StoreByteInstr(src, dst, ImmOffset(0)) =>
+            /** Store Byte Instructions */
+            case StoreByteInstr(src, dst, ImmOffset(0), true) =>
+                s"\tSTRB $src, [$dst]!"
+            case StoreByteInstr(src, dst, ImmOffset(offset), true) =>
+                s"\tSTRB $src, [$dst, #$offset]!"
+            case StoreByteInstr(src, dst, ImmOffset(0), false) =>
                 s"\tSTRB $src, [$dst]"
-            case StoreByteInstr(src, dst, ImmOffset(offset)) =>
+            case StoreByteInstr(src, dst, ImmOffset(offset), false) =>
                 s"\tSTRB $src, [$dst, #$offset]"
             case BranchInstr(label, condition)     => s"\tB$condition $label"
             case BranchLinkInstr(label, condition) => s"\tBL$condition $label"

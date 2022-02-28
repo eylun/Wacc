@@ -91,16 +91,23 @@ object transStatement {
             }
             case LRAssignNode(l, r) => {
                 l match {
-                    case IdentNode(i) => {
+                    case IdentNode(s) => {
                         transRHS(r, stackFrame)
                         collector.addStatement(
-                          List(
-                            StoreInstr(
-                              Reg(0),
-                              StackPtrReg(),
-                              ImmOffset(stackFrame.getOffset(i))
-                            )
-                          )
+                          List(stackFrame.st.lookup(s).get.getType() match {
+                              case CharType() | BoolType() =>
+                                  StoreByteInstr(
+                                    Reg(0),
+                                    StackPtrReg(),
+                                    ImmOffset(stackFrame.getOffset(s))
+                                  )
+                              case _ =>
+                                  StoreInstr(
+                                    Reg(0),
+                                    StackPtrReg(),
+                                    ImmOffset(stackFrame.getOffset(s))
+                                  )
+                          })
                         )
                     }
                     case ArrayElemNode(i, es) =>
