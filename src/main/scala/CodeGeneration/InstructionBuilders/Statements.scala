@@ -41,12 +41,20 @@ object transStatement {
                                 transExpression(e, stackFrame)
                                 collector.addStatement(
                                   List(
-                                    // set to store byte for char and bool
-                                    StoreInstr(
-                                      Reg(0),
-                                      Reg(3),
-                                      ImmOffset(ofs)
-                                    )
+                                    e.typeId.get.getType() match {
+                                        case CharType() | BoolType() =>
+                                            StoreByteInstr(
+                                              Reg(0),
+                                              Reg(3),
+                                              ImmOffset(ofs)
+                                            )
+                                        case _ =>
+                                            StoreInstr(
+                                              Reg(0),
+                                              Reg(3),
+                                              ImmOffset(ofs)
+                                            )
+                                    }
                                   )
                                 )
                                 ofs = ofs + elemSize
@@ -415,7 +423,7 @@ object transStatement {
                           List(BranchLinkInstr("p_print_string"))
                         )
                     }
-                    case ArrayType(CharType(), _, _) => {
+                    case ArrayType(CharType(), _, 1) => {
                         collector.insertUtil(UtilFlag.PPrintString)
 
                         /** Add branch instruction statement */
