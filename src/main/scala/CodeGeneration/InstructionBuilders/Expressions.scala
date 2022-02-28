@@ -1,4 +1,5 @@
 import Helpers._
+import Helpers.UtilFlag._
 import constants._
 
 object transExpression {
@@ -36,6 +37,9 @@ object transExpression {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(Reg(0)))))
                 transExpression(e2, stackFrame)
+
+                collector.insertUtil(PThrowOverflowError)
+
                 collector.addStatement(
                   List(
                     MoveInstr(Reg(1), RegOp(Reg(0))),
@@ -45,11 +49,14 @@ object transExpression {
                     BranchLinkInstr("exit", Condition.AL)
                   )
                 )
-            } // TODO: create labels for BLs
+            }
             case Sub(e1, e2) => {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(Reg(0)))))
                 transExpression(e2, stackFrame)
+
+                collector.insertUtil(PThrowOverflowError)
+
                 collector.addStatement(
                   List(
                     MoveInstr(Reg(1), RegOp(Reg(0))),
@@ -59,26 +66,33 @@ object transExpression {
                     BranchLinkInstr("exit", Condition.AL)
                   )
                 )
-            } // TODO: create labels for BLs
+            }
             case Mult(e1, e2) => {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(Reg(0)))))
                 transExpression(e2, stackFrame)
+
+                collector.insertUtil(PThrowOverflowError)
+
                 collector.addStatement(
                     List(
                         MoveInstr(Reg(1), RegOp(Reg(0))),
                         PopInstr(List(Reg(0))),
                         SMullInstr(Reg(0), Reg(1), Reg(0), Reg(1)),
-                        CompareInstr(Reg(0), RegOp(Reg(1)), Condition.AL),
+                        CompareInstr(Reg(0), ASRRegOp(Reg(0), ShiftImm(31)), 
+                                    Condition.AL),
                         BranchLinkInstr("p_throw_overflow_error", Condition.NE),
                         BranchLinkInstr("exit", Condition.AL)
                     )
                 )
-            } // TODO: handle overflow - CMP r1, r0, ASR #31, create labels for BLs
+            }
             case Div(e1, e2) => {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(Reg(0)))))
                 transExpression(e2, stackFrame)
+
+                collector.insertUtil(PDivisionByZeroError)
+
                 collector.addStatement(
                     List(
                         MoveInstr(Reg(1), RegOp(Reg(0))),
@@ -88,7 +102,7 @@ object transExpression {
                         BranchLinkInstr("exit", Condition.AL)
                     )
                 )
-            } // TODO: create labels for the BLs
+            }
             case _ => List[Instruction]().empty
         }
 }

@@ -109,6 +109,10 @@ sealed trait SecondOperand {
         this match {
             case ImmOffset(immOffset) => s"#$immOffset"
             case RegOp(regOp)         => regOp.toString()
+            case LSLRegOp(r, s) => s"${r.toString()} LSL ${s.toString()}"
+            case LSRRegOp(r, s) => s"${r.toString()} LSR ${s.toString()}"
+            case ASRRegOp(r, s) => s"${r.toString()} ASR ${s.toString()}"
+            case RORRegOp(r, s) => s"${r.toString()} ROR ${s.toString()}"
         }
     }
 }
@@ -116,3 +120,24 @@ sealed trait SecondOperand {
 case class ImmOffset(immOffset: Int) extends SecondOperand
 
 case class RegOp(regOp: Register) extends SecondOperand
+
+case class LSLRegOp(regOp: Register, shift: Shift) extends SecondOperand
+
+case class LSRRegOp(regOp: Register, shift: Shift) extends SecondOperand
+
+case class ASRRegOp(regOp: Register, shift: Shift) extends SecondOperand
+
+case class RORRegOp(regOp: Register, shift: Shift) extends SecondOperand
+
+sealed trait Shift {
+    override def toString: String = {
+        this match {
+            case ShiftReg(reg) => reg.toString()
+            case ShiftImm(imm) => s"#$imm"
+        }
+    }
+}
+
+case class ShiftReg(reg: Register) extends Shift
+
+case class ShiftImm(imm: Int) extends Shift
