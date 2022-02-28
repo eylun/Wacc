@@ -51,9 +51,6 @@ class WaccBuffer {
         mutable.ListBuffer[Instruction](
         )
 
-    private val functions: mutable.ListBuffer[Instruction] =
-        mutable.ListBuffer[Instruction]().empty
-
     private val utilityStatements: mutable.ListBuffer[Instruction] =
         mutable.ListBuffer[Instruction]().empty
 
@@ -84,18 +81,16 @@ class WaccBuffer {
         wdCount - 1
     }
 
-    def addFunc(func: List[Instruction]): Unit = functions ++= func
-
     def toList(buffer: mutable.ListBuffer[Instruction]): List[Instruction] =
         buffer.toList
 
     def emit(): List[Instruction] = toList(
       dataMsgs.length match {
-          case 0 => mainStatements ++ functions ++ utilityStatements
+          case 0 => mainStatements ++ utilityStatements
           case _ =>
               (Directive(
                 "data"
-              ) +=: dataMsgs) ++ mainStatements ++ functions ++ utilityStatements
+              ) +=: dataMsgs) ++ mainStatements ++ utilityStatements
       }
     )
 }

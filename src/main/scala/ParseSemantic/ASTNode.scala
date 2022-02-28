@@ -58,7 +58,7 @@ case class ProgramNode(flist: List[FuncNode], s: StatNode)(val pos: (Int, Int))
                         t.check(st, errors)
 
                         /** Checks params (uses new symbol table funcST) */
-                        plist.foreach { p =>
+                        plist.reverse.foreach { p =>
                             {
                                 p.check(funcST, errors)
                                 if (p.typeId.isEmpty) return ()

@@ -8,7 +8,6 @@ object ARMRepresentation extends Representation {
         st: SymbolTable,
         filename: String
     ): Unit = {
-        collector.setupMain()
         val bw = new BufferedWriter(new FileWriter(new File(filename)))
         CodeGenerator(progNode, st).foreach(l => bw.write(generateLine(l)))
         bw.close()

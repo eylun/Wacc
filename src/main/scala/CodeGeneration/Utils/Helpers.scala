@@ -7,9 +7,7 @@ object Helpers {
 
     val mainSetup = List(
       Directive("text"),
-      Directive("global main"),
-      Label("main"),
-      PushInstr(List(lr))
+      Directive("global main")
     )
 
     def getTypeSize(t: Identifier): Int = {
