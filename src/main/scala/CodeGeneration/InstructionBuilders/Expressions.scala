@@ -75,15 +75,18 @@ object transExpression {
                 collector.insertUtil(PThrowOverflowError)
 
                 collector.addStatement(
-                    List(
-                        MoveInstr(Reg(1), RegOp(Reg(0))),
-                        PopInstr(List(Reg(0))),
-                        SMullInstr(Reg(0), Reg(1), Reg(0), Reg(1)),
-                        CompareInstr(Reg(0), ASRRegOp(Reg(0), ShiftImm(31)), 
-                                    Condition.AL),
-                        BranchLinkInstr("p_throw_overflow_error", Condition.NE),
-                        BranchLinkInstr("exit", Condition.AL)
-                    )
+                  List(
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    SMullInstr(Reg(0), Reg(1), Reg(0), Reg(1)),
+                    CompareInstr(
+                      Reg(0),
+                      ASRRegOp(Reg(0), ShiftImm(31)),
+                      Condition.AL
+                    ),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.NE),
+                    BranchLinkInstr("exit", Condition.AL)
+                  )
                 )
             }
             case Div(e1, e2) => {
@@ -91,16 +94,16 @@ object transExpression {
                 collector.addStatement(List(PushInstr(List(Reg(0)))))
                 transExpression(e2, stackFrame)
 
-                collector.insertUtil(PDivisionByZeroError)
+                collector.insertUtil(PCheckDivideByZero)
 
                 collector.addStatement(
-                    List(
-                        MoveInstr(Reg(1), RegOp(Reg(0))),
-                        PopInstr(List(Reg(0))),
-                        BranchLinkInstr("p_check_divide_by_zero", Condition.AL),
-                        BranchLinkInstr("__aeabi_idiv", Condition.AL),
-                        BranchLinkInstr("exit", Condition.AL)
-                    )
+                  List(
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    BranchLinkInstr("p_check_divide_by_zero", Condition.AL),
+                    BranchLinkInstr("__aeabi_idiv", Condition.AL),
+                    BranchLinkInstr("exit", Condition.AL)
+                  )
                 )
             }
             case _ => List[Instruction]().empty
