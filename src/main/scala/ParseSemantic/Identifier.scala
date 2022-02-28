@@ -12,7 +12,7 @@ sealed trait Identifier {
 
 /** Type trait for all identifiers which are types */
 sealed trait Type extends Identifier {
-    override def getType(): Type = identity(this)
+    override def getType(): Type = this
 }
 
 /** Variable - newly declared identifiers */
@@ -57,8 +57,14 @@ case class NestedPairType() extends Type {
   *
   * 2D arrays have a dimension of 2, 3D arrays have a dimension of 3, etc...
   */
-case class ArrayType(elemType: Type, var dimension: Int) extends Type {
+case class ArrayType(elemType: Type, length: List[Int], var dimension: Int)
+    extends Type {
     override def toString(): String = elemType.toString() + "[]" * dimension
+}
+
+object ArrayType {
+    def apply(elemType: Type, dimension: Int): ArrayType =
+        ArrayType(elemType, List(0), dimension)
 }
 
 /** Pair - Pair type that contains 2 types within */

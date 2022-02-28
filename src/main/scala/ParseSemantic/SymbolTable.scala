@@ -1,8 +1,8 @@
-import scala.collection.mutable.Map
+import scala.collection.immutable.Map
 
 class SymbolTable(
     var encSymTable: Option[SymbolTable],
-    val dict: Map[String, Identifier]
+    var dict: Map[String, Identifier]
 ) {
 
     /** Sets the parent of this symbol table. */
@@ -12,7 +12,7 @@ class SymbolTable(
       * identifier object.
       */
     def add(name: String, obj: Identifier): Unit = {
-        dict.addOne(name -> obj)
+        dict = dict + (name -> obj)
     }
 
     /** Looks up an identifier string in the current symbol table. Returns a

@@ -9,7 +9,7 @@ object CodeGenerator {
         transStatement(progNode.s, mainStackFrame)
         progNode.flist.foreach { transFunction(_) }
         collector.addStatement(
-          List(MoveInstr(Reg(0), ImmOffset(0)), PopInstr(pc))
+          List(MoveInstr(Reg(0), ImmOffset(0)), PopInstr(List(pc)))
         )
         collector.emit()
     }
