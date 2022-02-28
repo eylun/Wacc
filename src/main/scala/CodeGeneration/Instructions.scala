@@ -37,6 +37,10 @@ case class SubInstr(dst: Register, fstOp: Register, sndOp: SecondOperand,
                     setFlags: Boolean)
     extends Instruction
 
+case class ReverseSubInstr(dst: Register, fstOp: Register, sndOp: SecondOperand,
+                            setFlags: Boolean)
+    extends Instruction
+
 case class SMullInstr(
     regLo: Register,
     regHi: Register,
@@ -100,11 +104,14 @@ case class BranchLinkInstr(
 ) extends Instruction
 
 /** Logic Operations */
-case class AndInstr(fstOp: Register, sndOp: Register) extends Instruction
+case class AndInstr(dst: Register, src: Register, op2: SecondOperand, 
+            cond: Condition.Condition, setFlags: Boolean) extends Instruction
 
-case class XorInstr(fstOp: Register, sndOp: Register) extends Instruction
+case class XorInstr(dst: Register, src: Register, op2: SecondOperand, 
+            cond: Condition.Condition, setFlags: Boolean) extends Instruction
 
-case class OrInstr(fstOp: Register, sndOp: Register) extends Instruction
+case class OrInstr(dst: Register, src: Register, op2: SecondOperand, 
+            cond: Condition.Condition, setFlags: Boolean) extends Instruction
 
 /* Stack Manipulation Operation*/
 case class PushInstr(regList: List[Register]) extends Instruction
