@@ -36,6 +36,7 @@ object transExpression {
                     }
                 }
 
+            /* Literals */
             case IntLiterNode(n) =>
                 collector.addStatement(List(LoadImmIntInstr(Reg(0), n)))
             case CharLiterNode(c) =>
@@ -53,26 +54,30 @@ object transExpression {
                   List(LoadLabelInstr(Reg(0), s"msg_$msgCount"))
                 )
             }
+
+            case ArrayElemNode(ident, es) => {
+                // TODO
+            }
+
+            /* Unary operations */
             case Not(e) => {
                 transExpression(e, stackFrame)
                 collector.addStatement(
-                    List(
-                        XorInstr(Reg(0), Reg(0), ImmOffset(1), Condition.AL, 
-                                false),
-                        StoreByteInstr(Reg(0), StackPtrReg(), ImmOffset(0))
-                    )
+                  List(
+                    XorInstr(Reg(0), Reg(0), ImmOffset(1))
+                  )
                 )
             }
             case Neg(e) => {
                 transExpression(e, stackFrame)
-                
+
                 collector.insertUtil(PThrowOverflowError)
 
                 collector.addStatement(
-                    List(
-                        ReverseSubInstr(Reg(0), Reg(0), ImmOffset(0), true),
-                        BranchLinkInstr("p_throw_overflow_error", Condition.VS),
-                    )
+                  List(
+                    ReverseSubInstr(Reg(0), Reg(0), ImmOffset(0), true),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.VS)
+                  )
                 )
             }
             case Len(e) => {
@@ -85,6 +90,8 @@ object transExpression {
             case Chr(e) => {
                 transExpression(e, stackFrame)
             }
+
+            /* Binary operations */
             case Add(e1, e2) => {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(Reg(0)))))
@@ -97,7 +104,7 @@ object transExpression {
                     MoveInstr(Reg(1), RegOp(Reg(0))),
                     PopInstr(List(Reg(0))),
                     AddInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
-                    BranchLinkInstr("p_throw_overflow_error", Condition.VS),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.VS)
                   )
                 )
             }
@@ -113,7 +120,7 @@ object transExpression {
                     MoveInstr(Reg(1), RegOp(Reg(0))),
                     PopInstr(List(Reg(0))),
                     SubInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
-                    BranchLinkInstr("p_throw_overflow_error", Condition.VS),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.VS)
                   )
                 )
             }
@@ -125,14 +132,13 @@ object transExpression {
                 collector.insertUtil(PThrowOverflowError)
 
                 collector.addStatement(
-                    List(
-                        MoveInstr(Reg(1), RegOp(Reg(0))),
-                        PopInstr(List(Reg(0))),
-                        SMullInstr(Reg(0), Reg(1), Reg(0), Reg(1), false),
-                        CompareInstr(Reg(0), ASRRegOp(Reg(0), ShiftImm(31)), 
-                                    Condition.AL),
-                        BranchLinkInstr("p_throw_overflow_error", Condition.NE),
-                    )
+                  List(
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    SMullInstr(Reg(0), Reg(1), Reg(0), Reg(1)),
+                    CompareInstr(Reg(0), ASRRegOp(Reg(0), ShiftImm(31))),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.NE)
+                  )
                 )
             }
             case Div(e1, e2) => {
@@ -143,48 +149,147 @@ object transExpression {
                 collector.insertUtil(PCheckDivideByZero)
 
                 collector.addStatement(
-                    List(
-                        MoveInstr(Reg(1), RegOp(Reg(0))),
-                        PopInstr(List(Reg(0))),
-                        BranchLinkInstr("p_check_divide_by_zero", Condition.AL),
-                        BranchLinkInstr("__aeabi_idiv", Condition.AL),
-                    )
+                  List(
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    BranchLinkInstr("p_check_divide_by_zero"),
+                    BranchLinkInstr("__aeabi_idiv")
+                  )
+                )
+            }
+            case Mod(e1, e2) => {
+                transExpression(e1, stackFrame)
+                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                transExpression(e2, stackFrame)
+
+                collector.insertUtil(PCheckDivideByZero)
+
+                collector.addStatement(
+                  List(
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    BranchLinkInstr("p_check_divide_by_zero"),
+                    BranchLinkInstr("__aeabi_idivmod"),
+                    MoveInstr(Reg(0), RegOp(Reg(1)))
+                  )
                 )
             }
             case And(e1, e2) => {
                 transExpression(e1, stackFrame)
                 // Short-circuit evaluation
                 collector.addStatement(
-                    List(
-                        CompareInstr(Reg(0), ImmOffset(0), Condition.AL),
-                        BranchInstr("L0", Condition.EQ)
-                    )
+                  List(
+                    CompareInstr(Reg(0), ImmOffset(0)),
+                    BranchInstr("L0", Condition.EQ)
+                  )
                 )
                 transExpression(e2, stackFrame)
-                
+
                 collector.addStatement(
-                    List(
-                        Label("L0"),
-                        StoreByteInstr(Reg(0), StackPtrReg(), ImmOffset(0))
-                    )
+                  List(
+                    Label("L0")
+                  )
                 )
             }
             case Or(e1, e2) => {
                 transExpression(e1, stackFrame)
                 // Short-circuit evaluation
                 collector.addStatement(
-                    List(
-                        CompareInstr(Reg(0), ImmOffset(1), Condition.AL),
-                        BranchInstr("L0", Condition.EQ)
-                    )
+                  List(
+                    CompareInstr(Reg(0), ImmOffset(1)),
+                    BranchInstr("L0", Condition.EQ)
+                  )
                 )
                 transExpression(e2, stackFrame)
-                
+
                 collector.addStatement(
-                    List(
-                        Label("L0"),
-                        StoreByteInstr(Reg(0), StackPtrReg(), ImmOffset(0))
-                    )
+                  List(
+                    Label("L0")
+                  )
+                )
+            }
+            case GT(e1, e2) => {
+                transExpression(e1, stackFrame)
+                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                transExpression(e2, stackFrame)
+                collector.addStatement(
+                  List(
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    CompareInstr(Reg(0), RegOp(Reg(1))),
+                    MoveInstr(Reg(0), ImmOffset(1), Condition.GT),
+                    MoveInstr(Reg(0), ImmOffset(0), Condition.LE)
+                  )
+                )
+            }
+            case GTE(e1, e2) => {
+                transExpression(e1, stackFrame)
+                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                transExpression(e2, stackFrame)
+                collector.addStatement(
+                  List(
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    CompareInstr(Reg(0), RegOp(Reg(1))),
+                    MoveInstr(Reg(0), ImmOffset(1), Condition.GE),
+                    MoveInstr(Reg(0), ImmOffset(0), Condition.LT)
+                  )
+                )
+            }
+            case LT(e1, e2) => {
+                transExpression(e1, stackFrame)
+                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                transExpression(e2, stackFrame)
+                collector.addStatement(
+                  List(
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    CompareInstr(Reg(0), RegOp(Reg(1))),
+                    MoveInstr(Reg(0), ImmOffset(1), Condition.LT),
+                    MoveInstr(Reg(0), ImmOffset(0), Condition.GE)
+                  )
+                )
+            }
+            case LTE(e1, e2) => {
+                transExpression(e1, stackFrame)
+                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                transExpression(e2, stackFrame)
+                collector.addStatement(
+                  List(
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    CompareInstr(Reg(0), RegOp(Reg(1))),
+                    MoveInstr(Reg(0), ImmOffset(1), Condition.LE),
+                    MoveInstr(Reg(0), ImmOffset(0), Condition.GT)
+                  )
+                )
+            }
+            case Equal(e1, e2) => {
+                transExpression(e1, stackFrame)
+                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                transExpression(e2, stackFrame)
+                collector.addStatement(
+                  List(
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    CompareInstr(Reg(0), RegOp(Reg(1))),
+                    MoveInstr(Reg(0), ImmOffset(1), Condition.EQ),
+                    MoveInstr(Reg(0), ImmOffset(0), Condition.NE)
+                  )
+                )
+            }
+            case NotEqual(e1, e2) => {
+                transExpression(e1, stackFrame)
+                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                transExpression(e2, stackFrame)
+                collector.addStatement(
+                  List(
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    CompareInstr(Reg(0), RegOp(Reg(1))),
+                    MoveInstr(Reg(0), ImmOffset(1), Condition.NE),
+                    MoveInstr(Reg(0), ImmOffset(0), Condition.EQ)
+                  )
                 )
             }
             case _ => List[Instruction]().empty
