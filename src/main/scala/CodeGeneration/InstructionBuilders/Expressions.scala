@@ -62,8 +62,7 @@ object transExpression {
                 transExpression(e, stackFrame)
                 collector.addStatement(
                     List(
-                        XorInstr(Reg(0), Reg(0), ImmOffset(1), Condition.AL, 
-                                false),
+                        XorInstr(Reg(0), Reg(0), ImmOffset(1)),
                     )
                 )
             }
@@ -132,9 +131,8 @@ object transExpression {
                     List(
                         MoveInstr(Reg(1), RegOp(Reg(0))),
                         PopInstr(List(Reg(0))),
-                        SMullInstr(Reg(0), Reg(1), Reg(0), Reg(1), false),
-                        CompareInstr(Reg(0), ASRRegOp(Reg(0), ShiftImm(31)), 
-                                    Condition.AL),
+                        SMullInstr(Reg(0), Reg(1), Reg(0), Reg(1)),
+                        CompareInstr(Reg(0), ASRRegOp(Reg(0), ShiftImm(31))),
                         BranchLinkInstr("p_throw_overflow_error", Condition.NE),
                     )
                 )
@@ -177,7 +175,7 @@ object transExpression {
                 // Short-circuit evaluation
                 collector.addStatement(
                     List(
-                        CompareInstr(Reg(0), ImmOffset(0), Condition.AL),
+                        CompareInstr(Reg(0), ImmOffset(0)),
                         BranchInstr("L0", Condition.EQ)
                     )
                 )
@@ -194,7 +192,7 @@ object transExpression {
                 // Short-circuit evaluation
                 collector.addStatement(
                     List(
-                        CompareInstr(Reg(0), ImmOffset(1), Condition.AL),
+                        CompareInstr(Reg(0), ImmOffset(1)),
                         BranchInstr("L0", Condition.EQ)
                     )
                 )

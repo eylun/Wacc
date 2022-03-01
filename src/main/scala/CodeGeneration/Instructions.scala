@@ -33,26 +33,29 @@ case class AddInstr(
     dst: Register,
     fstOp: Register,
     sndOp: SecondOperand,
-    setFlags: Boolean
+    setFlags: Boolean = false
 ) extends Instruction
 
 case class SubInstr(
     dst: Register,
     fstOp: Register,
     sndOp: SecondOperand,
-    setFlags: Boolean
+    setFlags: Boolean = false
 ) extends Instruction
 
-case class ReverseSubInstr(dst: Register, fstOp: Register, sndOp: SecondOperand,
-                            setFlags: Boolean)
-    extends Instruction
+case class ReverseSubInstr(
+    dst: Register,
+    fstOp: Register, 
+    sndOp: SecondOperand,
+    setFlags: Boolean = false
+) extends Instruction
 
 case class SMullInstr(
     regLo: Register,
     regHi: Register,
     fstOp: Register,
     sndOp: Register,
-    setFlags: Boolean
+    setFlags: Boolean = false
 ) extends Instruction
 
 /** Loading and Storing Instructions */
@@ -115,14 +118,29 @@ case class BranchLinkInstr(
 ) extends Instruction
 
 /** Logic Operations */
-case class AndInstr(dst: Register, src: Register, op2: SecondOperand, 
-            cond: Condition.Condition, setFlags: Boolean) extends Instruction
+case class AndInstr(
+    dst: Register, 
+    src: Register, 
+    op2: SecondOperand,
+    setFlags: Boolean = false,
+    cond: Condition.Condition = Condition.AL
+) extends Instruction
 
-case class XorInstr(dst: Register, src: Register, op2: SecondOperand, 
-            cond: Condition.Condition, setFlags: Boolean) extends Instruction
+case class XorInstr(
+    dst: Register, 
+    src: Register, 
+    op2: SecondOperand, 
+    setFlags: Boolean = false,
+    cond: Condition.Condition = Condition.AL
+) extends Instruction
 
-case class OrInstr(dst: Register, src: Register, op2: SecondOperand, 
-            cond: Condition.Condition, setFlags: Boolean) extends Instruction
+case class OrInstr(
+    dst: Register, 
+    src: Register, 
+    op2: SecondOperand, 
+    setFlags: Boolean = false,        
+    cond: Condition.Condition = Condition.AL
+) extends Instruction
 
 /* Stack Manipulation Operation*/
 case class PushInstr(regList: List[Register]) extends Instruction
