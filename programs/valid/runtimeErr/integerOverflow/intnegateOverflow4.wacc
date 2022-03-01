@@ -1,11 +1,12 @@
 # negative overflow
 
+# Input:
+
 # Output:
 # -2000000000
 # #runtime_error#
 
-# Exit:
-# 255
+# Exit: 255
 
 # Program:
 

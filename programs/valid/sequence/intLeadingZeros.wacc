@@ -1,8 +1,12 @@
 # integer variable declaration with leading zeroes
 
+# Input:
+
 # Output:
 # 42
 # 0
+
+# Exit: 0
 
 # Program:
 

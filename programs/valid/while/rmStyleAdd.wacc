@@ -1,9 +1,13 @@
 # register machine style addition
 
+# Input:
+
 # Output:
 # initial value of x: 3
 # (+)(+)(+)(+)(+)(+)(+)
 # final value of x: 10
+
+# Exit: 0
 
 # Program:
 

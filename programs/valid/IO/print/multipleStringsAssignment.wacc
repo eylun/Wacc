@@ -1,5 +1,7 @@
 # multiple string assignments and comparisons
 
+# Input: 0
+
 # Output:
 # s1 is Hi
 # s2 is Hello
@@ -8,6 +10,8 @@
 # s1 is Hello
 # s2 is Hello
 # They are the same string.
+
+# Exit: 0
 
 # Program:
 

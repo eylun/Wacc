@@ -1,5 +1,7 @@
 # simple counting while loop
 
+# Input:
+
 # Output:
 # Can you count to 10?
 # 1
@@ -12,6 +14,8 @@
 # 8
 # 9
 # 10
+
+# Exit: 0
 
 # Program:
 

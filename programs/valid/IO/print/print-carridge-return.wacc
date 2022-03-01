@@ -1,7 +1,11 @@
 # simple print statement off a string with a carridge-return character
 
+# Input:
+
 # Output:
 #  World!
+
+# Exit: 0
 
 # Program:
 

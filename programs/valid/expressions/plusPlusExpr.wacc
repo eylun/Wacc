@@ -1,7 +1,11 @@
 # ++ should be recognised as two separate symbols
 
+# Input:
+
 # Output:
 # 3
+
+# Exit: 0
 
 # Program:
 

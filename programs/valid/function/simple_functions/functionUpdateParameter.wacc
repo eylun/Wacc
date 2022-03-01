@@ -1,11 +1,15 @@
 # test that the passed parameter can be updated and used
 # and that y remains the same
 
+# Input:
+
 # Output:
 # y is 1
 # x is 1
 # x is now 5
 # y is still 1
+
+# Exit: 0
 
 # Program:
 

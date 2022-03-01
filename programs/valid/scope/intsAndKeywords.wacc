@@ -1,9 +1,13 @@
 # checking handling of ints and keywords 
 
+# Input:
+
 # Output:
-# #empty#
+
+# Exit:
 
 # Program:
+
 begin
   begin
     int x = 125end

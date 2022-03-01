@@ -1,9 +1,13 @@
 # create and modify string as array of characters
 
+# Input:
+
 # Output:
 # hello world!
 # Hello world!
 # Hi!
+
+# Exit: 0
 
 # Program:
 

@@ -1,10 +1,11 @@
 # attempt dereference of a null pair by using it
 
+# Input:
+
 # Output:
 # #runtime_error#
 
-# Exit:
-# 255
+# Exit: 255
 
 # Program:
 

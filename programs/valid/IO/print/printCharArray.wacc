@@ -1,10 +1,11 @@
 # printing the contents of a char[] is possible via an intermediate variable
 
+# Input:
+
 # Output:
 # hi!
 
-# Exit:
-# 0
+# Exit: 0
 
 # Program:
 

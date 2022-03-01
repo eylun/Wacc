@@ -1,8 +1,12 @@
 # Use a integer as a loop condition. Enter the loop once only, then exit the loop.
 
+# Input:
+
 # Output:
 # Change n
 # Should print "Change n" once before.
+
+# Exit: 0
 
 # Program:
 

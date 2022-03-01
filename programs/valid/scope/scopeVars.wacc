@@ -1,9 +1,13 @@
 # simple variable scoping test
 
+# Input:
+
 # Output:
 # 2
 # 4
 # 2
+
+# Exit: 0
 
 # Program:
 

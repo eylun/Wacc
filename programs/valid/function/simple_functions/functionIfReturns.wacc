@@ -1,8 +1,14 @@
 # a simple function with nested returns inside an if-statement after a return
 
+# Input:
+
 # Output:
 # go
 # 1
+
+# Exit: 0
+
+# Program:
 
 begin
     int f() is 

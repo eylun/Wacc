@@ -1,8 +1,12 @@
 # evaluating equality and boolean operator precedence
 
+# Input:
+
 # Output:
 # false
 # true
+
+# Exit: 0
 
 # Program:
 

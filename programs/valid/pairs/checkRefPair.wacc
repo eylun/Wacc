@@ -1,5 +1,7 @@
 # create a pair(int, char) with a second reference to it and check it works
 
+# Input:
+
 # Output:
 # #addrs#
 # #addrs#
@@ -10,6 +12,8 @@
 # a
 # a
 # true
+
+# Exit: 0
 
 # Program:
 

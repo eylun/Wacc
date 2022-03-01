@@ -1,12 +1,13 @@
 # integer overflow
 
+# Input:
+
 # Output:
 # 2147483646
 # 2147483647
 # #runtime_error#
 
-# Exit:
-# 255
+# Exit: 255
 
 # Program:
 

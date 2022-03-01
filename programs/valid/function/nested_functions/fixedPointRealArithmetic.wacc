@@ -8,7 +8,15 @@
 # 
 # We call the number 17 above p, and the number 14 above q.
 # We have f = 2**q. 
-# 
+
+# Input:
+
+# Output:
+# Using fixed-point real: 10 / 3 * 3 = 10
+
+# Exit: 0
+
+# Program:
 
 begin
 	# Returns the number of bits behind the decimal points.
@@ -16,7 +24,7 @@ begin
 		return 14
 	end
 	
-	# Because we do not have bitwise shit in the language, we have to calculate it manually.
+	# Because we do not have bitwise shift in the language, we have to calculate it manually.
 	int power(int base, int amount) is
 		int result = 1 ;
 		while amount > 0 do
@@ -112,6 +120,3 @@ begin
 	int result = call fixedPointToIntRoundNear(x) ;
 	println result 
 end
-
-
-

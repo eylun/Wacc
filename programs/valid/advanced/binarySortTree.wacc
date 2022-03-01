@@ -9,6 +9,21 @@
 # element has a type <pair, pair> which is the pointer to the two children 
 # nodes in the binary search tree.
 
+# Input:
+# 4
+# 3
+# 43
+# -2
+# 24
+
+# Output:
+# Please enter the number of integers to insert: There are 4 integers.
+# Please enter the number at position 1 : Please enter the number at position 2 : Please enter the number at position 3 : Please enter the number at position 4 : Here are the numbers sorted: -2 3 24 43 
+
+# Exit: 0
+
+# Program:
+
 begin
 
   # Create a new node of a binary search tree having the given integer value 
@@ -78,6 +93,3 @@ begin
   i = call printTree(root) ;
   println ""
 end
-
-
-

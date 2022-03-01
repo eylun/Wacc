@@ -1,7 +1,11 @@
 # multiplication expressions should not be whitespace sensitive
 
+# Input:
+
 # Output:
 # 2
+
+# Exit: 0
 
 # Program:
 

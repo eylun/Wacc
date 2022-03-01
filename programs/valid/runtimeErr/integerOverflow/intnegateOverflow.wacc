@@ -1,11 +1,12 @@
 # negating biggest possible negative integer
 
+# Input:
+
 # Output:
 # -2147483648
 # #runtime_error#
 
-# Exit:
-# 255 
+# Exit: 255 
 
 # Program:
 

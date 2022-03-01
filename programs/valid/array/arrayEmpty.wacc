@@ -1,11 +1,13 @@
 # empty array declaration (seems to error currently)
 
+# Input:
+
 # Output:
-# #empty#
+
+# Exit: 0
 
 # Program:
 
 begin
   int[] a = []
 end
-

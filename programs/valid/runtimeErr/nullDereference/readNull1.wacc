@@ -1,10 +1,12 @@
 # attempt dereference of a null pair by reading into an element of it
 
+# Input:
+# 43
+
 # Output:
 # #runtime_error#
 
-# Exit:
-# 255
+# Exit: 255
 
 # Program:
 
