@@ -54,6 +54,8 @@ object transExpression {
                   List(LoadLabelInstr(Reg(0), s"msg_$msgCount"))
                 )
             }
+            case PairLiterNode() => 
+                collector.addStatement(List(MoveInstr(Reg(0), ImmOffset(0))))
 
             case ArrayElemNode(ident, es) => {
                 // TODO
