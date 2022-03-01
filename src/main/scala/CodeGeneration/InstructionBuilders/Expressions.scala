@@ -35,7 +35,8 @@ object transExpression {
                         )
                     }
                 }
-
+            
+            /* Literals */
             case IntLiterNode(n) =>
                 collector.addStatement(List(LoadImmIntInstr(Reg(0), n)))
             case CharLiterNode(c) =>
@@ -58,6 +59,7 @@ object transExpression {
                 // TODO
             }
 
+            /* Unary operations */
             case Not(e) => {
                 transExpression(e, stackFrame)
                 collector.addStatement(
@@ -88,6 +90,8 @@ object transExpression {
             case Chr(e) => {
                 transExpression(e, stackFrame)
             }
+
+            /* Binary operations */
             case Add(e1, e2) => {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(Reg(0)))))
