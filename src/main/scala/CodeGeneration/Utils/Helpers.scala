@@ -32,18 +32,10 @@ object Helpers {
         )
     }
 
-    //TODO: only take ArrayTypeNode
-    def getArraySize(t: TypeNode, size: Int): Int = {
+    def getArraySize(t: Type, size: Int): Int = {
         t match {
-            case at @ ArrayTypeNode(elemType, dimension) => {
-                dimension match {
-                    case 1 => getTypeSize(elemType.typeId.get) * size
-                    case _ => 4 * size
-                }
-            }
-
-            // cannot be called on other types
-            case _ => -1
+            case BoolType() | CharType() => BIT_SIZE * size + WORD_SIZE
+            case _                       => WORD_SIZE * size + WORD_SIZE
         }
     }
 

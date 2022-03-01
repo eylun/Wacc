@@ -9,6 +9,84 @@ object transRHS {
     ): Unit = {
         rhs match {
             case e: ExprNode => transExpression(e, stackFrame)
+            case al @ ArrayLiterNode(es) => {
+                al.typeId.get match {
+                    case AnyType() => {
+                        collector.addStatement(
+                          List(
+                            MoveInstr(
+                              Reg(0),
+                              ImmOffset(WORD_SIZE)
+                            )
+                          )
+                        )
+                    }
+                    case ArrayType(t, _, d) => {
+                        collector.addStatement(
+                          List(
+                            MoveInstr(
+                              Reg(0),
+                              ImmOffset(getArraySize(t, es.length))
+                            )
+                          )
+                        )
+                    }
+                    case _ =>
+                }
+                collector.addStatement(
+                  List(
+                    BranchLinkInstr("malloc", Condition.AL),
+                    MoveInstr(Reg(3), RegOp(Reg(0)))
+                  )
+                )
+                var ofs = WORD_SIZE
+                es.foreach { e =>
+                    {
+                        transExpression(e, stackFrame)
+                        e.typeId.get.getType() match {
+                            case CharType() | BoolType() => {
+                                collector.addStatement(
+                                  List(
+                                    StoreByteInstr(
+                                      Reg(0),
+                                      Reg(3),
+                                      ImmOffset(ofs)
+                                    )
+                                  )
+                                )
+                                ofs += BIT_SIZE
+                            }
+                            case _ => {
+                                collector.addStatement(
+                                  List(
+                                    StoreInstr(Reg(0), Reg(3), ImmOffset(ofs))
+                                  )
+                                )
+                                ofs += WORD_SIZE
+                            }
+                        }
+                    }
+                }
+                collector.addStatement(
+                  List(
+                    MoveInstr(
+                      Reg(0),
+                      ImmOffset(es.length)
+                    ),
+                    StoreInstr(
+                      Reg(0),
+                      Reg(3),
+                      ImmOffset(0)
+                    ),
+                    MoveInstr(
+                      Reg(0),
+                      RegOp(
+                        Reg(3)
+                      )
+                    )
+                  )
+                )
+            }
             case NewPairNode(e1, e2) => {
                 addNewPairElem(e1, stackFrame)
                 addNewPairElem(e2, stackFrame)
@@ -84,7 +162,6 @@ object transRHS {
                       }) ++ List(LoadInstr(r0, r0, ImmOffset(0)))
                 )
             }
-            case _ =>
         }
     }
 }

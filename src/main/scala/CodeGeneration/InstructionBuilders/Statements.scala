@@ -14,85 +14,14 @@ object transStatement {
         val StatListNode(l) = statList
         l.foreach {
             case NewAssignNode(t, i, r) => {
-                t match {
-                    case arr_t @ ArrayTypeNode(at, dimension) => {
-                        // will always be 4 here, so not sure if necessary
-                        val arrayAddrSize = getTypeSize(t.typeId.get)
-                        val ArrayLiterNode(es) = r
-                        collector.addStatement(
-                          List(
-                            MoveInstr(
-                              Reg(0),
-                              ImmOffset(
-                                getArraySize(
-                                  arr_t,
-                                  es.length
-                                ) + arrayAddrSize
-                              )
-                            ),
-                            BranchLinkInstr("malloc", Condition.AL),
-                            MoveInstr(Reg(3), RegOp(Reg(0)))
-                          )
-                        )
-                        val elemSize =
-                            getTypeSize(at.typeId.get)
-                        var ofs = arrayAddrSize
-                        es.foreach { e =>
-                            {
-                                transExpression(e, stackFrame)
-                                collector.addStatement(
-                                  List(
-                                    e.typeId.get.getType() match {
-                                        case CharType() | BoolType() =>
-                                            StoreByteInstr(
-                                              Reg(0),
-                                              Reg(3),
-                                              ImmOffset(ofs)
-                                            )
-                                        case _ =>
-                                            StoreInstr(
-                                              Reg(0),
-                                              Reg(3),
-                                              ImmOffset(ofs)
-                                            )
-                                    }
-                                  )
-                                )
-                                ofs = ofs + elemSize
-                            }
-                        }
-                        collector.addStatement(
-                          List(
-                            MoveInstr(
-                              Reg(0),
-                              ImmOffset(es.length)
-                            ),
-                            StoreInstr(
-                              Reg(0),
-                              Reg(3),
-                              ImmOffset(0)
-                            ),
-                            MoveInstr(
-                              Reg(0),
-                              RegOp(
-                                Reg(3)
-                              )
-                            )
-                          )
-                        )
-                    }
-                    case _ => {
-                        transRHS(r, stackFrame)
-                    }
-                }
-
+                transRHS(r, stackFrame)
                 t match {
                     case CharTypeNode() | BoolTypeNode() => {
                         collector.addStatement(
                           List(
                             StoreByteInstr(
                               Reg(0),
-                              StackPtrReg(),
+                              sp,
                               ImmOffset(stackFrame.getOffset(i.s))
                             )
                           )
@@ -103,14 +32,13 @@ object transStatement {
                           List(
                             StoreInstr(
                               Reg(0),
-                              StackPtrReg(),
+                              sp,
                               ImmOffset(stackFrame.getOffset(i.s))
                             )
                           )
                         )
                 }
                 // all new assign code ends with storing reg 0 into stack
-
             }
             case LRAssignNode(l, r) => {
                 l match {
@@ -138,57 +66,88 @@ object transStatement {
                         transRHS(r, stackFrame)
                         stackFrame.addTempOffset(ARRAY_LHS_OFFSET)
                         collector.addStatement(
-                            List(
-                              PushInstr(List(Reg(0),Reg(4))),
-                              LoadInstr(
-                                Reg(4), 
-                                sp, 
-                                ImmOffset(stackFrame.getOffset(s))
-                              )
+                          List(
+                            PushInstr(List(Reg(0), Reg(4))),
+                            LoadInstr(
+                              Reg(4),
+                              sp,
+                              ImmOffset(stackFrame.getOffset(s))
                             )
+                          )
                         )
                         //consider using zipWithIndex
                         var count = 0
                         es.foreach { e =>
-                            { 
+                            {
                                 transExpression(e, stackFrame)
                                 collector.addStatement(
-                                    List(
-                                        BranchLinkInstr("p_check_array_bounds", Condition.AL),
-                                        AddInstr(Reg(4), Reg(4), ImmOffset(4), false)
-                                        )
+                                  List(
+                                    BranchLinkInstr(
+                                      "p_check_array_bounds",
+                                      Condition.AL
+                                    ),
+                                    AddInstr(
+                                      Reg(4),
+                                      Reg(4),
+                                      ImmOffset(4),
+                                      false
+                                    )
+                                  )
                                 )
                                 count = count + 1
                                 collector.addStatement(
-                                    if (count == es.length) {
-                                        List(
-                                            ae.typeId.get.getType() match {
-                                                case CharType() | BoolType() => 
-                                                    AddInstr(Reg(4), Reg(4), RegOp(Reg(0)), false)
-                                                case _ => 
-                                                    AddInstr(Reg(4), Reg(4), LSLRegOp(Reg(0), ShiftImm(2)), false) 
-                                            },
-                                            MoveInstr(Reg(1), RegOp(Reg(4))),
-                                            PopInstr(List(Reg(0), Reg(4))),
-                                            ae.typeId.get.getType() match {
-                                                case CharType() | BoolType() => 
-                                                    StoreByteInstr(Reg(0), Reg(1), ImmOffset(0))
-                                                case _ => 
-                                                    StoreInstr(Reg(0), Reg(1), ImmOffset(0))
-                                            }
-                                            )
-                                    } else {
-                                        List(AddInstr(Reg(4), Reg(4), LSLRegOp(Reg(0), ShiftImm(2)), false),
+                                  if (count == es.length) {
+                                      List(
+                                        ae.typeId.get.getType() match {
+                                            case CharType() | BoolType() =>
+                                                AddInstr(
+                                                  Reg(4),
+                                                  Reg(4),
+                                                  RegOp(Reg(0)),
+                                                  false
+                                                )
+                                            case _ =>
+                                                AddInstr(
+                                                  Reg(4),
+                                                  Reg(4),
+                                                  LSLRegOp(Reg(0), ShiftImm(2)),
+                                                  false
+                                                )
+                                        },
+                                        MoveInstr(Reg(1), RegOp(Reg(4))),
+                                        PopInstr(List(Reg(0), Reg(4))),
+                                        ae.typeId.get.getType() match {
+                                            case CharType() | BoolType() =>
+                                                StoreByteInstr(
+                                                  Reg(0),
+                                                  Reg(1),
+                                                  ImmOffset(0)
+                                                )
+                                            case _ =>
+                                                StoreInstr(
+                                                  Reg(0),
+                                                  Reg(1),
+                                                  ImmOffset(0)
+                                                )
+                                        }
+                                      )
+                                  } else {
+                                      List(
+                                        AddInstr(
+                                          Reg(4),
+                                          Reg(4),
+                                          LSLRegOp(Reg(0), ShiftImm(2)),
+                                          false
+                                        ),
                                         LoadInstr(Reg(4), Reg(4), ImmOffset(0))
-                                        )
-                                    }
+                                      )
+                                  }
                                 )
                             }
                         }
                         stackFrame.dropTempOffset(ARRAY_LHS_OFFSET)
 
                     }
-                    // TODO complete for array and pair elems
                     case l: PairElemNode => {
 
                         collector.insertUtil(UtilFlag.PCheckNullPointer)
@@ -365,12 +324,13 @@ object transStatement {
     def printExpr(e: ExprNode, stackFrame: StackFrame)(implicit
         collector: WaccBuffer
     ): Unit = {
+
         /** Call transExpression */
         transExpression(e, stackFrame)
         e match {
             case IntLiterNode(_) | Neg(_) | Len(_) | Ord(_) | Mult(_, _) |
-                Div(_, _) | Mod(_, _) | Add(_, _) | Sub(_, _) => {               
-                
+                Div(_, _) | Mod(_, _) | Add(_, _) | Sub(_, _) => {
+
                 /** Call branch */
                 collector.insertUtil(PPrintInt)
 
@@ -423,28 +383,29 @@ object transStatement {
                 /** Get Ident Node Type */
                 val nodeType: Type =
                     (stackFrame.st.lookupAll(s)).get.getType()
-                    // e match {
-                    //     case IdentNode(s) => (stackFrame.st.lookupAll(s)).get.getType()
-                    //     case ArrayElemNode(i, es) => e.typeId.get.getType()
-                    //     case _ => throw new RuntimeException("Invalid Identifier")
-                    // }
+                // e match {
+                //     case IdentNode(s) => (stackFrame.st.lookupAll(s)).get.getType()
+                //     case ArrayElemNode(i, es) => e.typeId.get.getType()
+                //     case _ => throw new RuntimeException("Invalid Identifier")
+                // }
 
                 determinePrintType(nodeType)
             }
             case ArrayElemNode(IdentNode(s), es) => {
-                val ArrayType(nodeType,_,dimension) = 
+                val ArrayType(nodeType, _, dimension) =
                     (stackFrame.st.lookupAll(s)).get.getType()
 
                 es.length match {
                     case `dimension` => determinePrintType(nodeType)
                     case _ => {
                         collector.insertUtil(UtilFlag.PPrintRef)
+
                         /** Add branch instruction statement */
                         collector.addStatement(
                           List(BranchLinkInstr("p_print_reference"))
                         )
                     }
-                } 
+                }
             }
             case _ => throw new RuntimeException(s"Invalid node $e in AST")
         }
@@ -452,59 +413,56 @@ object transStatement {
 
     def determinePrintType(nodeType: Type)(implicit collector: WaccBuffer) = {
         nodeType match {
-                    case IntType() => {
-                        collector.insertUtil(UtilFlag.PPrintInt)
+            case IntType() => {
+                collector.insertUtil(UtilFlag.PPrintInt)
 
-                        /** Add branch instruction Statement */
-                        collector.addStatement(
-                          List(BranchLinkInstr("p_print_int"))
-                        )
-                    }
-                    case BoolType() => {
-                        collector.insertUtil(UtilFlag.PPrintBool)
+                /** Add branch instruction Statement */
+                collector.addStatement(
+                  List(BranchLinkInstr("p_print_int"))
+                )
+            }
+            case BoolType() => {
+                collector.insertUtil(UtilFlag.PPrintBool)
 
-                        /** Add branch instruction Statement */
-                        collector.addStatement(
-                          List(BranchLinkInstr("p_print_bool"))
-                        )
-                    }
-                    case CharType() => {
-                        collector.addStatement(
-                          List(BranchLinkInstr("putchar"))
-                        )
-                    }
-                    case StringType() => {
-                        collector.insertUtil(UtilFlag.PPrintString)
+                /** Add branch instruction Statement */
+                collector.addStatement(
+                  List(BranchLinkInstr("p_print_bool"))
+                )
+            }
+            case CharType() => {
+                collector.addStatement(
+                  List(BranchLinkInstr("putchar"))
+                )
+            }
+            case StringType() => {
+                collector.insertUtil(UtilFlag.PPrintString)
 
-                        /** Add branch instruction statement */
-                        collector.addStatement(
-                          List(BranchLinkInstr("p_print_string"))
-                        )
-                    }
-                    case ArrayType(CharType(), _, 1) => {
-                        collector.insertUtil(UtilFlag.PPrintString)
+                /** Add branch instruction statement */
+                collector.addStatement(
+                  List(BranchLinkInstr("p_print_string"))
+                )
+            }
+            case ArrayType(CharType(), _, 1) => {
+                collector.insertUtil(UtilFlag.PPrintString)
 
-                        /** Add branch instruction statement */
-                        collector.addStatement(
-                          List(BranchLinkInstr("p_print_string"))
-                        )
+                /** Add branch instruction statement */
+                collector.addStatement(
+                  List(BranchLinkInstr("p_print_string"))
+                )
 
-                        collector.insertUtil(UtilFlag.PPrintNewLine)
-                    }
-                    case NullPairType() | PairType(_, _) |
-                        ArrayType(_, _, _) => {
-                        collector.insertUtil(UtilFlag.PPrintRef)
+                collector.insertUtil(UtilFlag.PPrintNewLine)
+            }
+            case NullPairType() | PairType(_, _) | ArrayType(_, _, _) => {
+                collector.insertUtil(UtilFlag.PPrintRef)
 
-                        /** Add branch instruction statement */
-                        collector.addStatement(
-                          List(BranchLinkInstr("p_print_reference"))
-                        )
-                    }
-                    case _ =>
-                        throw new RuntimeException("Invalid Identifier")
-                }
+                /** Add branch instruction statement */
+                collector.addStatement(
+                  List(BranchLinkInstr("p_print_reference"))
+                )
+            }
+            case _ =>
+                throw new RuntimeException("Invalid Identifier")
+        }
 
     }
 }
-
-
