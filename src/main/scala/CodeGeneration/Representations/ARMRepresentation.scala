@@ -23,17 +23,17 @@ object ARMRepresentation extends Representation {
             case PopInstr(reg)           => s"\tPOP {${reg.mkString(", ")}}"
             
             /* Logical Instructions */
-            case AndInstr(dst, fst, snd, cond, false) => 
+            case AndInstr(dst, fst, snd, false, cond) => 
                 s"\tAND$cond $dst, $fst, $snd"
-            case AndInstr(dst, fst, snd, cond, true) => 
+            case AndInstr(dst, fst, snd, true, cond) => 
                 s"\tAND${cond}S $dst, $fst, $snd"
-            case XorInstr(dst, fst, snd, cond, false) => 
+            case XorInstr(dst, fst, snd, false, cond) => 
                 s"\tEOR$cond $dst, $fst, $snd"
-            case XorInstr(dst, fst, snd, cond, true) => 
+            case XorInstr(dst, fst, snd, true, cond) => 
                 s"\tEOR${cond}S $dst, $fst, $snd"
-            case OrInstr(dst, fst, snd, cond, false) => 
+            case OrInstr(dst, fst, snd, false, cond) => 
                 s"\tORR$cond $dst, $fst, $snd"
-            case OrInstr(dst, fst, snd, cond, true) => 
+            case OrInstr(dst, fst, snd, true, cond) => 
                 s"\tORR${cond}S $dst, $fst, $snd"
             
             /* Arithmetic Instructions*/
@@ -50,7 +50,7 @@ object ARMRepresentation extends Representation {
             case SMullInstr(rdLo, rdHi, fst, snd, false) => 
                 s"\tSMULL $rdLo, $rdHi, $fst, $snd"
 
-            case MoveInstr(dst, src)              => s"\tMOV $dst, $src"
+            case MoveInstr(dst, src, cond)        => s"\tMOV$cond $dst, $src"
 
             /* Load Instructions */
             case LoadLabelInstr(dst, label, cond) => s"\tLDR$cond $dst, =$label"
