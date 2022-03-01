@@ -54,9 +54,62 @@ object transExpression {
                   List(LoadLabelInstr(Reg(0), s"msg_$msgCount"))
                 )
             }
+            case PairLiterNode() => 
+                collector.addStatement(List(MoveInstr(Reg(0), ImmOffset(0))))
 
-            case ArrayElemNode(ident, es) => {
-                // TODO
+            case ae @ ArrayElemNode(IdentNode(s), es) => {
+                collector.insertUtil(UtilFlag.PCheckArrayBounds)
+                collector.addStatement(
+                    List(
+                        LoadInstr(Reg(0), sp, ImmOffset(stackFrame.getOffset(s))),
+                        PushInstr(List(Reg(4))),
+                        MoveInstr(Reg(4), RegOp(Reg(0)))
+                        )
+                    )
+                stackFrame.addTempOffset(ARRAY_EXP_OFFSET)    
+                // slight duplication on this for loop, see if can merge
+                var count = 0
+                es.foreach { e =>
+                    { 
+                        transExpression(e, stackFrame)
+                        collector.addStatement(
+                            List(
+                                BranchLinkInstr("p_check_array_bounds", Condition.AL),
+                                AddInstr(Reg(4), Reg(4), ImmOffset(4), false),                                        
+                            )
+                        )
+                        count = count + 1
+                        collector.addStatement(
+                            if (count == es.length) {
+                                    ae.typeId.get.getType() match {
+                                        case CharType() | BoolType() => 
+                                            List(
+                                                AddInstr(Reg(4), Reg(4), RegOp(Reg(0)), false),
+                                                LoadRegSignedByte(Reg(4), Reg(4), ImmOffset(0))
+                                                )
+                                        case _ => 
+                                            List(
+                                                AddInstr(Reg(4), Reg(4), LSLRegOp(Reg(0), ShiftImm(2)), false),
+                                                LoadInstr(Reg(4), Reg(4), ImmOffset(0))
+                                                )
+                                    }
+
+                            } else {
+                                List(
+                                    AddInstr(Reg(4), Reg(4), LSLRegOp(Reg(0), ShiftImm(2)), false),
+                                    LoadInstr(Reg(4), Reg(4), ImmOffset(0))
+                                )
+                            }
+                        )
+                    }
+                }
+                collector.addStatement(
+                    List(
+                        MoveInstr(Reg(0), RegOp(Reg(4))),
+                        PopInstr(List(Reg(4)))
+                        )
+                    )
+                stackFrame.dropTempOffset(ARRAY_EXP_OFFSET)              
             }
 
             /* Unary operations */

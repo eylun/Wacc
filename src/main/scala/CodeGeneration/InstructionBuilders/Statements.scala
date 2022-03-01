@@ -1,6 +1,7 @@
 import Helpers._
 import Helpers.UtilFlag._
 import constants._
+import javax.management.RuntimeErrorException
 
 object transStatement {
     def apply(statList: StatNode, stackFrame: StackFrame)(implicit
@@ -120,19 +121,73 @@ object transStatement {
                               case CharType() | BoolType() =>
                                   StoreByteInstr(
                                     Reg(0),
-                                    StackPtrReg(),
+                                    sp,
                                     ImmOffset(stackFrame.getOffset(s))
                                   )
                               case _ =>
                                   StoreInstr(
                                     Reg(0),
-                                    StackPtrReg(),
+                                    sp,
                                     ImmOffset(stackFrame.getOffset(s))
                                   )
                           })
                         )
                     }
-                    case ArrayElemNode(i, es) =>
+                    case ae @ ArrayElemNode(IdentNode(s), es) => {
+                        collector.insertUtil(UtilFlag.PCheckArrayBounds)
+                        transRHS(r, stackFrame)
+                        stackFrame.addTempOffset(ARRAY_LHS_OFFSET)
+                        collector.addStatement(
+                            List(
+                              PushInstr(List(Reg(0),Reg(4))),
+                              LoadInstr(
+                                Reg(4), 
+                                sp, 
+                                ImmOffset(stackFrame.getOffset(s))
+                              )
+                            )
+                        )
+                        //consider using zipWithIndex
+                        var count = 0
+                        es.foreach { e =>
+                            { 
+                                transExpression(e, stackFrame)
+                                collector.addStatement(
+                                    List(
+                                        BranchLinkInstr("p_check_array_bounds", Condition.AL),
+                                        AddInstr(Reg(4), Reg(4), ImmOffset(4), false)
+                                        )
+                                )
+                                count = count + 1
+                                collector.addStatement(
+                                    if (count == es.length) {
+                                        List(
+                                            ae.typeId.get.getType() match {
+                                                case CharType() | BoolType() => 
+                                                    AddInstr(Reg(4), Reg(4), RegOp(Reg(0)), false)
+                                                case _ => 
+                                                    AddInstr(Reg(4), Reg(4), LSLRegOp(Reg(0), ShiftImm(2)), false) 
+                                            },
+                                            MoveInstr(Reg(1), RegOp(Reg(4))),
+                                            PopInstr(List(Reg(0), Reg(4))),
+                                            ae.typeId.get.getType() match {
+                                                case CharType() | BoolType() => 
+                                                    StoreByteInstr(Reg(0), Reg(1), ImmOffset(0))
+                                                case _ => 
+                                                    StoreInstr(Reg(0), Reg(1), ImmOffset(0))
+                                            }
+                                            )
+                                    } else {
+                                        List(AddInstr(Reg(4), Reg(4), LSLRegOp(Reg(0), ShiftImm(2)), false),
+                                        LoadInstr(Reg(4), Reg(4), ImmOffset(0))
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                        stackFrame.dropTempOffset(ARRAY_LHS_OFFSET)
+
+                    }
                     // TODO complete for array and pair elems
                     case l: PairElemNode => {
 
@@ -267,24 +322,7 @@ object transStatement {
                 /** Add branch instruction Statement */
                 collector.addStatement(List(BranchLinkInstr("p_print_ln")))
             }
-            case FreeNode(e) => {
-                transExpression(e, stackFrame)
-                e.typeId.get.getType() match {
-                    case PairType(_, _) => {
-
-                        collector.insertUtil(UtilFlag.PFreePair)
-                        collector.addStatement(
-                          List(BranchLinkInstr("p_free_pair"))
-                        )
-                    }
-                    case ArrayType(_, _, _) =>
-                        collector.addStatement(List(BranchLinkInstr("free")))
-                    case _ =>
-                        throw new RuntimeException(
-                          "Can only free arrays and pairs"
-                        )
-                }
-            }
+            case FreeNode(e)   =>
             case ReturnNode(e) => transExpression(e, stackFrame)
             case ReadNode(l) => {
 
@@ -327,13 +365,13 @@ object transStatement {
     def printExpr(e: ExprNode, stackFrame: StackFrame)(implicit
         collector: WaccBuffer
     ): Unit = {
+        /** Call transExpression */
+        transExpression(e, stackFrame)
         e match {
             case IntLiterNode(_) | Neg(_) | Len(_) | Ord(_) | Mult(_, _) |
-                Div(_, _) | Mod(_, _) | Add(_, _) | Sub(_, _) => {
-
-                /** Call transExpression and branch */
-                transExpression(e, stackFrame)
-
+                Div(_, _) | Mod(_, _) | Add(_, _) | Sub(_, _) => {               
+                
+                /** Call branch */
                 collector.insertUtil(PPrintInt)
 
                 /** Add branch instruction Statement */
@@ -345,8 +383,7 @@ object transStatement {
                 LTE(_, _) | Equal(_, _) | NotEqual(_, _) | And(_, _) |
                 Or(_, _) => {
 
-                /** Call transExpression and branch */
-                transExpression(e, stackFrame)
+                /** Call branch */
                 collector.insertUtil(PPrintBool)
 
                 /** Add branch instruction Statement */
@@ -355,7 +392,6 @@ object transStatement {
                 )
             }
             case CharLiterNode(_) | Chr(_) => {
-                transExpression(e, stackFrame)
                 collector.addStatement(
                   List(BranchLinkInstr("putchar"))
                 )
@@ -363,8 +399,7 @@ object transStatement {
 
             case StringLiterNode(_) => {
 
-                /** call transExpression and branch */
-                transExpression(e, stackFrame)
+                /** Call branch */
                 collector.insertUtil(PPrintString)
 
                 /** Add branch instruction statement */
@@ -375,7 +410,6 @@ object transStatement {
             }
 
             case PairLiterNode() => {
-                transExpression(e, stackFrame)
                 collector.insertUtil(PPrintRef)
 
                 /** Add branch instruction statement */
@@ -386,14 +420,38 @@ object transStatement {
 
             case IdentNode(s) => {
 
-                /** Loads sp into Reg(0) */
-                transExpression(e, stackFrame)
-
                 /** Get Ident Node Type */
                 val nodeType: Type =
                     (stackFrame.st.lookupAll(s)).get.getType()
+                    // e match {
+                    //     case IdentNode(s) => (stackFrame.st.lookupAll(s)).get.getType()
+                    //     case ArrayElemNode(i, es) => e.typeId.get.getType()
+                    //     case _ => throw new RuntimeException("Invalid Identifier")
+                    // }
 
-                nodeType match {
+                determinePrintType(nodeType)
+            }
+            case ArrayElemNode(IdentNode(s), es) => {
+                val ArrayType(nodeType,_,dimension) = 
+                    (stackFrame.st.lookupAll(s)).get.getType()
+
+                es.length match {
+                    case `dimension` => determinePrintType(nodeType)
+                    case _ => {
+                        collector.insertUtil(UtilFlag.PPrintRef)
+                        /** Add branch instruction statement */
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_print_reference"))
+                        )
+                    }
+                } 
+            }
+            case _ => throw new RuntimeException(s"Invalid node $e in AST")
+        }
+    }
+
+    def determinePrintType(nodeType: Type)(implicit collector: WaccBuffer) = {
+        nodeType match {
                     case IntType() => {
                         collector.insertUtil(UtilFlag.PPrintInt)
 
@@ -445,9 +503,8 @@ object transStatement {
                     case _ =>
                         throw new RuntimeException("Invalid Identifier")
                 }
-            }
-            case _ =>
-                throw new RuntimeException(s"Invalid node $e in AST")
-        }
+
     }
 }
+
+
