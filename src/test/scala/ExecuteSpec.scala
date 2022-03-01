@@ -1,16 +1,6 @@
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers._
 import java.io.File
-
-// case IntLiterNode(n) =>
-// 	collector.addStatement(List(LoadImmIntInstr(Reg(0), n)))
-// case CharLiterNode(c) =>
-// 	collector.addStatement(List(MoveInstr(Reg(0), ImmOffset(c))))
-// case BoolLiterNode(true) =>
-// 	collector.addStatement(List(MoveInstr(Reg(0), ImmOffset(1))))
-// case BoolLiterNode(false) =>
-// 	collector.addStatement(List(MoveInstr(Reg(0), ImmOffset(0))))
-
 class ExecuteSpec extends AnyFlatSpec {
     import sys.process._
     import scala.language.postfixOps
@@ -36,8 +26,6 @@ class ExecuteSpec extends AnyFlatSpec {
     it should "execute exit programs" in {
         val arrayValid =
             waccProgramsInDir(new File("./programs/valid/basic/exit"))
-        "touch input.txt" !
-
         arrayValid.foreach(executeAndCompare(_))
     }
     // behavior of "basic programs"

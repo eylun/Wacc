@@ -2,8 +2,6 @@ import org.scalatest.matchers.should.Matchers._
 import java.io.File
 import parsley.Parsley, Parsley._
 import scala.collection.mutable.ListBuffer
-import java.io.OutputStream
-import java.io.ByteArrayOutputStream
 
 object testUtils {
     import parsley.{Result, Success, Failure}
@@ -161,57 +159,78 @@ object testUtils {
         import scala.language.postfixOps
         import parsley.{Success, Failure}
         import Helpers.cleanFilename
-        import java.io.PrintWriter
-        import scala.io.Source
+        import java.io.{
+            OutputStream,
+            ByteArrayOutputStream,
+            InputStream,
+            ByteArrayInputStream
+        }
 
-        /** Cache outputs if they do not exist in the 'expected' directory */
-        // if (!new File(s"expected/${cleanFilename(f.getName())}").exists()) {
-        //     println("Caching outputs...")
-
-        //     val output = (s"./refCompile -x ${f.getPath()}" #< new File(
-        //       "input.txt"
-        //     )) !!
-
-        //     println("-----------------")
-        //     output match {
-        //         case s"$_${OUTPUT_SEPARATOR}$o" => {
-        //             new PrintWriter(
-        //               s"expected/${cleanFilename(f.getName())}"
-        //               /** Left trim */
-        //             ) { write(o.replaceAll("^\\s+", "")); close }
-        //         }
-        //         case _ =>
-        //             new PrintWriter(
-        //               s"expected/${cleanFilename(f.getName())}"
-        //             ) { write(""); close }
-        //     }
-        // }
         println(s"---${f.getName()}---")
         this.testCodegen(f)
 
         s"arm-linux-gnueabi-gcc -o ${cleanFilename(f.getPath())} -mcpu=arm1176jzf-s -mtune=arm1176jzf-s ${cleanFilename(f.getPath())}.s" !
 
+        val (input, expectedOutput, expectedExit) = extractTest(f)
+
+        val inputStream: InputStream = new ByteArrayInputStream(
+          expectedOutput.getBytes()
+        )
         val outputStream: OutputStream = new ByteArrayOutputStream()
-        val exitCode =
-            s"qemu-arm -L /usr/arm-linux-gnueabi/ ${cleanFilename(f.getPath())}" #< new File(
-              "input.txt"
-            ) #> outputStream !
+        val actualExit =
+            s"qemu-arm -L /usr/arm-linux-gnueabi/ ${cleanFilename(f.getPath())}" #< inputStream #> outputStream !
 
-        val output = outputStream.toString()
+        val actualOutput = outputStream.toString().trim()
 
-        println(exitCode)
-        println(output)
+        println(actualExit)
+        println(actualOutput)
+        println("extracted from wacc file:")
+        println(s"input: $input")
+        println(s"output: $expectedOutput")
+        println(s"exit: $expectedExit")
 
         s"rm ${cleanFilename(f.getPath())}.s" !
 
         s"rm ${cleanFilename(f.getPath())}" !
 
-        // if (expected == actual) succeed
-        // else fail(s"Expected: $expected, Actual: $actual")
-
-        "rm input.txt" !
+        if (expectedOutput != actualOutput)
+            fail(
+              s"Expected Output: [$expectedOutput]\nActual Output: [$actualOutput]"
+            )
+        if (expectedExit != actualExit)
+            fail(s"Expected Exit: [$expectedExit]\nActual Exit: [$actualExit]")
     }
 
-    var OUTPUT_SEPARATOR =
-        "==========================================================="
+    def extractTest(f: File): (String, String, Int) = {
+        import scala.io.Source
+        Source.fromFile(f.getPath()).getLines().mkString("\n") match {
+            case s"$_# Input:$input# Output:$output# Exit:$exit# Program$_" =>
+                (
+                  extractInputOutput(input.trim()),
+                  extractInputOutput(output.trim()),
+                  exit.trim().toInt
+                )
+        }
+    }
+
+    def extractInputOutput(str: String): String = {
+        println(
+          str.split("\n")
+              .map(s =>
+                  s.length match {
+                      case 0 => ""
+                      case _ => s.substring(2)
+                  }
+              )
+              .toList
+        )
+        str.split("\n")
+            .map(s =>
+                s.length match {
+                    case 0 => ""
+                    case _ => s.substring(2)
+                }
+            )
+            .mkString("\n")
+    }
 }

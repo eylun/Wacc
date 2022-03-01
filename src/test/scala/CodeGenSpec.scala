@@ -1,6 +1,14 @@
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers._
 
+// case IntLiterNode(n) =>
+// 	collector.addStatement(List(LoadImmIntInstr(Reg(0), n)))
+// case CharLiterNode(c) =>
+// 	collector.addStatement(List(MoveInstr(Reg(0), ImmOffset(c))))
+// case BoolLiterNode(true) =>
+// 	collector.addStatement(List(MoveInstr(Reg(0), ImmOffset(1))))
+// case BoolLiterNode(false) =>
+// 	collector.addStatement(List(MoveInstr(Reg(0), ImmOffset(0))))
 class CodegenSpec extends AnyFlatSpec {
     import parsley.{Success, Failure}
     import testUtils.{assertCodegenEquals}
