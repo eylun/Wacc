@@ -42,18 +42,19 @@ object transStatement {
                                 transExpression(e, stackFrame)
                                 collector.addStatement(
                                   List(
-                                    // set to store byte for char and bool
-                                    getArraySize(arr_t, 1) match {
-                                        case WORD_SIZE => StoreInstr(
-                                                            Reg(0),
-                                                            Reg(3),
-                                                            ImmOffset(ofs)
-                                                         )
-                                        case BIT_SIZE => StoreByteInstr(
-                                                            Reg(0),
-                                                            Reg(3),
-                                                            ImmOffset(ofs)
-                                                        )
+                                    e.typeId.get.getType() match {
+                                        case CharType() | BoolType() =>
+                                            StoreByteInstr(
+                                              Reg(0),
+                                              Reg(3),
+                                              ImmOffset(ofs)
+                                            )
+                                        case _ =>
+                                            StoreInstr(
+                                              Reg(0),
+                                              Reg(3),
+                                              ImmOffset(ofs)
+                                            )
                                     }
                                   )
                                 )
@@ -84,16 +85,31 @@ object transStatement {
                         transRHS(r, stackFrame)
                     }
                 }
+
+                t match {
+                    case CharTypeNode() | BoolTypeNode() => {
+                        collector.addStatement(
+                          List(
+                            StoreByteInstr(
+                              Reg(0),
+                              StackPtrReg(),
+                              ImmOffset(stackFrame.getOffset(i.s))
+                            )
+                          )
+                        )
+                    }
+                    case _ =>
+                        collector.addStatement(
+                          List(
+                            StoreInstr(
+                              Reg(0),
+                              StackPtrReg(),
+                              ImmOffset(stackFrame.getOffset(i.s))
+                            )
+                          )
+                        )
+                }
                 // all new assign code ends with storing reg 0 into stack
-                collector.addStatement(
-                  List(
-                    StoreInstr(
-                      Reg(0),
-                      sp,
-                      ImmOffset(stackFrame.getOffset(i.s))
-                    )
-                  )
-                )
 
             }
             case LRAssignNode(l, r) => {
@@ -435,7 +451,7 @@ object transStatement {
                           List(BranchLinkInstr("p_print_string"))
                         )
                     }
-                    case ArrayType(CharType(), _, _) => {
+                    case ArrayType(CharType(), _, 1) => {
                         collector.insertUtil(UtilFlag.PPrintString)
 
                         /** Add branch instruction statement */
