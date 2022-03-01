@@ -53,13 +53,17 @@ object transExpression {
                   List(LoadLabelInstr(Reg(0), s"msg_$msgCount"))
                 )
             }
+
+            case ArrayElemNode(ident, es) => {
+                // TODO
+            }
+
             case Not(e) => {
                 transExpression(e, stackFrame)
                 collector.addStatement(
                     List(
                         XorInstr(Reg(0), Reg(0), ImmOffset(1), Condition.AL, 
                                 false),
-                        StoreByteInstr(Reg(0), StackPtrReg(), ImmOffset(0))
                     )
                 )
             }
@@ -146,8 +150,25 @@ object transExpression {
                     List(
                         MoveInstr(Reg(1), RegOp(Reg(0))),
                         PopInstr(List(Reg(0))),
-                        BranchLinkInstr("p_check_divide_by_zero", Condition.AL),
-                        BranchLinkInstr("__aeabi_idiv", Condition.AL),
+                        BranchLinkInstr("p_check_divide_by_zero"),
+                        BranchLinkInstr("__aeabi_idiv"),
+                    )
+                )
+            }
+            case Mod(e1, e2) => { 
+                transExpression(e1, stackFrame)
+                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                transExpression(e2, stackFrame)
+
+                collector.insertUtil(PCheckDivideByZero)
+
+                collector.addStatement(
+                    List(
+                        MoveInstr(Reg(1), RegOp(Reg(0))),
+                        PopInstr(List(Reg(0))),
+                        BranchLinkInstr("p_check_divide_by_zero"),
+                        BranchLinkInstr("__aeabi_idivmod"),
+                        MoveInstr(Reg(0), RegOp(Reg(1)))
                     )
                 )
             }
@@ -164,8 +185,7 @@ object transExpression {
                 
                 collector.addStatement(
                     List(
-                        Label("L0"),
-                        StoreByteInstr(Reg(0), StackPtrReg(), ImmOffset(0))
+                        Label("L0")
                     )
                 )
             }
@@ -182,8 +202,91 @@ object transExpression {
                 
                 collector.addStatement(
                     List(
-                        Label("L0"),
-                        StoreByteInstr(Reg(0), StackPtrReg(), ImmOffset(0))
+                        Label("L0")
+                    )
+                )
+            }
+            case GT(e1, e2) => {
+                transExpression(e1, stackFrame)
+                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                transExpression(e2, stackFrame)
+                collector.addStatement(
+                    List(
+                        MoveInstr(Reg(1), RegOp(Reg(0))),
+                        PopInstr(List(Reg(0))),
+                        CompareInstr(Reg(0), RegOp(Reg(1))),
+                        MoveInstr(Reg(0), ImmOffset(1), Condition.GT),
+                        MoveInstr(Reg(0), ImmOffset(0), Condition.LE)
+                    )
+                )
+            }
+            case GTE(e1, e2) => {
+                transExpression(e1, stackFrame)
+                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                transExpression(e2, stackFrame)
+                collector.addStatement(
+                    List(
+                        MoveInstr(Reg(1), RegOp(Reg(0))),
+                        PopInstr(List(Reg(0))),
+                        CompareInstr(Reg(0), RegOp(Reg(1))),
+                        MoveInstr(Reg(0), ImmOffset(1), Condition.GE),
+                        MoveInstr(Reg(0), ImmOffset(0), Condition.LT)
+                    )
+                )
+            }
+            case LT(e1, e2) => {
+                transExpression(e1, stackFrame)
+                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                transExpression(e2, stackFrame)
+                collector.addStatement(
+                    List(
+                        MoveInstr(Reg(1), RegOp(Reg(0))),
+                        PopInstr(List(Reg(0))),
+                        CompareInstr(Reg(0), RegOp(Reg(1))),
+                        MoveInstr(Reg(0), ImmOffset(1), Condition.LT),
+                        MoveInstr(Reg(0), ImmOffset(0), Condition.GE)
+                    )
+                )
+            }
+            case LTE(e1, e2) => {
+                transExpression(e1, stackFrame)
+                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                transExpression(e2, stackFrame)
+                collector.addStatement(
+                    List(
+                        MoveInstr(Reg(1), RegOp(Reg(0))),
+                        PopInstr(List(Reg(0))),
+                        CompareInstr(Reg(0), RegOp(Reg(1))),
+                        MoveInstr(Reg(0), ImmOffset(1), Condition.LE),
+                        MoveInstr(Reg(0), ImmOffset(0), Condition.GT)
+                    )
+                )
+            }
+            case Equal(e1, e2) => {
+                transExpression(e1, stackFrame)
+                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                transExpression(e2, stackFrame)
+                collector.addStatement(
+                    List(
+                        MoveInstr(Reg(1), RegOp(Reg(0))),
+                        PopInstr(List(Reg(0))),
+                        CompareInstr(Reg(0), RegOp(Reg(1))),
+                        MoveInstr(Reg(0), ImmOffset(1), Condition.EQ),
+                        MoveInstr(Reg(0), ImmOffset(0), Condition.NE)
+                    )
+                )
+            }
+            case NotEqual(e1, e2) => {
+                transExpression(e1, stackFrame)
+                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                transExpression(e2, stackFrame)
+                collector.addStatement(
+                    List(
+                        MoveInstr(Reg(1), RegOp(Reg(0))),
+                        PopInstr(List(Reg(0))),
+                        CompareInstr(Reg(0), RegOp(Reg(1))),
+                        MoveInstr(Reg(0), ImmOffset(1), Condition.NE),
+                        MoveInstr(Reg(0), ImmOffset(0), Condition.EQ)
                     )
                 )
             }

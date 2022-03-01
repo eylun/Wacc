@@ -50,7 +50,7 @@ object ARMRepresentation extends Representation {
             case SMullInstr(rdLo, rdHi, fst, snd, false) => 
                 s"\tSMULL $rdLo, $rdHi, $fst, $snd"
 
-            case MoveInstr(dst, src)              => s"\tMOV $dst, $src"
+            case MoveInstr(dst, src, cond)        => s"\tMOV$cond $dst, $src"
 
             /* Load Instructions */
             case LoadLabelInstr(dst, label, cond) => s"\tLDR$cond $dst, =$label"

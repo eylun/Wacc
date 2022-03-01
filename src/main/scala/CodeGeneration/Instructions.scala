@@ -97,7 +97,11 @@ case class StoreByteInstr(
     writeBack: Boolean = false
 ) extends Instruction
 
-case class MoveInstr(dst: Register, src: SecondOperand) extends Instruction
+case class MoveInstr(
+    dst: Register, 
+    src: SecondOperand,
+    condition: Condition.Condition = Condition.AL
+) extends Instruction
 
 /** Branch Instructions */
 case class BranchInstr(
