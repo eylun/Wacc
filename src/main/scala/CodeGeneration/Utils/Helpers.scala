@@ -4,7 +4,8 @@ import transExpression._
 object Helpers {
     val WORD_SIZE = 4
     val BIT_SIZE = 1
-    val ARRAY_OFFSET = 8
+    val ARRAY_LHS_OFFSET = 8
+    val ARRAY_EXP_OFFSET = 4
 
     val mainSetup = List(
       Directive("text"),
