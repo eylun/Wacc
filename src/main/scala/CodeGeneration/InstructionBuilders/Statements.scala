@@ -127,7 +127,7 @@ object transStatement {
                                 Reg(4), 
                                 sp, 
                                 // TODO: figure out where this 8 came from
-                                ImmOffset(stackFrame.getOffset(s) + 8)
+                                ImmOffset(stackFrame.getOffset(s) + ARRAY_OFFSET)
                               )
                             )
                         )
@@ -200,9 +200,6 @@ object transStatement {
                               )
                         )
                     }
-                    
-                    case FirstPairElemNode(e)  => // TODO complete for first
-                    case SecondPairElemNode(e) => // TODO complete for second
                 }
             }
             case ite @ IfThenElseNode(e, s1, s2) => {
