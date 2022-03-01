@@ -2,6 +2,8 @@ import org.scalatest.matchers.should.Matchers._
 import java.io.File
 import parsley.Parsley, Parsley._
 import scala.collection.mutable.ListBuffer
+import java.io.OutputStream
+import java.io.ByteArrayOutputStream
 
 object testUtils {
     import parsley.{Result, Success, Failure}
@@ -161,47 +163,55 @@ object testUtils {
         import Helpers.cleanFilename
         import java.io.PrintWriter
         import scala.io.Source
-        if (!new File(s"expected/${cleanFilename(f.getName())}").exists()) {
-            println("Caching outputs...")
-            // s"touch expected/${cleanFilename(f.getName())}" !
 
-            val output = (s"./refCompile -x ${f.getPath()}" #< new File(
-              "input.txt"
-            )) !!
+        /** Cache outputs if they do not exist in the 'expected' directory */
+        // if (!new File(s"expected/${cleanFilename(f.getName())}").exists()) {
+        //     println("Caching outputs...")
 
-            println("-----------------")
-            output match {
-                case s"$_===========================================================$o===$_" => {
-                    new PrintWriter(
-                      s"expected/${cleanFilename(f.getName())}"
-                      /** Left trim */
-                    ) { write(o.replaceAll("^\\s+", "")); close }
-                }
-                case _ =>
-                    new PrintWriter(
-                      s"expected/${cleanFilename(f.getName())}"
-                    ) { write(""); close }
-            }
-        }
+        //     val output = (s"./refCompile -x ${f.getPath()}" #< new File(
+        //       "input.txt"
+        //     )) !!
+
+        //     println("-----------------")
+        //     output match {
+        //         case s"$_${OUTPUT_SEPARATOR}$o" => {
+        //             new PrintWriter(
+        //               s"expected/${cleanFilename(f.getName())}"
+        //               /** Left trim */
+        //             ) { write(o.replaceAll("^\\s+", "")); close }
+        //         }
+        //         case _ =>
+        //             new PrintWriter(
+        //               s"expected/${cleanFilename(f.getName())}"
+        //             ) { write(""); close }
+        //     }
+        // }
+        println(s"---${f.getName()}---")
         this.testCodegen(f)
 
         s"arm-linux-gnueabi-gcc -o ${cleanFilename(f.getPath())} -mcpu=arm1176jzf-s -mtune=arm1176jzf-s ${cleanFilename(f.getPath())}.s" !
 
-        val actual =
-            (s"qemu-arm -L /usr/arm-linux-gnueabi/ ${cleanFilename(f.getPath())} < input.txt" !!).trim()
+        val outputStream: OutputStream = new ByteArrayOutputStream()
+        val exitCode =
+            s"qemu-arm -L /usr/arm-linux-gnueabi/ ${cleanFilename(f.getPath())}" #< new File(
+              "input.txt"
+            ) #> outputStream !
 
-        val expected =
-            Source
-                .fromFile(s"expected/${cleanFilename(f.getName())}")
-                .getLines()
-                .mkString("\n")
+        val output = outputStream.toString()
+
+        println(exitCode)
+        println(output)
+
         s"rm ${cleanFilename(f.getPath())}.s" !
 
         s"rm ${cleanFilename(f.getPath())}" !
 
-        if (expected == actual) succeed
-        else fail(s"Expected: $expected, Actual: $actual")
+        // if (expected == actual) succeed
+        // else fail(s"Expected: $expected, Actual: $actual")
 
         "rm input.txt" !
     }
+
+    var OUTPUT_SEPARATOR =
+        "==========================================================="
 }

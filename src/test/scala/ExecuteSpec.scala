@@ -23,20 +23,38 @@ class ExecuteSpec extends AnyFlatSpec {
     if (!new File("/expected").exists()) {
         "mkdir -p expected" !
     }
-    // behavior of "print programs"
-    // it should "execute print programs" in {
-    //     val printValid =
-    //         waccProgramsInDir(new File("./programs/valid/IO/print"))
-    //     "touch input.txt" !
+    behavior of "print programs"
+    it should "execute print programs" in {
+        val printValid =
+            waccProgramsInDir(new File("./programs/valid/IO/print"))
+        "touch input.txt" !
 
-    //     printValid.foreach(executeAndCompare(_))
-    // }
+        printValid.foreach(executeAndCompare(_))
+    }
 
-    // behavior of "array programs"
-    // it should "execute array programs" in {
-    //     val arrayValid = waccProgramsInDir(new File("./programs/valid/array"))
-    //     "touch input.txt" !
+    behavior of "exit programs"
+    it should "execute exit programs" in {
+        val arrayValid =
+            waccProgramsInDir(new File("./programs/valid/basic/exit"))
+        "touch input.txt" !
 
-    //     arrayValid.foreach(executeAndCompare(_))
-    // }
+        arrayValid.foreach(executeAndCompare(_))
+    }
+    // behavior of "basic programs"
+    // it should "execute skip statements" {}
+    // it should "execute exit statements" {}
+    // behavior of "expression programs"
+    // behavior of "function programs"
+    // it should "execute simple functions" {}
+    // it should "execute nested functions" {}
+    // behavior of "if programs"
+    // behavior of "read programs"
+    // behavior of "pair programs"
+    // behavior of "runtime error programs"
+    // it should "execute and return array out of bounds" {}
+    // it should "execute and return division by zero" {}
+    // it should "execute and return integer overflow" {}
+    // it should "execute and return null dereference" {}
+    // behavior of "basic programs"
+    // behavior of "basic programs"
 }
