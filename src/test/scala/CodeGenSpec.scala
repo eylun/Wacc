@@ -37,14 +37,11 @@ class CodeGenSpec extends AnyFlatSpec {
 
     val expectedPrintStrDirective: List[Instruction] = List(
         Directive("word 5"),
-        Directive("ascii \"%.*s\\0")
+        Directive("ascii \"%.*s\\0\"")
     )
 
     def expectedTextSection(sections: List[List[Instruction]]): List[Instruction] = {
-        val expected: ListBuffer[Instruction] = ListBuffer(
-            Directive("text"),
-            Directive("global main")
-        )
+        val expected: ListBuffer[Instruction] = ListBuffer()
         sections.foreach(s => s.foreach(i => expected += i))
         expected.toList
     }
@@ -119,17 +116,13 @@ class CodeGenSpec extends AnyFlatSpec {
             )) ++
             expectedTextSection(List(
                 List(
-                    Label("main"),
-                    PushInstr(List(LinkReg())),
-                    SubInstr(StackPtrReg(), StackPtrReg(), ImmOffset(4)),
-                    LoadImmIntInstr(Reg(0), 3),
-                    PushInstr(List(Reg(0))),
                     LoadImmIntInstr(Reg(0), 4),
+                    PushInstr(List(Reg(0))),
+                    LoadImmIntInstr(Reg(0), 12),
                     MoveInstr(Reg(1), RegOp(Reg(0))),
                     PopInstr(List(Reg(0))),
                     AddInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
-                    MoveInstr(Reg(0), ImmOffset(0)),
-                    PopInstr(List(StackPtrReg()))
+                    BranchLinkInstr("p_throw_overflow_error", Condition.VS)
                 ),
                 expectedOverflowText(0),
                 expectedRuntimeErrText,
