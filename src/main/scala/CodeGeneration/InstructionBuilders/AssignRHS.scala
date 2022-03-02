@@ -86,7 +86,9 @@ object transRHS {
             /** NEW PAIR NODE */
             case NewPairNode(e1, e2) => {
 
-                /** Evaluate the pair-elem expressions and store in the stack */
+                /** Evaluate the pair-elem expressions and stores it in the
+                  * stack
+                  */
                 addNewPairElem(e1, stackFrame)
                 addNewPairElem(e2, stackFrame)
                 collector.addStatement(
