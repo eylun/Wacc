@@ -13,55 +13,67 @@ class ExecuteSpec extends AnyFlatSpec {
     if (!new File("/expected").exists()) {
         "mkdir -p expected" !
     }
-    behavior of "print programs"
-    it should "execute print programs" in {
-        waccProgramsInDir(new File("./programs/valid/IO/print"))
-            .foreach(executeAndCompare(_))
-    }
+    // behavior of "print programs"
+    // it should "execute print programs" in {
+    //     waccProgramsInDir(new File("./programs/valid/IO/print"))
+    //         .foreach(executeAndCompare(_))
+    // }
 
-    behavior of "array programs"
-    it should "execute array programs" in {
-        waccProgramsInDir(new File("./programs/valid/array"))
-            .foreach(executeAndCompare(_))
-    }
+    // behavior of "array programs"
+    // it should "execute array programs" in {
+    //     waccProgramsInDir(new File("./programs/valid/array"))
+    //         .foreach(executeAndCompare(_))
+    // }
 
-    behavior of "basic programs"
-    it should "execute skip statements" in {
-        waccProgramsInDir(new File("./programs/valid/basic/skip"))
-            .foreach(executeAndCompare(_))
-    }
+    // behavior of "basic programs"
+    // it should "execute skip statements" in {
+    //     waccProgramsInDir(new File("./programs/valid/basic/skip"))
+    //         .foreach(executeAndCompare(_))
+    // }
 
-    it should "execute exit statements" in {
-        waccProgramsInDir(new File("./programs/valid/basic/exit"))
-            .foreach(executeAndCompare(_))
-    }
-    behavior of "expression programs"
-    it should "execute expressions" in {
-        waccProgramsInDir(new File("./programs/valid/expressions"))
-            .foreach(executeAndCompare(_))
-    }
-    behavior of "function programs"
-    it should "execute simple functions" in {
+    // it should "execute exit statements" in {
+    //     waccProgramsInDir(new File("./programs/valid/basic/exit"))
+    //         .foreach(executeAndCompare(_))
+    // }
+    // behavior of "expression programs"
+    // it should "execute expressions" in {
+    //     waccProgramsInDir(new File("./programs/valid/expressions"))
+    //         .foreach(executeAndCompare(_))
+    // }
+    // behavior of "function programs"
+    // it should "execute simple functions" in {
+    //     waccProgramsInDir(
+    //       new File("./programs/valid/function/simple_functions")
+    //     )
+    //         .foreach(executeAndCompare(_))
+    // }
+    // it should "execute nested functions" in {
+    //     waccProgramsInDir(
+    //       new File("./programs/valid/function/nested_functions")
+    //     )
+    //         .foreach(executeAndCompare(_))
+    // }
+    // behavior of "if programs"
+    // it should "execute if statements" in {
+    //     waccProgramsInDir(new File("./programs/valid/if"))
+    //         .foreach((executeAndCompare(_)))
+    // }
+    // behavior of "read programs"
+    // it should "execute read statements" in {
+    //     waccProgramsInDir(
+    //       new File("./programs/valid/IO/read")
+    //     )
+    //         .foreach(executeAndCompare(_))
+    // }
+    behavior of "IO programs"
+    it should "execute IO statements" in {
         waccProgramsInDir(
-          new File("./programs/valid/function/simple_functions")
-        )
-            .foreach(executeAndCompare(_))
-    }
-    it should "execute nested functions" in {
-        waccProgramsInDir(
-          new File("./programs/valid/function/nested_functions")
-        )
-            .foreach(executeAndCompare(_))
-    }
-    behavior of "if programs"
-    behavior of "read programs"
-    it should "execute read statements" in {
-        waccProgramsInDir(
-          new File("./programs/valid/IO/read")
+          new File("./programs/valid/IO")
         )
             .foreach(executeAndCompare(_))
     }
     // behavior of "pair programs"
+    // it should "execute pair programs" in {}
     // behavior of "runtime error programs"
     // it should "execute and return array out of bounds" in {}
     // it should "execute and return division by zero" in {}

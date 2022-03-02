@@ -175,7 +175,7 @@ object testUtils {
         val (input, expectedOutput, expectedExit) = extractTest(f)
 
         val inputStream: InputStream = new ByteArrayInputStream(
-          input.getBytes()
+          input.replace("\n", " ").getBytes()
         )
         val outputStream: OutputStream = new ByteArrayOutputStream()
         val actualExit =
@@ -195,7 +195,7 @@ object testUtils {
 
         // s"rm ${cleanFilename(f.getPath())}.s" !
 
-        s"rm ${cleanFilename(f.getPath())}" !
+        // s"rm ${cleanFilename(f.getPath())}" !
 
         inputStream.reset()
 
@@ -235,7 +235,7 @@ object testUtils {
                 case regexHelper.startRegex(str) => str
                 case _                           => ""
             }
-            .mkString}")
+            .mkString("\n")}")
         str.split("\n")
             .map {
                 case regexHelper.startRegex(str) => str
