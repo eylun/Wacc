@@ -1,6 +1,7 @@
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers._
 import scala.collection.mutable.ListBuffer
+import constants._
 
 class CodeGenSpec extends AnyFlatSpec {
     import parsley.{Success, Failure}
@@ -120,9 +121,11 @@ class CodeGenSpec extends AnyFlatSpec {
         )
     }
     it should "translate addition expressions" in {
+        // Simple addition expression (4 + 12)
         reset()
         testExpr(
             Add(IntLiterNode(4)(0,0), IntLiterNode(12)(0,0))(0,0),
+
             expectedDataSection(List(
                 expectedOverflowDirective,
                 expectedPrintStrDirective
@@ -142,11 +145,77 @@ class CodeGenSpec extends AnyFlatSpec {
                 expectedPrintStrText(1)
             ))
         )
+
+        // Nested expression (2 + (3 + 4)) + (((-1) + 5) + (6 + 10))
+        reset()
+        testExpr(
+            Add(
+                Add(
+                    IntLiterNode(2)(0,0), 
+                    Add(IntLiterNode(3)(0,0), IntLiterNode(4)(0,0))(0,0)
+                )(0,0),
+                Add(
+                    Add(IntLiterNode(-1)(0,0), IntLiterNode(5)(0,0))(0,0),
+                    Add(IntLiterNode(6)(0,0), IntLiterNode(10)(0,0))(0,0)
+                )(0,0)
+            )(0,0),
+            
+            expectedDataSection(List(
+                expectedOverflowDirective,
+                expectedPrintStrDirective
+            )) ++
+            expectedTextSection(List(
+                List(
+                    LoadImmIntInstr(r0, 2),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 3),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 4),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    AddInstr(r0, r0, RegOp(r1), true),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.VS),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    AddInstr(r0, r0, RegOp(r1), true),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.VS),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, -1),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 5),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    AddInstr(r0, r0, RegOp(r1), true),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.VS),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 6),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 10),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    AddInstr(r0, r0, RegOp(r1), true),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.VS),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    AddInstr(r0, r0, RegOp(r1), true),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.VS),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    AddInstr(r0, r0, RegOp(r1), true),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.VS)
+                ),
+                expectedOverflowText(0),
+                expectedRuntimeErrText,
+                expectedPrintStrText(1)
+            ))
+        )
     }
     it should "translate subtraction expressions" in {
+        // Simple expression (10 - 25)
         reset()
         testExpr(
             Sub(IntLiterNode(10)(0,0), IntLiterNode(25)(0,0))(0,0),
+
             expectedDataSection(List(
                 expectedOverflowDirective,
                 expectedPrintStrDirective
