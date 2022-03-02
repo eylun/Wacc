@@ -32,7 +32,7 @@ class CodeGenSpec extends AnyFlatSpec {
 
     val expectedOverflowDirective: List[Instruction] = List(
         Directive("word 83"),
-        Directive("ascii \"OverflowError: the result is too small/large to store in a 4-byte signed-integer.\\n\\0")
+        Directive("ascii \"OverflowError: the result is too small/large to store in a 4-byte signed-integer.\\n\\0\"")
     )
 
     val expectedPrintStrDirective: List[Instruction] = List(
@@ -105,9 +105,8 @@ class CodeGenSpec extends AnyFlatSpec {
             List(MoveInstr(Reg(0), ImmOffset(0)))
         )
     }
-    it should "translate add expressions" in {
+    it should "translate addition expressions" in {
         reset()
-        val expected = 
         testExpr(
             Add(IntLiterNode(4)(0,0), IntLiterNode(12)(0,0))(0,0),
             expectedDataSection(List(
@@ -129,5 +128,7 @@ class CodeGenSpec extends AnyFlatSpec {
                 expectedPrintStrText(1)
             ))
         )
+    }
+    it should "translate subtraction expressions" in {
     }
 }
