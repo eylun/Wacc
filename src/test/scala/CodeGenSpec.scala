@@ -294,4 +294,74 @@ class CodeGenSpec extends AnyFlatSpec {
             ))
         )
     }
+    it should "translate multiplication expressions" in {
+        // Simple expression (5 * 7)
+        reset()
+        testExpr(
+            Mult(IntLiterNode(5)(0,0), IntLiterNode(7)(0,0))(0,0),
+
+            expectedDataSection(List(
+                expectedOverflowDirective,
+                expectedPrintStrDirective
+            )) ++
+            expectedTextSection(List(
+                List(
+                    LoadImmIntInstr(r0, 5),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 7),
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    SMullInstr(r0, r1, r0, r1),
+                    CompareInstr(r1, ASRRegOp(r0, ShiftImm(31))),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.NE)
+                ),
+                expectedOverflowText(0),
+                expectedRuntimeErrText,
+                expectedPrintStrText(1)
+            ))
+        )
+
+        // Nested expression (4 * 2) * (-5 * 10)
+        reset()
+        testExpr(
+            Mult(
+                Mult(IntLiterNode(4)(0,0), IntLiterNode(2)(0,0))(0,0),
+                Mult(IntLiterNode(-5)(0,0), IntLiterNode(10)(0,0))(0,0)
+            )(0,0),
+
+            expectedDataSection(List(
+                expectedOverflowDirective,
+                expectedPrintStrDirective
+            )) ++
+            expectedTextSection(List(
+                List(
+                    LoadImmIntInstr(r0, 4),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 2),
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    SMullInstr(r0, r1, r0, r1),
+                    CompareInstr(r1, ASRRegOp(r0, ShiftImm(31))),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.NE),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, -5),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 10),
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    SMullInstr(r0, r1, r0, r1),
+                    CompareInstr(r1, ASRRegOp(r0, ShiftImm(31))),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.NE),
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    SMullInstr(r0, r1, r0, r1),
+                    CompareInstr(r1, ASRRegOp(r0, ShiftImm(31))),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.NE)
+                ),
+                expectedOverflowText(0),
+                expectedRuntimeErrText,
+                expectedPrintStrText(1)
+            ))
+        )
+    }
 }
