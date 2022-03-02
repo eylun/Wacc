@@ -13,21 +13,21 @@ class ExecuteSpec extends AnyFlatSpec {
     if (!new File("/expected").exists()) {
         "mkdir -p expected" !
     }
-    behavior of "print programs"
-    it should "execute print programs" in {
-        val printValid =
-            waccProgramsInDir(new File("./programs/valid/IO/print"))
-        "touch input.txt" !
+    // behavior of "print programs"
+    // it should "execute print programs" in {
+    //     val printValid =
+    //         waccProgramsInDir(new File("./programs/valid/IO/print"))
+    //     "touch input.txt" !
 
-        printValid.foreach(executeAndCompare(_))
-    }
+    //     printValid.foreach(executeAndCompare(_))
+    // }
 
-    behavior of "exit programs"
-    it should "execute exit programs" in {
-        val arrayValid =
-            waccProgramsInDir(new File("./programs/valid/basic/exit"))
-        arrayValid.foreach(executeAndCompare(_))
-    }
+    // behavior of "exit programs"
+    // it should "execute exit programs" in {
+    //     val arrayValid =
+    //         waccProgramsInDir(new File("./programs/valid/basic/exit"))
+    //     arrayValid.foreach(executeAndCompare(_))
+    // }
     // behavior of "basic programs"
     // it should "execute skip statements" {}
     // it should "execute exit statements" {}
