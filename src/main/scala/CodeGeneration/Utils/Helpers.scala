@@ -477,7 +477,7 @@ object Helpers {
         List(
           Label(s"msg_$idx"),
           Directive(s"word 4"),
-          Directive(s"ascii \"%c\\0\"")
+          Directive(s"ascii \" %c\\0\"")
         )
     }
     def printReadCharFunc(idx: Int): List[Instruction] = {

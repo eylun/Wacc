@@ -193,9 +193,9 @@ object testUtils {
         println(s"expected output: $expectedOutput")
         println(s"expected exit: $expectedExit")
 
-        // s"rm ${cleanFilename(f.getPath())}.s" !
+        s"rm ${cleanFilename(f.getPath())}.s" !
 
-        // s"rm ${cleanFilename(f.getPath())}" !
+        s"rm ${cleanFilename(f.getPath())}" !
 
         inputStream.reset()
 
