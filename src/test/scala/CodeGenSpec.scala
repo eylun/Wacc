@@ -49,6 +49,12 @@ class CodeGenSpec extends AnyFlatSpec {
         Directive("ascii \"%.*s\\0\"")
     )
 
+    /** Expected directive for a divide by zero error in the data section*/
+    val expectedDivideByZeroDirective: List[Instruction] = List(
+        Directive("word 45"),
+        Directive("ascii \"DivideByZeroError: divide or modulo by zero\\n\\0\"")
+    )
+
     /** Returns a list of expected instructions in the text section */
     def expectedTextSection(
         sections: List[List[Instruction]]
@@ -84,6 +90,15 @@ class CodeGenSpec extends AnyFlatSpec {
         BranchLinkInstr("printf"),
         MoveInstr(Reg(0), ImmOffset(0)),
         BranchLinkInstr("fflush"),
+        PopInstr(List(PCReg()))
+    )
+
+    def expectedDivideByZeroText(msgNo: Int): List[Instruction] = List(
+        Label("p_check_divide_by_zero"),
+        PushInstr(List(LinkReg())),
+        CompareInstr(r1, ImmOffset(0)),
+        LoadLabelInstr(r0, s"msg_$msgNo", Condition.EQ),
+        BranchLinkInstr("p_throw_runtime_error", Condition.EQ),
         PopInstr(List(PCReg()))
     )
 
@@ -359,6 +374,87 @@ class CodeGenSpec extends AnyFlatSpec {
                     BranchLinkInstr("p_throw_overflow_error", Condition.NE)
                 ),
                 expectedOverflowText(0),
+                expectedRuntimeErrText,
+                expectedPrintStrText(1)
+            ))
+        )
+    }
+    it should "translate division expressions" in {
+        // Simple expression (-4 / -9)
+        reset()
+        testExpr(
+            Div(IntLiterNode(-4)(0,0), IntLiterNode(-9)(0,0))(0,0),
+        
+            expectedDataSection(List(
+                expectedDivideByZeroDirective,
+                expectedPrintStrDirective
+            )) ++
+            expectedTextSection(List(
+                List(
+                    LoadImmIntInstr(r0, -4),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, -9),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    BranchLinkInstr("p_check_divide_by_zero"),
+                    BranchLinkInstr("__aeabi_idiv")
+                ),
+                expectedDivideByZeroText(0),
+                expectedRuntimeErrText,
+                expectedPrintStrText(1)
+            ))
+        )
+
+        // Nested expression (1 / (2 / (3 / (4 / 5))))
+        reset()
+        testExpr(
+            Div(
+                IntLiterNode(1)(0,0),
+                Div(
+                    IntLiterNode(2)(0,0),
+                    Div(
+                        IntLiterNode(3)(0,0),
+                        Div(
+                            IntLiterNode(4)(0,0),
+                            IntLiterNode(5)(0,0)
+                        )(0,0)
+                    )(0,0)
+                )(0,0)
+            )(0,0),
+
+            expectedDataSection(List(
+                expectedDivideByZeroDirective,
+                expectedPrintStrDirective
+            )) ++
+            expectedTextSection(List(
+                List(
+                    LoadImmIntInstr(r0, 1),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 2),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 3),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 4),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 5),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    BranchLinkInstr("p_check_divide_by_zero"),
+                    BranchLinkInstr("__aeabi_idiv"),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    BranchLinkInstr("p_check_divide_by_zero"),
+                    BranchLinkInstr("__aeabi_idiv"),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    BranchLinkInstr("p_check_divide_by_zero"),
+                    BranchLinkInstr("__aeabi_idiv"),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    BranchLinkInstr("p_check_divide_by_zero"),
+                    BranchLinkInstr("__aeabi_idiv")
+                ),
+                expectedDivideByZeroText(0),
                 expectedRuntimeErrText,
                 expectedPrintStrText(1)
             ))
