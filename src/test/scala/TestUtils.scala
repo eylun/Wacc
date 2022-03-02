@@ -149,7 +149,7 @@ object testUtils {
         ARMRepresentation(
           result.get,
           topLevelST,
-          cleanFilename(f.getPath()) + ".s"
+          cleanFilename(f.getName()) + ".s"
         )
     }
 
@@ -169,7 +169,7 @@ object testUtils {
 
         this.testCodegen(f)
 
-        s"arm-linux-gnueabi-gcc -o ${cleanFilename(f.getPath())} -mcpu=arm1176jzf-s -mtune=arm1176jzf-s ${cleanFilename(f.getPath())}.s" !
+        s"arm-linux-gnueabi-gcc -o ${cleanFilename(f.getName())} -mcpu=arm1176jzf-s -mtune=arm1176jzf-s ${cleanFilename(f.getPath())}.s" !
 
         val (input, expectedOutput, expectedExit) = extractTest(f)
 
@@ -178,13 +178,13 @@ object testUtils {
         )
         val outputStream: OutputStream = new ByteArrayOutputStream()
         val actualExit =
-            s"qemu-arm -L /usr/arm-linux-gnueabi/ ${cleanFilename(f.getPath())}" #< inputStream #> outputStream !
+            s"qemu-arm -L /usr/arm-linux-gnueabi/ ${cleanFilename(f.getName())}" #< inputStream #> outputStream !
 
         val actualOutput = outputStream.toString().trim()
 
-        s"rm ${cleanFilename(f.getPath())}.s" !
+        s"rm ${cleanFilename(f.getName())}.s" !
 
-        s"rm ${cleanFilename(f.getPath())}" !
+        s"rm ${cleanFilename(f.getName())}" !
 
         inputStream.reset()
 
