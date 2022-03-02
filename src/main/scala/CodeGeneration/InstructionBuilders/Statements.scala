@@ -11,6 +11,7 @@ object transStatement {
         l.foreach {
             case NewAssignNode(t, i, r) => {
                 transRHS(r, stackFrame)
+                stackFrame.unlock(i.s)
                 t match {
                     case CharTypeNode() | BoolTypeNode() => {
                         collector.addStatement(
@@ -43,7 +44,7 @@ object transStatement {
                         collector.addStatement(
                           List(
                             determineStoreInstr(
-                              stackFrame.st.lookupAll(s).get.getType(),
+                              stackFrame.currST.lookupAll(s).get.getType(),
                               r0,
                               sp,
                               stackFrame.getOffset(s)
@@ -85,9 +86,9 @@ object transStatement {
             case ite @ IfThenElseNode(e, s1, s2) => {
                 val labelFalse = s"ite_${collector.tickIte()}"
                 val labelTrue = s"ite_${collector.tickIte()}"
-                val trueSF = stackFrame.join(StackFrame(ite.trueST), ite.trueST)
+                val trueSF = stackFrame.join(ite.trueST)
                 val falseSF =
-                    stackFrame.join(StackFrame(ite.falseST), ite.falseST)
+                    stackFrame.join(ite.falseST)
                 transExpression(e, stackFrame)
                 collector.addStatement(
                   List(
@@ -115,7 +116,6 @@ object transStatement {
             }
             case be @ BeginEndNode(s) => {
                 val beSF = stackFrame.join(
-                  StackFrame(be.newScopeST),
                   be.newScopeST
                 )
                 collector.addStatement(beSF.head)
@@ -135,7 +135,6 @@ object transStatement {
                   )
                 )
                 val wdSF = stackFrame.join(
-                  StackFrame(wd.newScopeST),
                   wd.newScopeST
                 )
                 collector.addStatement(wdSF.head)
@@ -308,13 +307,13 @@ object transStatement {
 
                 /** Get Ident Node Type */
                 val nodeType: Type =
-                    (stackFrame.st.lookupAll(s)).get.getType()
+                    (stackFrame.currST.lookupAll(s)).get.getType()
 
                 determinePrintType(nodeType)
             }
             case ArrayElemNode(IdentNode(s), es) => {
                 val ArrayType(nodeType, _, dimension) =
-                    (stackFrame.st.lookupAll(s)).get.getType()
+                    (stackFrame.currST.lookupAll(s)).get.getType()
 
                 es.length match {
                     case `dimension` => determinePrintType(nodeType)

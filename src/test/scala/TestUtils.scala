@@ -166,6 +166,7 @@ object testUtils {
             ByteArrayInputStream
         }
         import regexHelper._
+
         this.testCodegen(f)
 
         s"arm-linux-gnueabi-gcc -o ${cleanFilename(f.getName())} -mcpu=arm1176jzf-s -mtune=arm1176jzf-s ${cleanFilename(f.getName())}.s" !
