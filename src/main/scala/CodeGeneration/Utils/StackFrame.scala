@@ -4,13 +4,15 @@ import scala.collection.mutable
 import scala.collection.immutable.Map
 
 class StackFrame(
-    val offsetMap: Map[String, Int],
+    val childOffsetMap: Map[String, Int],
+    val parentOffsetMap: Map[String, Int],
     val totalBytes: Int,
-    val st: SymbolTable,
+    val currST: SymbolTable,
     val returnOffset: Int
 ) {
     var tempOffset = 0;
-    val varBytes = StackFrame.varBytes(offsetMap, st)
+    val varBytes = StackFrame.varBytes(childOffsetMap, currST)
+    var unlocked = mutable.Set[String]().empty
 
     val head: List[Instruction] = varBytes match {
         case 0 => List.empty
@@ -40,42 +42,87 @@ class StackFrame(
 
     def dropTempOffset(amount: Int): Unit = tempOffset -= amount
 
-    def join(sf: StackFrame, st: SymbolTable): StackFrame = {
-        val newMap: mutable.Map[String, Int] = mutable.Map[String, Int]()
-        offsetMap.foreach {
+    def join(st: SymbolTable): StackFrame = {
+        val newParentMap: mutable.Map[String, Int] = mutable.Map[String, Int]()
+        parentOffsetMap.foreach {
             case (k, v) => {
-                newMap += (k -> (v + sf.totalBytes + tempOffset))
+                newParentMap += (k -> (v + StackFrame.totalBytes(
+                  st
+                ) + tempOffset))
             }
         }
+        unlocked.foreach { k =>
+            {
+                childOffsetMap.get(k) match {
+                    case Some(x) =>
+                        newParentMap += (k -> (x + StackFrame.totalBytes(
+                          st
+                        ) + tempOffset))
+                    case None =>
+                }
+            }
+        }
+        val newChildMap = StackFrame.generateOffsetMap(st)
+        // println("join...")
+        // println(s"new child map: $newChildMap")
+        // println(s"old child map: $childOffsetMap")
+        // println(s"new parent map: ${newParentMap.toMap}")
+        // println(s"old parent map: $parentOffsetMap")
         StackFrame(
-          (newMap ++ sf.offsetMap).toMap,
-          sf.totalBytes,
+          newChildMap,
+          newParentMap.toMap,
+          StackFrame.totalBytes(st),
           st,
-          varBytes + StackFrame.varBytes(sf.offsetMap, st)
+          varBytes + StackFrame.varBytes(newChildMap, st)
         )
     }
 
     def getOffset(ident: String): Int = {
-        offsetMap.get(ident) match {
+        // println(s"getting $ident")
+        if (unlocked.contains(ident)) {
+            childOffsetMap.get(ident) match {
+                case Some(x) => return x + tempOffset
+                case None    =>
+            }
+        }
+        parentOffsetMap.get(ident) match {
             case Some(x) => x + tempOffset
             case None =>
                 throw new RuntimeException("ident should exist in stack frame")
         }
     }
+
+    def unlock(ident: String): Unit = {
+        // println(s"unlocking $ident")
+        unlocked.add(ident)
+    }
 }
 object StackFrame {
     def apply(st: SymbolTable) = {
         val offsetMap = generateOffsetMap(st)
-        new StackFrame(offsetMap, totalBytes(st), st, varBytes(offsetMap, st))
+        new StackFrame(
+          offsetMap,
+          Map.empty,
+          totalBytes(st),
+          st,
+          varBytes(offsetMap, st)
+        )
     }
 
     def apply(
-        offsetMap: Map[String, Int],
+        childOffsetMap: Map[String, Int],
+        parentOffsetMap: Map[String, Int],
         totalBytes: Int,
         st: SymbolTable,
         varBytes: Int
     ) =
-        new StackFrame(offsetMap, totalBytes, st, varBytes)
+        new StackFrame(
+          childOffsetMap,
+          parentOffsetMap,
+          totalBytes,
+          st,
+          varBytes
+        )
 
     private def totalBytes(st: SymbolTable) = {
         var sum = 0

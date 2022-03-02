@@ -91,7 +91,8 @@ object transRHS {
                 stackFrame.dropTempOffset(WORD_SIZE * 2)
             }
             case CallNode(i, args) => {
-                val FunctionId(t, plist, _) = stackFrame.st.lookupAll(i.s).get
+                val FunctionId(t, plist, _) =
+                    stackFrame.currST.lookupAll(i.s).get
                 var offset = 0
 
                 /** Push params into stack */

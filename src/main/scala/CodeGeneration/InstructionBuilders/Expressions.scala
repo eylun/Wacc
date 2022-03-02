@@ -11,7 +11,7 @@ object transExpression {
                 collector.addStatement(
                   List(
                     determineLoadInstr(
-                      stackFrame.st.lookupAll(s).get.getType(),
+                      stackFrame.currST.lookupAll(s).get.getType(),
                       r0,
                       sp,
                       stackFrame.getOffset(s)

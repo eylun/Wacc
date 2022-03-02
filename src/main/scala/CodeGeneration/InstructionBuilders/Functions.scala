@@ -5,7 +5,10 @@ object transFunction {
     def apply(funcNode: FuncNode, stackFrame: StackFrame)(implicit
         collector: WaccBuffer
     ): Unit = {
-        val FuncNode(_, i, _, s) = funcNode
+        val FuncNode(_, i, plist, s) = funcNode
+        plist.foreach(p => {
+            stackFrame.unlock(p.i.s)
+        })
         collector.addStatement(
           List(Label(s"f_${i.s}"), PushInstr(List(lr))) ++ stackFrame.head
         )
