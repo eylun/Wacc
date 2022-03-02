@@ -101,6 +101,7 @@ object transRHS {
                         collector.addStatement(List(p match {
                             case Param(CharType()) | Param(BoolType()) => {
                                 offset += BIT_SIZE
+                                stackFrame.addTempOffset(BIT_SIZE)
                                 StoreByteInstr(
                                   r0,
                                   sp,
@@ -110,6 +111,7 @@ object transRHS {
                             }
                             case _ => {
                                 offset += WORD_SIZE
+                                stackFrame.addTempOffset(WORD_SIZE)
                                 StoreInstr(r0, sp, ImmOffset(-WORD_SIZE), true)
                             }
                         }))
@@ -129,6 +131,7 @@ object transRHS {
                           List(AddInstr(sp, sp, ImmOffset(offset), false))
                         )
                 }
+                stackFrame.dropTempOffset(offset)
 
             }
             case e: PairElemNode => {

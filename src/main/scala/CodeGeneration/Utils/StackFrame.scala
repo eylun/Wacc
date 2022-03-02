@@ -6,19 +6,11 @@ import scala.collection.immutable.Map
 class StackFrame(
     val offsetMap: Map[String, Int],
     val totalBytes: Int,
-    val st: SymbolTable
+    val st: SymbolTable,
+    val returnOffset: Int
 ) {
     var tempOffset = 0;
-    private val varBytes = {
-        var sum = 0
-        st.dict.foreach {
-            case (k, Variable(t)) => {
-                sum += getTypeSize(t)
-            }
-            case _ =>
-        }
-        sum
-    }
+    val varBytes = StackFrame.varBytes(offsetMap, st)
 
     val head: List[Instruction] = varBytes match {
         case 0 => List.empty
@@ -28,6 +20,19 @@ class StackFrame(
                 sp,
                 sp,
                 ImmOffset(varBytes),
+                false
+              )
+            )
+    }
+
+    val returnTail: List[Instruction] = returnOffset match {
+        case 0 => List.empty
+        case _ =>
+            List(
+              AddInstr(
+                sp,
+                sp,
+                ImmOffset(returnOffset),
                 false
               )
             )
@@ -57,7 +62,12 @@ class StackFrame(
                 newMap += (k -> (v + sf.totalBytes + tempOffset))
             }
         }
-        StackFrame((newMap ++ sf.offsetMap).toMap, sf.totalBytes, st)
+        StackFrame(
+          (newMap ++ sf.offsetMap).toMap,
+          sf.totalBytes,
+          st,
+          varBytes + StackFrame.varBytes(sf.offsetMap, st)
+        )
     }
 
     def getOffset(ident: String): Int = {
@@ -69,17 +79,35 @@ class StackFrame(
     }
 }
 object StackFrame {
-    def apply(st: SymbolTable) =
-        new StackFrame(generateOffsetMap(st), totalBytes(st), st)
+    def apply(st: SymbolTable) = {
+        val offsetMap = generateOffsetMap(st)
+        new StackFrame(offsetMap, totalBytes(st), st, varBytes(offsetMap, st))
+    }
 
-    def apply(offsetMap: Map[String, Int], totalBytes: Int, st: SymbolTable) =
-        new StackFrame(offsetMap, totalBytes, st)
+    def apply(
+        offsetMap: Map[String, Int],
+        totalBytes: Int,
+        st: SymbolTable,
+        varBytes: Int
+    ) =
+        new StackFrame(offsetMap, totalBytes, st, varBytes)
 
     private def totalBytes(st: SymbolTable) = {
         var sum = 0
         st.dict.foreach {
             case ("return", _) => 0
             case (k, v)        => sum += getTypeSize(v)
+        }
+        sum
+    }
+
+    private def varBytes(offsetMap: Map[String, Int], st: SymbolTable): Int = {
+        var sum = 0
+        offsetMap.foreach { case (k, _) =>
+            st.lookup(k) match {
+                case Some(Variable(t)) => sum += getTypeSize(t)
+                case _                 =>
+            }
         }
         sum
     }

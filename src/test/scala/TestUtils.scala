@@ -175,24 +175,29 @@ object testUtils {
         val (input, expectedOutput, expectedExit) = extractTest(f)
 
         val inputStream: InputStream = new ByteArrayInputStream(
-          expectedOutput.getBytes()
+          input.getBytes()
         )
         val outputStream: OutputStream = new ByteArrayOutputStream()
         val actualExit =
             s"qemu-arm -L /usr/arm-linux-gnueabi/ ${cleanFilename(f.getPath())}" #< inputStream #> outputStream !
 
         val actualOutput = outputStream.toString().trim()
-
+        println("actual input")
+        println(input)
+        println("actual exit code")
         println(actualExit)
+        println("actual output")
         println(actualOutput)
         println("extracted from wacc file:")
-        println(s"input: $input")
-        println(s"output: $expectedOutput")
-        println(s"exit: $expectedExit")
+        println(s"expected input: $input")
+        println(s"expected output: $expectedOutput")
+        println(s"expected exit: $expectedExit")
 
         // s"rm ${cleanFilename(f.getPath())}.s" !
 
         s"rm ${cleanFilename(f.getPath())}" !
+
+        inputStream.reset()
 
         (expectedOutput.split("\n") zip actualOutput.split("\n")).foreach {
             case (expectedAddrRegex(el, er), actualAddrRegex(al, _, ar))

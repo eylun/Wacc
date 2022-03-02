@@ -52,76 +52,10 @@ object transStatement {
                         )
                     }
                     case ae @ ArrayElemNode(IdentNode(s), es) => {
-                        collector.insertUtil(UtilFlag.PCheckArrayBounds)
                         transRHS(r, stackFrame)
-                        stackFrame.addTempOffset(ARRAY_LHS_OFFSET)
+                        transLHS(l, stackFrame)
                         collector.addStatement(
                           List(
-                            PushInstr(List(Reg(0), Reg(4))),
-                            LoadInstr(
-                              Reg(4),
-                              sp,
-                              ImmOffset(stackFrame.getOffset(s))
-                            )
-                          )
-                        )
-                        //consider using zipWithIndex
-                        es.zipWithIndex.foreach {
-                            case (e, idx) => {
-                                transExpression(e, stackFrame)
-                                collector.addStatement(
-                                  List(
-                                    BranchLinkInstr(
-                                      "p_check_array_bounds",
-                                      Condition.AL
-                                    ),
-                                    AddInstr(
-                                      Reg(4),
-                                      Reg(4),
-                                      ImmOffset(4),
-                                      false
-                                    )
-                                  )
-                                )
-                                collector.addStatement(
-                                  if (idx == es.length - 1) {
-                                      List(
-                                        ae.typeId.get.getType() match {
-                                            case CharType() | BoolType() =>
-                                                AddInstr(
-                                                  Reg(4),
-                                                  Reg(4),
-                                                  RegOp(Reg(0)),
-                                                  false
-                                                )
-                                            case _ =>
-                                                AddInstr(
-                                                  Reg(4),
-                                                  Reg(4),
-                                                  LSLRegOp(Reg(0), ShiftImm(2)),
-                                                  false
-                                                )
-                                        }
-                                      )
-                                  } else {
-                                      List(
-                                        AddInstr(
-                                          Reg(4),
-                                          Reg(4),
-                                          LSLRegOp(Reg(0), ShiftImm(2)),
-                                          false
-                                        ),
-                                        LoadInstr(Reg(4), Reg(4), ImmOffset(0))
-                                      )
-                                  }
-                                )
-                            }
-                        }
-                        stackFrame.dropTempOffset(ARRAY_LHS_OFFSET)
-                        collector.addStatement(
-                          List(
-                            MoveInstr(Reg(1), RegOp(Reg(4))),
-                            PopInstr(List(Reg(0), Reg(4))),
                             determineStoreInstr(
                               ae.typeId.get.getType(),
                               r0,
@@ -133,54 +67,10 @@ object transStatement {
 
                     }
                     case l: PairElemNode => {
-
-                        collector.insertUtil(UtilFlag.PCheckNullPointer)
                         transRHS(r, stackFrame)
-                        stackFrame.addTempOffset(WORD_SIZE)
+                        transLHS(l, stackFrame)
                         collector.addStatement(
                           List(
-                            PushInstr(List(r0))
-                          )
-                        )
-                        l match {
-                            case FirstPairElemNode(e) => {
-                                transExpression(e, stackFrame)
-                                collector.addStatement(
-                                  List(
-                                    BranchLinkInstr("p_check_null_pointer"),
-                                    AddInstr(r0, r0, ImmOffset(0), false)
-                                  )
-                                )
-                            }
-                            case SecondPairElemNode(e) => {
-                                transExpression(e, stackFrame)
-                                collector.addStatement(
-                                  List(
-                                    BranchLinkInstr("p_check_null_pointer"),
-                                    AddInstr(
-                                      r0,
-                                      r0,
-                                      ImmOffset(WORD_SIZE),
-                                      false
-                                    )
-                                  )
-                                )
-                            }
-                        }
-                        collector.addStatement(
-                          List(
-                            PushInstr(List(r0)),
-                            LoadInstr(r0, r0, ImmOffset(0)),
-                            BranchLinkInstr("free"),
-                            MoveInstr(
-                              r0,
-                              ImmOffset(getTypeSize(l.typeId.get.getType()))
-                            ),
-                            BranchLinkInstr("malloc"),
-                            PopInstr(List(r1)),
-                            StoreInstr(r0, r1, ImmOffset(0)),
-                            MoveInstr(r1, RegOp(r0)),
-                            PopInstr(List(r0)),
                             determineStoreInstr(
                               l.typeId.get.getType(),
                               r0,
@@ -189,7 +79,6 @@ object transStatement {
                             )
                           )
                         )
-                        stackFrame.dropTempOffset(WORD_SIZE)
                     }
                 }
             }
@@ -271,10 +160,9 @@ object transStatement {
             case ExitNode(e) => {
                 transExpression(e, stackFrame)
                 collector.addStatement(
-                  stackFrame.tail ++
-                      List(
-                        BranchLinkInstr("exit", Condition.AL)
-                      )
+                  List(
+                    BranchLinkInstr("exit", Condition.AL)
+                  )
                 )
             }
             case PrintNode(e) => {
@@ -292,14 +180,36 @@ object transStatement {
             case ReturnNode(e) => {
                 transExpression(e, stackFrame)
                 collector.addStatement(
-                  stackFrame.tail ++ List(PopInstr(List(pc)))
+                  stackFrame.returnTail ++ List(PopInstr(List(pc)))
                 )
             }
             case ReadNode(l) => {
-
-                collector.addStatement(
-                  List(AddInstr(Reg(0), sp, ImmOffset(0), false))
-                )
+                transLHS(l, stackFrame)
+                l match {
+                    case IdentNode(s) => {
+                        collector.addStatement(
+                          List(
+                            AddInstr(
+                              r0,
+                              sp,
+                              ImmOffset(stackFrame.getOffset(s)),
+                              false
+                            )
+                          )
+                        )
+                    }
+                    case _ =>
+                        collector.addStatement(
+                          List(
+                            AddInstr(
+                              r0,
+                              r1,
+                              ImmOffset(0),
+                              false
+                            )
+                          )
+                        )
+                }
 
                 l.typeId.get.getType() match {
                     case CharType() => {

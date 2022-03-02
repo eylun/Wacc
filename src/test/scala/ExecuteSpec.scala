@@ -47,9 +47,20 @@ class ExecuteSpec extends AnyFlatSpec {
         )
             .foreach(executeAndCompare(_))
     }
-    // it should "execute nested functions" in {}
-    // behavior of "if programs"
-    // behavior of "read programs"
+    it should "execute nested functions" in {
+        waccProgramsInDir(
+          new File("./programs/valid/function/nested_functions")
+        )
+            .foreach(executeAndCompare(_))
+    }
+    behavior of "if programs"
+    behavior of "read programs"
+    it should "execute read statements" in {
+        waccProgramsInDir(
+          new File("./programs/valid/IO/read")
+        )
+            .foreach(executeAndCompare(_))
+    }
     // behavior of "pair programs"
     // behavior of "runtime error programs"
     // it should "execute and return array out of bounds" in {}
