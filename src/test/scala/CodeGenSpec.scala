@@ -235,5 +235,63 @@ class CodeGenSpec extends AnyFlatSpec {
                 expectedPrintStrText(1)
             ))
         )
+
+        // Nested expression (20 - (31 - 4)) - (((-10) - 5) - 6)
+        reset()
+        testExpr(
+            Sub(
+                Sub(
+                    IntLiterNode(20)(0,0),
+                    Sub(IntLiterNode(31)(0,0), IntLiterNode(4)(0,0))(0,0)
+                )(0,0),
+                Sub(
+                    Sub(IntLiterNode(-10)(0,0), IntLiterNode(5)(0,0))(0,0),
+                    IntLiterNode(6)(0,0)
+                )(0,0)
+            )(0,0),
+
+            expectedDataSection(List(
+                expectedOverflowDirective,
+                expectedPrintStrDirective
+            )) ++
+            expectedTextSection(List(
+                List(
+                    LoadImmIntInstr(r0, 20),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 31),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 4),
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    SubInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.VS),
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    SubInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.VS),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, -10),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 5),
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    SubInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.VS),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 6),
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    SubInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.VS),
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    SubInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.VS)
+                ),
+                expectedOverflowText(0),
+                expectedRuntimeErrText,
+                expectedPrintStrText(1)
+            ))
+        )
     }
 }
