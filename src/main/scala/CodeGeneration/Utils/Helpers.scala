@@ -4,6 +4,8 @@ import transExpression._
 object Helpers {
     val WORD_SIZE = 4
     val BIT_SIZE = 1
+    val ARRAY_LHS_OFFSET = 8
+    val ARRAY_EXP_OFFSET = 4
 
     val mainSetup = List(
       Directive("text"),
@@ -51,17 +53,12 @@ object Helpers {
         sb.toString()
     }
 
-    def getArraySize(t: TypeNode, size: Int): Int = {
-        t match {
-            case at @ ArrayTypeNode(elemType, dimension) => {
-                dimension match {
-                    case 1 => getTypeSize(elemType.typeId.get) * size
-                    case _ => 4 * size
-                }
-            }
-
-            // cannot be called on other types
-            case _ => -1
+    def getArraySize(arrayType: Type, size: Int): Int = {
+        val ArrayType(t, _, d) = arrayType
+        (t, d) match {
+            case (BoolType(), 1) | (CharType(), 1) =>
+                BIT_SIZE * size + WORD_SIZE
+            case _ => WORD_SIZE * size + WORD_SIZE
         }
     }
 
@@ -90,6 +87,29 @@ object Helpers {
         }
         collector.addStatement(List(PushInstr(List(Reg(0)))))
         stackFrame.addTempOffset(WORD_SIZE)
+    }
+
+    def determineStoreInstr(
+        t: Type,
+        src: Register,
+        dst: Register,
+        offset: Int,
+        writeBack: Boolean = false
+    ): Instruction = t match {
+        case CharType() | BoolType() =>
+            StoreByteInstr(src, dst, ImmOffset(offset), writeBack)
+        case _ => StoreInstr(src, dst, ImmOffset(offset), writeBack)
+    }
+    def determineLoadInstr(
+        t: Type,
+        src: Register,
+        dst: Register,
+        offset: Int,
+        cond: Condition.Condition = Condition.AL
+    ): Instruction = t match {
+        case CharType() | BoolType() =>
+            LoadRegSignedByte(src, dst, ImmOffset(offset), cond)
+        case _ => LoadInstr(src, dst, ImmOffset(offset), cond)
     }
 
     /** PRINT STATEMENT HELPERS */
