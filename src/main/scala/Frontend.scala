@@ -23,7 +23,7 @@ object frontend {
                     ARMRepresentation(
                       result,
                       topLevelST,
-                      cleanFilename(fn) + ".s"
+                      cleanFilename(waccFile.getName()) + ".s"
                     )
                     System.exit(0)
                 }
