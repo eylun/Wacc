@@ -2,14 +2,21 @@ import Helpers._
 import Helpers.UtilFlag._
 import constants._
 
+/** Adds the appropriate instructions for each expression into our Wacc Buffer
+  * collector
+  */
 object transExpression {
     def apply(exprNode: ExprNode, stackFrame: StackFrame)(implicit
         collector: WaccBuffer
     ): Unit =
         exprNode match {
+            /** IDENTIFIER */
             case IdentNode(s) =>
                 collector.addStatement(
                   List(
+                    /** Adds a different load instruction depending on the
+                      * identifier type
+                      */
                     determineLoadInstr(
                       stackFrame.st.lookupAll(s).get.getType(),
                       r0,
@@ -19,34 +26,34 @@ object transExpression {
                   )
                 )
 
-            /* Literals */
+            /** LITERALS: int, char, bool, string, pair, array-elem */
             case IntLiterNode(n) =>
-                collector.addStatement(List(LoadImmIntInstr(Reg(0), n)))
+                collector.addStatement(List(LoadImmIntInstr(r0, n)))
             case CharLiterNode(c) =>
-                collector.addStatement(List(MoveInstr(Reg(0), ImmOffset(c))))
+                collector.addStatement(List(MoveInstr(r0, ImmOffset(c))))
             case BoolLiterNode(true) =>
-                collector.addStatement(List(MoveInstr(Reg(0), ImmOffset(1))))
+                collector.addStatement(List(MoveInstr(r0, ImmOffset(1))))
             case BoolLiterNode(false) =>
-                collector.addStatement(List(MoveInstr(Reg(0), ImmOffset(0))))
+                collector.addStatement(List(MoveInstr(r0, ImmOffset(0))))
             case StringLiterNode(str) => {
                 val msgCount = collector.tickDataMsg()
                 collector.addDataMsg(
                   getStringDirective(str, msgCount)
                 )
                 collector.addStatement(
-                  List(LoadLabelInstr(Reg(0), s"msg_$msgCount"))
+                  List(LoadLabelInstr(r0, s"msg_$msgCount"))
                 )
             }
             case PairLiterNode() =>
-                collector.addStatement(List(MoveInstr(Reg(0), ImmOffset(0))))
+                collector.addStatement(List(MoveInstr(r0, ImmOffset(0))))
 
             case ae @ ArrayElemNode(IdentNode(s), es) => {
                 collector.insertUtil(UtilFlag.PCheckArrayBounds)
                 collector.addStatement(
                   List(
-                    LoadInstr(Reg(0), sp, ImmOffset(stackFrame.getOffset(s))),
-                    PushInstr(List(Reg(4))),
-                    MoveInstr(Reg(4), RegOp(Reg(0)))
+                    LoadInstr(r0, sp, ImmOffset(stackFrame.getOffset(s))),
+                    PushInstr(List(r4)),
+                    MoveInstr(r4, RegOp(r0))
                   )
                 )
                 stackFrame.addTempOffset(ARRAY_EXP_OFFSET)
@@ -59,7 +66,7 @@ object transExpression {
                               "p_check_array_bounds",
                               Condition.AL
                             ),
-                            AddInstr(Reg(4), Reg(4), ImmOffset(4), false)
+                            AddInstr(r4, r4, ImmOffset(4), false)
                           )
                         )
                         collector.addStatement(ae.typeId.get.getType() match {
@@ -67,45 +74,45 @@ object transExpression {
                                 if idx == es.length - 1 =>
                                 List(
                                   AddInstr(
-                                    Reg(4),
-                                    Reg(4),
-                                    RegOp(Reg(0)),
+                                    r4,
+                                    r4,
+                                    RegOp(r0),
                                     false
                                   ),
                                   LoadRegSignedByte(
-                                    Reg(4),
-                                    Reg(4),
+                                    r4,
+                                    r4,
                                     ImmOffset(0)
                                   )
                                 )
                             case _ =>
                                 List(
                                   AddInstr(
-                                    Reg(4),
-                                    Reg(4),
-                                    LSLRegOp(Reg(0), ShiftImm(2)),
+                                    r4,
+                                    r4,
+                                    LSLRegOp(r0, ShiftImm(2)),
                                     false
                                   ),
-                                  LoadInstr(Reg(4), Reg(4), ImmOffset(0))
+                                  LoadInstr(r4, r4, ImmOffset(0))
                                 )
                         })
                     }
                 }
                 collector.addStatement(
                   List(
-                    MoveInstr(Reg(0), RegOp(Reg(4))),
-                    PopInstr(List(Reg(4)))
+                    MoveInstr(r0, RegOp(r4)),
+                    PopInstr(List(r4))
                   )
                 )
                 stackFrame.dropTempOffset(ARRAY_EXP_OFFSET)
             }
 
-            /* Unary operations */
+            /** UNARY OPERATIONS */
             case Not(e) => {
                 transExpression(e, stackFrame)
                 collector.addStatement(
                   List(
-                    XorInstr(Reg(0), Reg(0), ImmOffset(1))
+                    XorInstr(r0, r0, ImmOffset(1))
                   )
                 )
             }
@@ -116,7 +123,7 @@ object transExpression {
 
                 collector.addStatement(
                   List(
-                    ReverseSubInstr(Reg(0), Reg(0), ImmOffset(0), true),
+                    ReverseSubInstr(r0, r0, ImmOffset(0), true),
                     BranchLinkInstr("p_throw_overflow_error", Condition.VS)
                   )
                 )
@@ -132,10 +139,10 @@ object transExpression {
                 transExpression(e, stackFrame)
             }
 
-            /* Binary operations */
+            /* * BINARY OPERATIONS */
             case Add(e1, e2) => {
                 transExpression(e1, stackFrame)
-                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
 
@@ -143,9 +150,9 @@ object transExpression {
 
                 collector.addStatement(
                   List(
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
-                    AddInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    AddInstr(r0, r0, RegOp(r1), true),
                     BranchLinkInstr("p_throw_overflow_error", Condition.VS)
                   )
                 )
@@ -153,7 +160,7 @@ object transExpression {
             }
             case Sub(e1, e2) => {
                 transExpression(e1, stackFrame)
-                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
 
@@ -161,9 +168,9 @@ object transExpression {
 
                 collector.addStatement(
                   List(
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
-                    SubInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    SubInstr(r0, r0, RegOp(r1), true),
                     BranchLinkInstr("p_throw_overflow_error", Condition.VS)
                   )
                 )
@@ -171,7 +178,7 @@ object transExpression {
             }
             case Mult(e1, e2) => {
                 transExpression(e1, stackFrame)
-                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
 
@@ -179,10 +186,10 @@ object transExpression {
 
                 collector.addStatement(
                   List(
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
-                    SMullInstr(Reg(0), Reg(1), Reg(0), Reg(1)),
-                    CompareInstr(Reg(1), ASRRegOp(Reg(0), ShiftImm(31))),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    SMullInstr(r0, r1, r0, r1),
+                    CompareInstr(r1, ASRRegOp(r0, ShiftImm(31))),
                     BranchLinkInstr("p_throw_overflow_error", Condition.NE)
                   )
                 )
@@ -190,7 +197,7 @@ object transExpression {
             }
             case Div(e1, e2) => {
                 transExpression(e1, stackFrame)
-                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
 
@@ -198,8 +205,8 @@ object transExpression {
 
                 collector.addStatement(
                   List(
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
                     BranchLinkInstr("p_check_divide_by_zero"),
                     BranchLinkInstr("__aeabi_idiv")
                   )
@@ -208,7 +215,7 @@ object transExpression {
             }
             case Mod(e1, e2) => {
                 transExpression(e1, stackFrame)
-                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
 
@@ -216,11 +223,11 @@ object transExpression {
 
                 collector.addStatement(
                   List(
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
                     BranchLinkInstr("p_check_divide_by_zero"),
                     BranchLinkInstr("__aeabi_idivmod"),
-                    MoveInstr(Reg(0), RegOp(Reg(1)))
+                    MoveInstr(r0, RegOp(r1))
                   )
                 )
                 stackFrame.dropTempOffset(WORD_SIZE)
@@ -228,10 +235,11 @@ object transExpression {
             case And(e1, e2) => {
                 val label = collector.tickGeneral()
                 transExpression(e1, stackFrame)
-                // Short-circuit evaluation
+
+                /** short-circuit evaluation */
                 collector.addStatement(
                   List(
-                    CompareInstr(Reg(0), ImmOffset(0)),
+                    CompareInstr(r0, ImmOffset(0)),
                     BranchInstr(s"L$label", Condition.EQ)
                   )
                 )
@@ -246,10 +254,11 @@ object transExpression {
             case Or(e1, e2) => {
                 val label = collector.tickGeneral()
                 transExpression(e1, stackFrame)
-                // Short-circuit evaluation
+
+                /** short-circuit evaluation */
                 collector.addStatement(
                   List(
-                    CompareInstr(Reg(0), ImmOffset(1)),
+                    CompareInstr(r0, ImmOffset(1)),
                     BranchInstr(s"L$label", Condition.EQ)
                   )
                 )
@@ -261,98 +270,102 @@ object transExpression {
                   )
                 )
             }
+            /** Greater-Than operator */
             case GT(e1, e2) => {
                 transExpression(e1, stackFrame)
-                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
                 collector.addStatement(
                   List(
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
-                    CompareInstr(Reg(0), RegOp(Reg(1))),
-                    MoveInstr(Reg(0), ImmOffset(1), Condition.GT),
-                    MoveInstr(Reg(0), ImmOffset(0), Condition.LE)
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    CompareInstr(r0, RegOp(r1)),
+                    MoveInstr(r0, ImmOffset(1), Condition.GT),
+                    MoveInstr(r0, ImmOffset(0), Condition.LE)
                   )
                 )
                 stackFrame.dropTempOffset(WORD_SIZE)
             }
+            /** Greater-Than-Or-Equals operator */
             case GTE(e1, e2) => {
                 transExpression(e1, stackFrame)
-                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
                 collector.addStatement(
                   List(
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
-                    CompareInstr(Reg(0), RegOp(Reg(1))),
-                    MoveInstr(Reg(0), ImmOffset(1), Condition.GE),
-                    MoveInstr(Reg(0), ImmOffset(0), Condition.LT)
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    CompareInstr(r0, RegOp(r1)),
+                    MoveInstr(r0, ImmOffset(1), Condition.GE),
+                    MoveInstr(r0, ImmOffset(0), Condition.LT)
                   )
                 )
                 stackFrame.dropTempOffset(WORD_SIZE)
             }
+            /** Less-Than operator */
             case LT(e1, e2) => {
                 transExpression(e1, stackFrame)
-                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
                 collector.addStatement(
                   List(
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
-                    CompareInstr(Reg(0), RegOp(Reg(1))),
-                    MoveInstr(Reg(0), ImmOffset(1), Condition.LT),
-                    MoveInstr(Reg(0), ImmOffset(0), Condition.GE)
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    CompareInstr(r0, RegOp(r1)),
+                    MoveInstr(r0, ImmOffset(1), Condition.LT),
+                    MoveInstr(r0, ImmOffset(0), Condition.GE)
                   )
                 )
                 stackFrame.dropTempOffset(WORD_SIZE)
             }
+            /** Less-Than-Or-Equals operator */
             case LTE(e1, e2) => {
                 transExpression(e1, stackFrame)
-                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
                 collector.addStatement(
                   List(
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
-                    CompareInstr(Reg(0), RegOp(Reg(1))),
-                    MoveInstr(Reg(0), ImmOffset(1), Condition.LE),
-                    MoveInstr(Reg(0), ImmOffset(0), Condition.GT)
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    CompareInstr(r0, RegOp(r1)),
+                    MoveInstr(r0, ImmOffset(1), Condition.LE),
+                    MoveInstr(r0, ImmOffset(0), Condition.GT)
                   )
                 )
                 stackFrame.dropTempOffset(WORD_SIZE)
             }
             case Equal(e1, e2) => {
                 transExpression(e1, stackFrame)
-                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
                 collector.addStatement(
                   List(
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
-                    CompareInstr(Reg(0), RegOp(Reg(1))),
-                    MoveInstr(Reg(0), ImmOffset(1), Condition.EQ),
-                    MoveInstr(Reg(0), ImmOffset(0), Condition.NE)
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    CompareInstr(r0, RegOp(r1)),
+                    MoveInstr(r0, ImmOffset(1), Condition.EQ),
+                    MoveInstr(r0, ImmOffset(0), Condition.NE)
                   )
                 )
                 stackFrame.dropTempOffset(WORD_SIZE)
             }
             case NotEqual(e1, e2) => {
                 transExpression(e1, stackFrame)
-                collector.addStatement(List(PushInstr(List(Reg(0)))))
+                collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
                 collector.addStatement(
                   List(
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
-                    CompareInstr(Reg(0), RegOp(Reg(1))),
-                    MoveInstr(Reg(0), ImmOffset(1), Condition.NE),
-                    MoveInstr(Reg(0), ImmOffset(0), Condition.EQ)
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    CompareInstr(r0, RegOp(r1)),
+                    MoveInstr(r0, ImmOffset(1), Condition.NE),
+                    MoveInstr(r0, ImmOffset(0), Condition.EQ)
                   )
                 )
                 stackFrame.dropTempOffset(WORD_SIZE)
