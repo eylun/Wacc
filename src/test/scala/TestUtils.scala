@@ -182,16 +182,6 @@ object testUtils {
             s"qemu-arm -L /usr/arm-linux-gnueabi/ ${cleanFilename(f.getPath())}" #< inputStream #> outputStream !
 
         val actualOutput = outputStream.toString().trim()
-        println("actual input")
-        println(input)
-        println("actual exit code")
-        println(actualExit)
-        println("actual output")
-        println(actualOutput)
-        println("extracted from wacc file:")
-        println(s"expected input: $input")
-        println(s"expected output: $expectedOutput")
-        println(s"expected exit: $expectedExit")
 
         s"rm ${cleanFilename(f.getPath())}.s" !
 
@@ -229,13 +219,6 @@ object testUtils {
     }
 
     def extractInputOutput(str: String): String = {
-        println(s"STRING INPUT OUTPUT${str
-            .split("\n")
-            .map {
-                case regexHelper.startRegex(str) => str
-                case _                           => ""
-            }
-            .mkString("\n")}")
         str.split("\n")
             .map {
                 case regexHelper.startRegex(str) => str

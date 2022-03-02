@@ -10,9 +10,6 @@ class ExecuteSpec extends AnyFlatSpec {
     import java.io.PrintWriter
     import scala.io.Source
 
-    if (!new File("/expected").exists()) {
-        "mkdir -p expected" !
-    }
     behavior of "print programs"
     it should "execute print programs" in {
         waccProgramsInDir(new File("./programs/valid/IO/print"))
