@@ -9,17 +9,23 @@ class CodeGenSpec extends AnyFlatSpec {
     var sf: StackFrame = StackFrame(SymbolTable())
     implicit var wbuffer: WaccBuffer = new WaccBuffer
     
+    /** Resets the stack frame and buffer */
     def reset(): Unit = {
         sf = StackFrame(SymbolTable())
         wbuffer = new WaccBuffer
     }
 
+    /** Translates an expression into a list of instructions and compares it
+     *  with the expected output */
     def testExpr(node: ExprNode, expected: List[Instruction]): Unit = {
         transExpression(node, sf)
         assertCodegenEquals(expected, wbuffer.emit())
     }
 
-    def expectedDataSection(directives: List[List[Instruction]]): List[Instruction] = {
+    /** Returns a list of expected data directives in the data section */
+    def expectedDataSection(
+        directives: List[List[Instruction]]
+    ): List[Instruction] = {
         val expected: ListBuffer[Instruction] = ListBuffer(Directive("data"))
         var msgNo: Int = 0
         directives.foreach(d => {
@@ -30,28 +36,35 @@ class CodeGenSpec extends AnyFlatSpec {
         expected.toList
     }
 
+    /** Expected directive for an overflow error in the data section */
     val expectedOverflowDirective: List[Instruction] = List(
         Directive("word 83"),
         Directive("ascii \"OverflowError: the result is too small/large to store in a 4-byte signed-integer.\\n\\0\"")
     )
 
+    /** Expected directive for print string in the data section */
     val expectedPrintStrDirective: List[Instruction] = List(
         Directive("word 5"),
         Directive("ascii \"%.*s\\0\"")
     )
 
-    def expectedTextSection(sections: List[List[Instruction]]): List[Instruction] = {
+    /** Returns a list of expected instructions in the text section */
+    def expectedTextSection(
+        sections: List[List[Instruction]]
+    ): List[Instruction] = {
         val expected: ListBuffer[Instruction] = ListBuffer()
         sections.foreach(s => s.foreach(i => expected += i))
         expected.toList
     }
 
+    /** Expected instruction output for overflow errors */
     def expectedOverflowText(msgNo: Int): List[Instruction] = List(
         Label("p_throw_overflow_error"),
         LoadLabelInstr(Reg(0), s"msg_$msgNo"),
         BranchLinkInstr("p_throw_runtime_error")
     )
 
+    /** Expected instruction output for runtime errors */
     val expectedRuntimeErrText: List[Instruction] = List(
         Label("p_throw_runtime_error"),
         BranchLinkInstr("p_print_string"),
@@ -59,6 +72,7 @@ class CodeGenSpec extends AnyFlatSpec {
         BranchLinkInstr("exit")
     )
 
+    /** Expected instruction output for print string */
     def expectedPrintStrText(msgNo: Int): List[Instruction] = List(
         Label("p_print_string"),
         PushInstr(List(LinkReg())),
@@ -130,5 +144,27 @@ class CodeGenSpec extends AnyFlatSpec {
         )
     }
     it should "translate subtraction expressions" in {
+        reset()
+        testExpr(
+            Sub(IntLiterNode(10)(0,0), IntLiterNode(25)(0,0))(0,0),
+            expectedDataSection(List(
+                expectedOverflowDirective,
+                expectedPrintStrDirective
+            )) ++
+            expectedTextSection(List(
+                List(
+                    LoadImmIntInstr(Reg(0), 10),
+                    PushInstr(List(Reg(0))),
+                    LoadImmIntInstr(Reg(0), 25),
+                    MoveInstr(Reg(1), RegOp(Reg(0))),
+                    PopInstr(List(Reg(0))),
+                    SubInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.VS)
+                ),
+                expectedOverflowText(0),
+                expectedRuntimeErrText,
+                expectedPrintStrText(1)
+            ))
+        )
     }
 }
