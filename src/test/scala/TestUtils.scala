@@ -167,7 +167,6 @@ object testUtils {
         }
         import regexHelper._
 
-        println(s"---${f.getName()}---")
         this.testCodegen(f)
 
         s"arm-linux-gnueabi-gcc -o ${cleanFilename(f.getPath())} -mcpu=arm1176jzf-s -mtune=arm1176jzf-s ${cleanFilename(f.getPath())}.s" !
