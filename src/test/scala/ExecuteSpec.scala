@@ -15,34 +15,47 @@ class ExecuteSpec extends AnyFlatSpec {
     }
     behavior of "print programs"
     it should "execute print programs" in {
-        val printValid =
-            waccProgramsInDir(new File("./programs/valid/IO/print"))
-        "touch input.txt" !
-
-        printValid.foreach(executeAndCompare(_))
+        waccProgramsInDir(new File("./programs/valid/IO/print"))
+            .foreach(executeAndCompare(_))
     }
 
-    behavior of "exit programs"
-    it should "execute exit programs" in {
-        val arrayValid =
-            waccProgramsInDir(new File("./programs/valid/basic/exit"))
-        arrayValid.foreach(executeAndCompare(_))
+    behavior of "array programs"
+    it should "execute array programs" in {
+        waccProgramsInDir(new File("./programs/valid/array"))
+            .foreach(executeAndCompare(_))
     }
-    // behavior of "basic programs"
-    // it should "execute skip statements" {}
-    // it should "execute exit statements" {}
-    // behavior of "expression programs"
-    // behavior of "function programs"
-    // it should "execute simple functions" {}
-    // it should "execute nested functions" {}
+
+    behavior of "basic programs"
+    it should "execute skip statements" in {
+        waccProgramsInDir(new File("./programs/valid/basic/skip"))
+            .foreach(executeAndCompare(_))
+    }
+
+    it should "execute exit statements" in {
+        waccProgramsInDir(new File("./programs/valid/basic/exit"))
+            .foreach(executeAndCompare(_))
+    }
+    behavior of "expression programs"
+    it should "execute expressions" in {
+        waccProgramsInDir(new File("./programs/valid/expressions"))
+            .foreach(executeAndCompare(_))
+    }
+    behavior of "function programs"
+    it should "execute simple functions" in {
+        waccProgramsInDir(
+          new File("./programs/valid/function/simple_functions")
+        )
+            .foreach(executeAndCompare(_))
+    }
+    // it should "execute nested functions" in {}
     // behavior of "if programs"
     // behavior of "read programs"
     // behavior of "pair programs"
     // behavior of "runtime error programs"
-    // it should "execute and return array out of bounds" {}
-    // it should "execute and return division by zero" {}
-    // it should "execute and return integer overflow" {}
-    // it should "execute and return null dereference" {}
+    // it should "execute and return array out of bounds" in {}
+    // it should "execute and return division by zero" in {}
+    // it should "execute and return integer overflow" in {}
+    // it should "execute and return null dereference" in {}
     // behavior of "basic programs"
     // behavior of "basic programs"
 }

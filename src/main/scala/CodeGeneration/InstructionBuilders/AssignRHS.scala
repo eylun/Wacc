@@ -119,10 +119,16 @@ object transRHS {
                 /** Branch to function and recover stack */
                 collector.addStatement(
                   List(
-                    BranchLinkInstr(s"f_${i.s}", Condition.AL),
-                    AddInstr(sp, sp, ImmOffset(offset), false)
+                    BranchLinkInstr(s"f_${i.s}", Condition.AL)
                   )
                 )
+                offset match {
+                    case 0 =>
+                    case _ =>
+                        collector.addStatement(
+                          List(AddInstr(sp, sp, ImmOffset(offset), false))
+                        )
+                }
 
             }
             case e: PairElemNode => {

@@ -7,10 +7,6 @@ object transStatement {
     def apply(statList: StatNode, stackFrame: StackFrame)(implicit
         collector: WaccBuffer
     ): Unit = {
-        // TODO: Each statNode match should return a list of instructions
-        // it should call translation functions on all appropriate parts of
-        // the statement, this also means that it should call transStatement
-        // on nested statements (like in if-then-else, while-do, begin-end)
         val StatListNode(l) = statList
         l.foreach {
             case NewAssignNode(t, i, r) => {
@@ -47,7 +43,7 @@ object transStatement {
                         collector.addStatement(
                           List(
                             determineStoreInstr(
-                              stackFrame.st.lookup(s).get.getType(),
+                              stackFrame.st.lookupAll(s).get.getType(),
                               r0,
                               sp,
                               stackFrame.getOffset(s)
@@ -275,9 +271,10 @@ object transStatement {
             case ExitNode(e) => {
                 transExpression(e, stackFrame)
                 collector.addStatement(
-                  List(
-                    BranchLinkInstr("exit", Condition.AL)
-                  )
+                  stackFrame.tail ++
+                      List(
+                        BranchLinkInstr("exit", Condition.AL)
+                      )
                 )
             }
             case PrintNode(e) => {
@@ -291,8 +288,13 @@ object transStatement {
                 /** Add branch instruction Statement */
                 collector.addStatement(List(BranchLinkInstr("p_print_ln")))
             }
-            case FreeNode(e)   =>
-            case ReturnNode(e) => transExpression(e, stackFrame)
+            case FreeNode(e) =>
+            case ReturnNode(e) => {
+                transExpression(e, stackFrame)
+                collector.addStatement(
+                  stackFrame.tail ++ List(PopInstr(List(pc)))
+                )
+            }
             case ReadNode(l) => {
 
                 collector.addStatement(
@@ -393,11 +395,6 @@ object transStatement {
                 /** Get Ident Node Type */
                 val nodeType: Type =
                     (stackFrame.st.lookupAll(s)).get.getType()
-                // e match {
-                //     case IdentNode(s) => (stackFrame.st.lookupAll(s)).get.getType()
-                //     case ArrayElemNode(i, es) => e.typeId.get.getType()
-                //     case _ => throw new RuntimeException("Invalid Identifier")
-                // }
 
                 determinePrintType(nodeType)
             }

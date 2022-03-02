@@ -1108,7 +1108,10 @@ case class IdentNode(var s: String)(val pos: (Int, Int))
                           pos,
                           s"$s has not been defined in this scope"
                         )
-                    case i @ Some(_) => this.typeId = i
+                    case i @ Some(_) => {
+                        this.typeId = i
+                        s += "$"
+                    }
                 }
             }
             case i @ Some(_) => this.typeId = i

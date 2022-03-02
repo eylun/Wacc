@@ -9,28 +9,38 @@ class StackFrame(
     val st: SymbolTable
 ) {
     var tempOffset = 0;
+    private val varBytes = {
+        var sum = 0
+        st.dict.foreach {
+            case (k, Variable(t)) => {
+                sum += getTypeSize(t)
+            }
+            case _ =>
+        }
+        sum
+    }
 
-    val head: List[Instruction] = totalBytes match {
+    val head: List[Instruction] = varBytes match {
         case 0 => List.empty
         case _ =>
             List(
               SubInstr(
                 sp,
                 sp,
-                ImmOffset(totalBytes),
+                ImmOffset(varBytes),
                 false
               )
             )
     }
 
-    val tail: List[Instruction] = totalBytes match {
+    val tail: List[Instruction] = varBytes match {
         case 0 => List.empty
         case _ =>
             List(
               AddInstr(
                 sp,
                 sp,
-                ImmOffset(totalBytes),
+                ImmOffset(varBytes),
                 false
               )
             )
@@ -77,12 +87,20 @@ object StackFrame {
     private def generateOffsetMap(st: SymbolTable): Map[String, Int] = {
         var acc = totalBytes(st)
         val map = mutable.Map[String, Int]()
-        st.dict.foreach {
+        st.order.foreach {
             /** return is a only for semantic checking */
-            case ("return", _) =>
-            case (k, v) => {
+            case "return" =>
+            case k => {
+                val v = st.lookup(k).get
                 acc -= getTypeSize(v)
-                map += (k -> acc)
+                v match {
+                    /** Params have to be offset by 4 bytes due to LR being
+                      * pushed at the start of a function call
+                      */
+                    case Param(t) => map += (k -> (acc + WORD_SIZE))
+                    case _        => map += (k -> acc)
+                }
+
             }
         }
 
