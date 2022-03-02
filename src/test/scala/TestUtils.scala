@@ -149,7 +149,7 @@ object testUtils {
         ARMRepresentation(
           result.get,
           topLevelST,
-          cleanFilename(f.getPath()) + ".s"
+          cleanFilename(f.getName()) + ".s"
         )
     }
 
@@ -166,10 +166,9 @@ object testUtils {
             ByteArrayInputStream
         }
         import regexHelper._
-
         this.testCodegen(f)
 
-        s"arm-linux-gnueabi-gcc -o ${cleanFilename(f.getPath())} -mcpu=arm1176jzf-s -mtune=arm1176jzf-s ${cleanFilename(f.getPath())}.s" !
+        s"arm-linux-gnueabi-gcc -o ${cleanFilename(f.getName())} -mcpu=arm1176jzf-s -mtune=arm1176jzf-s ${cleanFilename(f.getName())}.s" !
 
         val (input, expectedOutput, expectedExit) = extractTest(f)
 
@@ -178,21 +177,23 @@ object testUtils {
         )
         val outputStream: OutputStream = new ByteArrayOutputStream()
         val actualExit =
-            s"qemu-arm -L /usr/arm-linux-gnueabi/ ${cleanFilename(f.getPath())}" #< inputStream #> outputStream !
+            s"qemu-arm -L /usr/arm-linux-gnueabi/ ${cleanFilename(f.getName())}" #< inputStream #> outputStream !
 
         val actualOutput = outputStream.toString().trim()
 
-        s"rm ${cleanFilename(f.getPath())}.s" !
+        s"rm ${cleanFilename(f.getName())}.s" !
 
-        s"rm ${cleanFilename(f.getPath())}" !
-
-        inputStream.reset()
+        s"rm ${cleanFilename(f.getName())}" !
 
         (expectedOutput.split("\n") zip actualOutput.split("\n")).foreach {
             case (expectedAddrRegex(el, er), actualAddrRegex(al, _, ar))
                 if el == al && er == ar =>
-            case (expectedRuntimeErrRegex, actualRuntimeErrRegex(_*)) =>
-            case (e, a) if e == a                                     =>
+            case (
+                  expectedDuoAddrRegex(el, em, er),
+                  actualDuoAddrRegex(al, _, am, _, ar)
+                ) if el == al && er == ar && em == am =>
+            case (expectedRuntimeErrRegex(_*), actualRuntimeErrRegex(_*)) =>
+            case (e, a) if e == a                                         =>
             case (e, a) =>
                 fail(
                   s"${f.getName()}\nExpected Output : [$e]\nActual Output   : [$a]"
@@ -229,6 +230,10 @@ object testUtils {
     object regexHelper {
         val expectedAddrRegex = raw"(.*)#addrs#(.*)".r
         val actualAddrRegex = raw"(.*)0x([0-9a-fA-F]+)(.*)".r
+
+        val expectedDuoAddrRegex = raw"(.*)#addrs#(.*)#addrs#(.*)".r
+        val actualDuoAddrRegex =
+            raw"(.*)0x([0-9a-fA-F]+)(.*)0x([0-9a-fA-F]+)(.*)".r
 
         val expectedRuntimeErrRegex = raw"#runtime_error#".r
         val actualRuntimeErrRegex = raw"(.*)Error(.*)".r

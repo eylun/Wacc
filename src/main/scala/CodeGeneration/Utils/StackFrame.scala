@@ -15,40 +15,25 @@ class StackFrame(
     val head: List[Instruction] = varBytes match {
         case 0 => List.empty
         case _ =>
-            List(
-              SubInstr(
-                sp,
-                sp,
-                ImmOffset(varBytes),
-                false
-              )
-            )
+            StackFrame
+                .splitOffsets(varBytes)
+                .map(n => SubInstr(sp, sp, ImmOffset(n), false))
     }
 
     val returnTail: List[Instruction] = returnOffset match {
         case 0 => List.empty
         case _ =>
-            List(
-              AddInstr(
-                sp,
-                sp,
-                ImmOffset(returnOffset),
-                false
-              )
-            )
+            StackFrame
+                .splitOffsets(returnOffset)
+                .map(n => AddInstr(sp, sp, ImmOffset(n), false))
     }
 
     val tail: List[Instruction] = varBytes match {
         case 0 => List.empty
         case _ =>
-            List(
-              AddInstr(
-                sp,
-                sp,
-                ImmOffset(varBytes),
-                false
-              )
-            )
+            StackFrame
+                .splitOffsets(varBytes)
+                .map(n => AddInstr(sp, sp, ImmOffset(n), false))
     }
 
     def addTempOffset(amount: Int): Unit = tempOffset += amount
@@ -134,6 +119,18 @@ object StackFrame {
 
         /** Convert to immutable map */
         map.toMap
+    }
+
+    private def splitOffsets(offset: Int): List[Int] = {
+        import scala.collection.immutable.List
+        val lb = mutable.ListBuffer[Int]()
+        val chunks = offset / OFFSET_MAX
+        val rem = offset % OFFSET_MAX
+        for (n <- 0 until chunks) {
+            lb += 1024
+        }
+        lb += rem
+        lb.toList
     }
 
 }
