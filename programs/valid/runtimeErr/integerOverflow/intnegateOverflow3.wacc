@@ -1,11 +1,12 @@
 # multiplying a negative integer
 
+# Input:
+
 # Output:
 # -20000
 # #runtime_error#
 
-# Exit:
-# 255
+# Exit: 255
 
 # Program:
 

@@ -25,11 +25,32 @@ object Helpers {
 
     def getStringDirective(s: String, idx: Int): List[Instruction] = {
 
+        /** Convert escape characters into printable escape characters */
+        val string = escapeConvert(s)
         List(
           Label(s"msg_$idx"),
           Directive(s"word ${s.length()}"),
-          Directive(s"ascii \"$s\"")
+          Directive(s"ascii \"$string\"")
         )
+    }
+
+    def escapeConvert(str: String): String = {
+        val sb = new StringBuilder
+        str.foreach { c =>
+            sb ++= (c match {
+                case '\u0000' => "\\u0000"
+                case '\b'     => "\\b"
+                case '\t'     => "\\t"
+                case '\n'     => "\\n"
+                case '\f'     => "\\f"
+                case '\r'     => "\\r"
+                case '\"'     => "\\\""
+                case '\''     => "\\'"
+                case '\\'     => "\\\\"
+                case _        => s"$c"
+            })
+        }
+        sb.toString()
     }
 
     def getArraySize(arrayType: Type, size: Int): Int = {
@@ -292,7 +313,7 @@ object Helpers {
           Label(s"msg_$idx"),
           Directive(s"word 83"),
           Directive(
-            s"ascii \"OverflowError: the result is too small/large to store in a 4-byte signed-integer.\\n\\0"
+            s"ascii \"OverflowError: the result is too small/large to store in a 4-byte signed-integer.\\n\\0\""
           )
         )
     }
@@ -342,7 +363,7 @@ object Helpers {
           Label(s"msg_$idx"),
           Directive(s"word 45"),
           Directive(
-            s"ascii \"DivideByZeroError: divide or modulo by zero\\n\\0"
+            s"ascii \"DivideByZeroError: divide or modulo by zero\\n\\0\""
           )
         )
     }
@@ -381,13 +402,13 @@ object Helpers {
           Label(s"msg_$negIdx"),
           Directive(s"word 44"),
           Directive(
-            s"ascii \"ArrayIndexOutOfBoundsError: negative index\\n\\0"
+            s"ascii \"ArrayIndexOutOfBoundsError: negative index\\n\\0\""
           ),
           /** Index Too Large Data Message */
           Label(s"msg_$largeIdx"),
           Directive(s"word 45"),
           Directive(
-            s"ascii \"ArrayIndexOutOfBoundsError: index too large\\n\\0"
+            s"ascii \"ArrayIndexOutOfBoundsError: index too large\\n\\0\""
           )
         )
     }
@@ -404,7 +425,7 @@ object Helpers {
           LoadInstr(r1, r4, ImmOffset(0)),
           CompareInstr(r0, RegOp(r1)),
           LoadLabelInstr(r0, s"msg_$largeIdx", Condition.CS),
-          BranchLinkInstr("p_throw_runetime_error", Condition.CS),
+          BranchLinkInstr("p_throw_runtime_error", Condition.CS),
           PopInstr(List(pc))
         )
     }
@@ -456,7 +477,7 @@ object Helpers {
         List(
           Label(s"msg_$idx"),
           Directive(s"word 4"),
-          Directive(s"ascii \"%c\\0\"")
+          Directive(s"ascii \" %c\\0\"")
         )
     }
     def printReadCharFunc(idx: Int): List[Instruction] = {
@@ -563,4 +584,5 @@ object Helpers {
             PFreePair, PCheckNullPointer = Value
     }
 
+    def cleanFilename(fn: String): String = fn.take(fn.lastIndexOf("."))
 }

@@ -1,9 +1,13 @@
 # evaluating string equality
 
+# Input:
+
 # Output:
 # true
 # false
 # false
+
+# Exit: 0
 
 # Program:
 

@@ -1,7 +1,11 @@
 # create and print a linked list using pairs
 
+# Input:
+
 # Output:
 # list = {1, 2, 4, 11}
+
+# Exit: 0
 
 # Program:
 

@@ -1,15 +1,13 @@
 import constants._
 
 object CodeGenerator {
-    // TODO: Call transProg on progNode whenever that is ready
     def apply(progNode: ProgramNode, st: SymbolTable)(implicit
         collector: WaccBuffer
     ): List[Instruction] = {
-        collector.setupMain()
         val mainStackFrame = StackFrame(st)
         progNode.flist.foreach(f => {
             val FunctionId(_, _, funcSt) = st.lookup(f.i.s).get
-            transFunction(f, mainStackFrame.join(StackFrame(funcSt), funcSt))
+            transFunction(f, StackFrame(funcSt))
         })
         collector.addStatement(List(Label("main"), PushInstr(List(lr))))
 

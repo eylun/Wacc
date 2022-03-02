@@ -1,12 +1,13 @@
 # integer underflow
 
+# Input:
+
 # Output:
 # -2147483647
 # -2147483648
 # #runtime_error#
 
-# Exit:
-# 255
+# Exit: 255
 
 # Program:
 

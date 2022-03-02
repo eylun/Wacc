@@ -1,7 +1,11 @@
 # basic array (reference) printing
 
+# Input:
+
 # Output:
 # Printing an array variable gives an address, such as #addrs#
+
+# Exit: 0
 
 # Program:
 

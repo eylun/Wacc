@@ -1,13 +1,13 @@
 import java.io.{File, BufferedWriter, FileWriter}
 object ARMRepresentation extends Representation {
 
-    implicit val collector: WaccBuffer = new WaccBuffer
-
     def apply(
         progNode: ProgramNode,
         st: SymbolTable,
         filename: String
     ): Unit = {
+        implicit val collector: WaccBuffer = new WaccBuffer
+        collector.setupMain()
         val bw = new BufferedWriter(new FileWriter(new File(filename)))
         CodeGenerator(progNode, st).foreach(l => bw.write(generateLine(l)))
         bw.close()
@@ -17,40 +17,40 @@ object ARMRepresentation extends Representation {
     // relevant assembly code
     def generateLine(instr: Instruction): String =
         s"${instr match {
-            case Label(labelName)        => s"$labelName:"
-            case Directive(name)         => s".$name"
-            case PushInstr(reg)          => s"\tPUSH {${reg.mkString(", ")}}"
-            case PopInstr(reg)           => s"\tPOP {${reg.mkString(", ")}}"
-            
+            case Label(labelName) => s"$labelName:"
+            case Directive(name)  => s".$name"
+            case PushInstr(reg)   => s"\tPUSH {${reg.mkString(", ")}}"
+            case PopInstr(reg)    => s"\tPOP {${reg.mkString(", ")}}"
+
             /* Logical Instructions */
-            case AndInstr(dst, fst, snd, false, cond) => 
+            case AndInstr(dst, fst, snd, false, cond) =>
                 s"\tAND$cond $dst, $fst, $snd"
-            case AndInstr(dst, fst, snd, true, cond) => 
+            case AndInstr(dst, fst, snd, true, cond) =>
                 s"\tAND${cond}S $dst, $fst, $snd"
-            case XorInstr(dst, fst, snd, false, cond) => 
+            case XorInstr(dst, fst, snd, false, cond) =>
                 s"\tEOR$cond $dst, $fst, $snd"
-            case XorInstr(dst, fst, snd, true, cond) => 
+            case XorInstr(dst, fst, snd, true, cond) =>
                 s"\tEOR${cond}S $dst, $fst, $snd"
-            case OrInstr(dst, fst, snd, false, cond) => 
+            case OrInstr(dst, fst, snd, false, cond) =>
                 s"\tORR$cond $dst, $fst, $snd"
-            case OrInstr(dst, fst, snd, true, cond) => 
+            case OrInstr(dst, fst, snd, true, cond) =>
                 s"\tORR${cond}S $dst, $fst, $snd"
-            
+
             /* Arithmetic Instructions*/
-            case AddInstr(dst, fst, snd, true)    => s"\tADDS $dst, $fst, $snd"
-            case AddInstr(dst, fst, snd, false)   => s"\tADD $dst $fst $snd"
-            case SubInstr(dst, fst, snd, true)    => s"\tSUBS $dst, $fst, $snd"
-            case SubInstr(dst, fst, snd, false)   => s"\tSUB $dst, $fst, $snd"
+            case AddInstr(dst, fst, snd, true)  => s"\tADDS $dst, $fst, $snd"
+            case AddInstr(dst, fst, snd, false) => s"\tADD $dst, $fst, $snd"
+            case SubInstr(dst, fst, snd, true)  => s"\tSUBS $dst, $fst, $snd"
+            case SubInstr(dst, fst, snd, false) => s"\tSUB $dst, $fst, $snd"
             case ReverseSubInstr(dst, fst, snd, true) =>
                 s"\tRSBS $dst, $fst, $snd"
             case ReverseSubInstr(dst, fst, snd, false) =>
                 s"\tRSB $dst, $fst, $snd"
-            case SMullInstr(rdLo, rdHi, fst, snd, true) => 
+            case SMullInstr(rdLo, rdHi, fst, snd, true) =>
                 s"\tSMULLS $rdLo, $rdHi, $fst, $snd"
-            case SMullInstr(rdLo, rdHi, fst, snd, false) => 
+            case SMullInstr(rdLo, rdHi, fst, snd, false) =>
                 s"\tSMULL $rdLo, $rdHi, $fst, $snd"
 
-            case MoveInstr(dst, src, cond)        => s"\tMOV$cond $dst, $src"
+            case MoveInstr(dst, src, cond) => s"\tMOV$cond $dst, $src"
 
             /* Load Instructions */
             case LoadLabelInstr(dst, label, cond) => s"\tLDR$cond $dst, =$label"
@@ -63,7 +63,7 @@ object ARMRepresentation extends Representation {
                 s"\tLDRSB$cond $dst, [$src]"
             case LoadRegSignedByte(dst, src, ImmOffset(offset), cond) =>
                 s"\tLDRSB$cond $dst, [$src, #$offset]"
-                
+
             /** Store Instructions */
             case StoreInstr(src, dst, ImmOffset(0), true) =>
                 s"\tSTR $src, [$dst]!"

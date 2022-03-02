@@ -1,5 +1,7 @@
 # variable scoping test that redefines a variable within a while-loop
 
+# Input:
+
 # Output:
 # counting... 5
 # counting... 4
@@ -7,6 +9,8 @@
 # counting... 2
 # counting... 1
 # 0 Boom!
+
+# Exit: 0
 
 # Program:
 

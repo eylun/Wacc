@@ -1,5 +1,7 @@
 # print a fixed size triangle
 
+# Input:
+
 # Output:
 # --------
 # -------
@@ -9,6 +11,8 @@
 # ---
 # --
 # -
+
+# Exit: 0
 
 # Program:
 

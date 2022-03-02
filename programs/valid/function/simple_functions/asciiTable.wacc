@@ -1,5 +1,7 @@
 # print out a lookup table for Ascii character representations
 
+# Input:
+
 # Output:
 # Ascii character lookup table:
 # -------------
@@ -100,6 +102,7 @@
 # |  126 = ~  |
 # -------------
 
+# Exit: 0
 
 # Program:
 

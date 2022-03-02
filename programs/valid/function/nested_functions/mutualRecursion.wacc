@@ -1,5 +1,7 @@
 # a pair of mutually recursive functions
 
+# Input:
+
 # Output:
 # r1: sending 8
 # r2: received 8
@@ -17,6 +19,8 @@
 # r2: received 2
 # r1: sending 1
 # r2: received 1
+
+# Exit: 0
 
 # Program:
 

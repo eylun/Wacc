@@ -1,7 +1,11 @@
 # simple array assignment and lookup
 
+# Input:
+
 # Output:
 # 42
+
+# Exit: 0
 
 # Program:
 
@@ -10,4 +14,3 @@ begin
   a[0] = 42 ;
   println a[0]
 end
-

@@ -1,9 +1,13 @@
 # echo the user's input char
 
+# Input:
+# a
+
 # Output:
 # enter a character to echo
-# #input#
-# #output#
+# a
+
+# Exit: 0
 
 # Program:
 

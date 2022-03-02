@@ -1,8 +1,12 @@
 # Use a character as a loop condition. Enter the loop once only, then exit the loop.
 
+# Input:
+
 # Output:
 # Change c
 # Should print "Change c" once before.
+
+# Exit: 0
 
 # Program:
 

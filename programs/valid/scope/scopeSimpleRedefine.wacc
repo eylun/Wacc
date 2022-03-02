@@ -1,8 +1,12 @@
 # variable scoping test that redefines a variable
 
+# Input:
+
 # Output:
 # true
 # 12
+
+# Exit: 0
 
 # Program:
 

@@ -1,7 +1,10 @@
 # basic array declaration and assignment
 
+# Input:
+
 # Output:
-# #empty#
+
+# Exit: 0
 
 # Program:
 
@@ -9,4 +12,3 @@ begin
   int[] a = [0];
   a[0] = 2
 end
-

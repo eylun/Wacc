@@ -1,10 +1,12 @@
 # tests whether the compiler can handle long expressions
 
-# Output:
-# #empty#
+# Input:
 
-# Exit:
-# 10
+# Output:
+
+# Exit: 10
+
+# Program:
 
 begin
 

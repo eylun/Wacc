@@ -1,9 +1,26 @@
 # print a user-specified sized triangle
 
+# Input:
+# 14
+
 # Output:
-# Please enter the size of the triangle to print:
-# #input#
-# #output#
+# Please enter the size of the triangle to print: 
+# --------------
+# -------------
+# ------------
+# -----------
+# ----------
+# ---------
+# --------
+# -------
+# ------
+# -----
+# ----
+# ---
+# --
+# -
+
+# Exit: 0
 
 # Program:
 

@@ -1,7 +1,11 @@
 # subtraction expressions should not be whitespace sensitive
 
+# Input:
+
 # Output:
 # -1
+
+# Exit: 0
 
 # Program:
 

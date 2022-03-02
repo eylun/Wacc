@@ -1,20 +1,26 @@
 # construct a pair from supplied user input
 
+# Input:
+# c
+# 23
+
 # Output:
-# Please enter the first element (char): #input#
-# Please enter the second element (int): #input#
-# The first element was #output#
-# The second element was #output#
+# Please enter the first element (char): 
+# Please enter the second element (int): 
+# The first element was c
+# The second element was 23
+
+# Exit: 0
 
 # Program:
 
 begin
 	pair(char, int) p = newpair('\0', 0) ;
-	print "Please enter the first element (char): " ;
+	println "Please enter the first element (char): " ;
   	char c = '0';
 	read c ;
   	fst p = c ;
-	print "Please enter the second element (int): " ;
+	println "Please enter the second element (int): " ;
 	int i = 0 ;
 	read i ;
 	snd p = i ;

@@ -1,9 +1,13 @@
 # echo the user's input int
 
+# Input:
+# 43
+
 # Output:
 # enter an integer to echo
-# #input#
-# #output#
+# 43
+
+# Exit: 0
 
 # Program:
 

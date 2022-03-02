@@ -1,5 +1,7 @@
 # a function with varied inputs
 
+# Input:
+
 # Output:
 # a is 42
 # b is true
@@ -8,6 +10,8 @@
 # e is #addrs#
 # f is #addrs#
 # answer is g
+
+# Exit: 0
 
 # Program:
 

@@ -1,8 +1,12 @@
 # program with function that has same parameter name as function 
 # and also returns to same named variable
 
+# Input:
+
 # Output:
 # 99
+
+# Exit: 0
 
 # Program:
 

@@ -6,6 +6,193 @@
 # 
 # Integers those mapped to the same index are stored on the list (in any order) in that index.
 
+# Input:
+# a
+# 5
+# a
+# 2
+# a
+# 50
+# c
+# d
+# e
+# 5
+# d
+# f
+# d
+# g
+
+# Output:
+# ===========================================================
+# ===========================================
+# ========== Hash Table Program =============
+# ===========================================
+# =                                         =
+# = Please choose the following options:    =
+# =                                         =
+# = a: insert an integer                    =
+# = b: find an integer                      =
+# = c: count the integers                   =
+# = d: print all integers                   =
+# = e: remove an integer                    =
+# = f: remove all integers                  =
+# = g: exit                                 =
+# =                                         =
+# ===========================================
+# Your decision: Please enter an integer to insert: You have entered: 5
+# Successfully insert it. The integer is new.
+# ===========================================
+# ========== Hash Table Program =============
+# ===========================================
+# =                                         =
+# = Please choose the following options:    =
+# =                                         =
+# = a: insert an integer                    =
+# = b: find an integer                      =
+# = c: count the integers                   =
+# = d: print all integers                   =
+# = e: remove an integer                    =
+# = f: remove all integers                  =
+# = g: exit                                 =
+# =                                         =
+# ===========================================
+# Your decision: Please enter an integer to insert: You have entered: 2
+# Successfully insert it. The integer is new.
+# ===========================================
+# ========== Hash Table Program =============
+# ===========================================
+# =                                         =
+# = Please choose the following options:    =
+# =                                         =
+# = a: insert an integer                    =
+# = b: find an integer                      =
+# = c: count the integers                   =
+# = d: print all integers                   =
+# = e: remove an integer                    =
+# = f: remove all integers                  =
+# = g: exit                                 =
+# =                                         =
+# ===========================================
+# Your decision: Please enter an integer to insert: You have entered: 50
+# Successfully insert it. The integer is new.
+# ===========================================
+# ========== Hash Table Program =============
+# ===========================================
+# =                                         =
+# = Please choose the following options:    =
+# =                                         =
+# = a: insert an integer                    =
+# = b: find an integer                      =
+# = c: count the integers                   =
+# = d: print all integers                   =
+# = e: remove an integer                    =
+# = f: remove all integers                  =
+# = g: exit                                 =
+# =                                         =
+# ===========================================
+# Your decision: There are 3 integers.
+# ===========================================
+# ========== Hash Table Program =============
+# ===========================================
+# =                                         =
+# = Please choose the following options:    =
+# =                                         =
+# = a: insert an integer                    =
+# = b: find an integer                      =
+# = c: count the integers                   =
+# = d: print all integers                   =
+# = e: remove an integer                    =
+# = f: remove all integers                  =
+# = g: exit                                 =
+# =                                         =
+# ===========================================
+# Your decision: Here are the integers: 2 5 50 
+# ===========================================
+# ========== Hash Table Program =============
+# ===========================================
+# =                                         =
+# = Please choose the following options:    =
+# =                                         =
+# = a: insert an integer                    =
+# = b: find an integer                      =
+# = c: count the integers                   =
+# = d: print all integers                   =
+# = e: remove an integer                    =
+# = f: remove all integers                  =
+# = g: exit                                 =
+# =                                         =
+# ===========================================
+# Your decision: Please enter an integer to remove: You have entered: 5
+# The integer has been removed.
+# ===========================================
+# ========== Hash Table Program =============
+# ===========================================
+# =                                         =
+# = Please choose the following options:    =
+# =                                         =
+# = a: insert an integer                    =
+# = b: find an integer                      =
+# = c: count the integers                   =
+# = d: print all integers                   =
+# = e: remove an integer                    =
+# = f: remove all integers                  =
+# = g: exit                                 =
+# =                                         =
+# ===========================================
+# Your decision: Here are the integers: 2 50 
+# ===========================================
+# ========== Hash Table Program =============
+# ===========================================
+# =                                         =
+# = Please choose the following options:    =
+# =                                         =
+# = a: insert an integer                    =
+# = b: find an integer                      =
+# = c: count the integers                   =
+# = d: print all integers                   =
+# = e: remove an integer                    =
+# = f: remove all integers                  =
+# = g: exit                                 =
+# =                                         =
+# ===========================================
+# Your decision: All integers have been removed.
+# ===========================================
+# ========== Hash Table Program =============
+# ===========================================
+# =                                         =
+# = Please choose the following options:    =
+# =                                         =
+# = a: insert an integer                    =
+# = b: find an integer                      =
+# = c: count the integers                   =
+# = d: print all integers                   =
+# = e: remove an integer                    =
+# = f: remove all integers                  =
+# = g: exit                                 =
+# =                                         =
+# ===========================================
+# Your decision: Here are the integers: 
+# ===========================================
+# ========== Hash Table Program =============
+# ===========================================
+# =                                         =
+# = Please choose the following options:    =
+# =                                         =
+# = a: insert an integer                    =
+# = b: find an integer                      =
+# = c: count the integers                   =
+# = d: print all integers                   =
+# = e: remove an integer                    =
+# = f: remove all integers                  =
+# = g: exit                                 =
+# =                                         =
+# ===========================================
+# Your decision: Goodbye Human
+
+# Exit: 0
+
+# Program:
+
 begin
 
 	######################### Functions for Hash Table Interface ###############################

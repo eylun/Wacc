@@ -1,7 +1,11 @@
 # print a pair of null pairs 
 
+# Input:
+
 # Output:
 # #addrs# = ((nil),(nil))
+
+# Exit: 0
 
 # Program:
 

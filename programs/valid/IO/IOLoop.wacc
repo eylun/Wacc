@@ -1,12 +1,25 @@
 # simple input/output loop
 
+# Input:
+# 34
+# Y
+# 3
+# Y
+# 21
+# N
+
 # Output:
-# Please input an integer: #input#
-# echo input: #output#
+# Please input an integer: echo input: 34
 # Do you want to continue entering input?
 # (enter Y for 'yes' and N for 'no')
-# #input#
-# ...
+# Please input an integer: echo input: 3
+# Do you want to continue entering input?
+# (enter Y for 'yes' and N for 'no')
+# Please input an integer: echo input: 21
+# Do you want to continue entering input?
+# (enter Y for 'yes' and N for 'no')
+
+# Exit: 0
 
 # Program:
 

@@ -1,5 +1,7 @@
 # detailed battery of character comparison tests
 
+# Input:
+
 # Output:
 # false
 # true
@@ -7,6 +9,8 @@
 # true
 # false
 # false
+
+# Exit: 0
 
 # Program:
 

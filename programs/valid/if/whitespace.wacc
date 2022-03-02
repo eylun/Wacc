@@ -1,7 +1,11 @@
 # Whitespace only important between keyword and variable tokens
 
+# Input:
+
 # Output:
 # 1
+
+# Exit: 0
 
 # Program:
 

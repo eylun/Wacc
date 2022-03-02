@@ -1,8 +1,12 @@
 # null pair assignment
 
+# Input:
+
 # Output:
 # (nil)
 # (nil)
+
+# Exit: 0
 
 # Program:
 
@@ -12,5 +16,3 @@ begin
   p = null ;
   println p
 end
-
-

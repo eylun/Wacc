@@ -1,8 +1,12 @@
 # basic array declaration and assignment
 
+# Input:
+
 # Output:
 # 3
 # 3
+
+# Exit: 0
 
 # Program:
 
@@ -13,4 +17,3 @@ begin
   println c[0][2] ;
   println c[1][0]
 end
-

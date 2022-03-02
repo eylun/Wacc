@@ -1,9 +1,13 @@
 # a simple negation function definition and usage
 
+# Input:
+
 # Output:
 # true
 # false
 # true
+
+# Exit: 0
 
 # Program:
 

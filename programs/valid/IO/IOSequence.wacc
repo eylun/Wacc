@@ -1,8 +1,13 @@
 # basic input/output sequence
 
+# Input:
+# 2031
+
 # Output:
-# Please input an integer: #input#
-# You input: #output#
+# Please input an integer: You input: 2031
+# 
+
+# Exit: 0
 
 # Program:
 

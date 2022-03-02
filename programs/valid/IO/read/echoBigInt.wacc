@@ -1,9 +1,13 @@
 # echo the user's input int
 
+# Input:
+# 2147483640
+
 # Output:
 # enter an integer to echo
-# #input#
-# #output#
+# 2147483640
+
+# Exit: 0
 
 # Program:
 

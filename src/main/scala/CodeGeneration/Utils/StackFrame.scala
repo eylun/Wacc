@@ -6,31 +6,46 @@ import scala.collection.immutable.Map
 class StackFrame(
     val offsetMap: Map[String, Int],
     val totalBytes: Int,
-    val st: SymbolTable
+    val st: SymbolTable,
+    val returnOffset: Int
 ) {
     var tempOffset = 0;
+    val varBytes = StackFrame.varBytes(offsetMap, st)
 
-    val head: List[Instruction] = totalBytes match {
+    val head: List[Instruction] = varBytes match {
         case 0 => List.empty
         case _ =>
             List(
               SubInstr(
                 sp,
                 sp,
-                ImmOffset(totalBytes),
+                ImmOffset(varBytes),
                 false
               )
             )
     }
 
-    val tail: List[Instruction] = totalBytes match {
+    val returnTail: List[Instruction] = returnOffset match {
         case 0 => List.empty
         case _ =>
             List(
               AddInstr(
                 sp,
                 sp,
-                ImmOffset(totalBytes),
+                ImmOffset(returnOffset),
+                false
+              )
+            )
+    }
+
+    val tail: List[Instruction] = varBytes match {
+        case 0 => List.empty
+        case _ =>
+            List(
+              AddInstr(
+                sp,
+                sp,
+                ImmOffset(varBytes),
                 false
               )
             )
@@ -47,7 +62,12 @@ class StackFrame(
                 newMap += (k -> (v + sf.totalBytes + tempOffset))
             }
         }
-        StackFrame((newMap ++ sf.offsetMap).toMap, sf.totalBytes, st)
+        StackFrame(
+          (newMap ++ sf.offsetMap).toMap,
+          sf.totalBytes,
+          st,
+          varBytes + StackFrame.varBytes(sf.offsetMap, st)
+        )
     }
 
     def getOffset(ident: String): Int = {
@@ -59,11 +79,18 @@ class StackFrame(
     }
 }
 object StackFrame {
-    def apply(st: SymbolTable) =
-        new StackFrame(generateOffsetMap(st), totalBytes(st), st)
+    def apply(st: SymbolTable) = {
+        val offsetMap = generateOffsetMap(st)
+        new StackFrame(offsetMap, totalBytes(st), st, varBytes(offsetMap, st))
+    }
 
-    def apply(offsetMap: Map[String, Int], totalBytes: Int, st: SymbolTable) =
-        new StackFrame(offsetMap, totalBytes, st)
+    def apply(
+        offsetMap: Map[String, Int],
+        totalBytes: Int,
+        st: SymbolTable,
+        varBytes: Int
+    ) =
+        new StackFrame(offsetMap, totalBytes, st, varBytes)
 
     private def totalBytes(st: SymbolTable) = {
         var sum = 0
@@ -74,15 +101,34 @@ object StackFrame {
         sum
     }
 
+    private def varBytes(offsetMap: Map[String, Int], st: SymbolTable): Int = {
+        var sum = 0
+        offsetMap.foreach { case (k, _) =>
+            st.lookup(k) match {
+                case Some(Variable(t)) => sum += getTypeSize(t)
+                case _                 =>
+            }
+        }
+        sum
+    }
+
     private def generateOffsetMap(st: SymbolTable): Map[String, Int] = {
         var acc = totalBytes(st)
         val map = mutable.Map[String, Int]()
-        st.dict.foreach {
+        st.order.foreach {
             /** return is a only for semantic checking */
-            case ("return", _) =>
-            case (k, v) => {
+            case "return" =>
+            case k => {
+                val v = st.lookup(k).get
                 acc -= getTypeSize(v)
-                map += (k -> acc)
+                v match {
+                    /** Params have to be offset by 4 bytes due to LR being
+                      * pushed at the start of a function call
+                      */
+                    case Param(t) => map += (k -> (acc + WORD_SIZE))
+                    case _        => map += (k -> acc)
+                }
+
             }
         }
 
