@@ -21,12 +21,12 @@ object transRHS {
                           )
                         )
                     }
-                    case ArrayType(t, _, d) => {
+                    case a @ ArrayType(_, _, _) => {
                         collector.addStatement(
                           List(
                             MoveInstr(
                               Reg(0),
-                              ImmOffset(getArraySize(t, es.length))
+                              ImmOffset(getArraySize(a, es.length))
                             )
                           )
                         )
@@ -43,28 +43,17 @@ object transRHS {
                 es.foreach { e =>
                     {
                         transExpression(e, stackFrame)
-                        e.typeId.get.getType() match {
-                            case CharType() | BoolType() => {
-                                collector.addStatement(
-                                  List(
-                                    StoreByteInstr(
-                                      Reg(0),
-                                      Reg(3),
-                                      ImmOffset(ofs)
-                                    )
-                                  )
-                                )
-                                ofs += BIT_SIZE
-                            }
-                            case _ => {
-                                collector.addStatement(
-                                  List(
-                                    StoreInstr(Reg(0), Reg(3), ImmOffset(ofs))
-                                  )
-                                )
-                                ofs += WORD_SIZE
-                            }
-                        }
+                        collector.addStatement(
+                          List(
+                            determineStoreInstr(
+                              e.typeId.get.getType(),
+                              r0,
+                              r3,
+                              ofs
+                            )
+                          )
+                        )
+                        ofs += getTypeSize(e.typeId.get.getType())
                     }
                 }
                 collector.addStatement(
@@ -152,14 +141,13 @@ object transRHS {
                           case SecondPairElemNode(s) => {
                               transExpression(s, stackFrame)
                               List(
-                                LoadInstr(
-                                  r0,
-                                  r0,
-                                  ImmOffset(WORD_SIZE)
-                                )
+                                LoadInstr(r0, r0, ImmOffset(WORD_SIZE))
                               )
                           }
-                      }) ++ List(LoadInstr(r0, r0, ImmOffset(0)))
+                      })
+                )
+                collector.addStatement(
+                  List(determineLoadInstr(e.typeId.get.getType(), r0, r0, 0))
                 )
             }
         }

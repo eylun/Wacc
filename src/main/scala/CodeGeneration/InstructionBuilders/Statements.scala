@@ -45,20 +45,14 @@ object transStatement {
                     case IdentNode(s) => {
                         transRHS(r, stackFrame)
                         collector.addStatement(
-                          List(stackFrame.st.lookup(s).get.getType() match {
-                              case CharType() | BoolType() =>
-                                  StoreByteInstr(
-                                    Reg(0),
-                                    sp,
-                                    ImmOffset(stackFrame.getOffset(s))
-                                  )
-                              case _ =>
-                                  StoreInstr(
-                                    Reg(0),
-                                    sp,
-                                    ImmOffset(stackFrame.getOffset(s))
-                                  )
-                          })
+                          List(
+                            determineStoreInstr(
+                              stackFrame.st.lookup(s).get.getType(),
+                              r0,
+                              sp,
+                              stackFrame.getOffset(s)
+                            )
+                          )
                         )
                     }
                     case ae @ ArrayElemNode(IdentNode(s), es) => {
@@ -76,9 +70,8 @@ object transStatement {
                           )
                         )
                         //consider using zipWithIndex
-                        var count = 0
-                        es.foreach { e =>
-                            {
+                        es.zipWithIndex.foreach {
+                            case (e, idx) => {
                                 transExpression(e, stackFrame)
                                 collector.addStatement(
                                   List(
@@ -94,9 +87,8 @@ object transStatement {
                                     )
                                   )
                                 )
-                                count = count + 1
                                 collector.addStatement(
-                                  if (count == es.length) {
+                                  if (idx == es.length - 1) {
                                       List(
                                         ae.typeId.get.getType() match {
                                             case CharType() | BoolType() =>
@@ -112,22 +104,6 @@ object transStatement {
                                                   Reg(4),
                                                   LSLRegOp(Reg(0), ShiftImm(2)),
                                                   false
-                                                )
-                                        },
-                                        MoveInstr(Reg(1), RegOp(Reg(4))),
-                                        PopInstr(List(Reg(0), Reg(4))),
-                                        ae.typeId.get.getType() match {
-                                            case CharType() | BoolType() =>
-                                                StoreByteInstr(
-                                                  Reg(0),
-                                                  Reg(1),
-                                                  ImmOffset(0)
-                                                )
-                                            case _ =>
-                                                StoreInstr(
-                                                  Reg(0),
-                                                  Reg(1),
-                                                  ImmOffset(0)
                                                 )
                                         }
                                       )
@@ -146,44 +122,78 @@ object transStatement {
                             }
                         }
                         stackFrame.dropTempOffset(ARRAY_LHS_OFFSET)
+                        collector.addStatement(
+                          List(
+                            MoveInstr(Reg(1), RegOp(Reg(4))),
+                            PopInstr(List(Reg(0), Reg(4))),
+                            determineStoreInstr(
+                              ae.typeId.get.getType(),
+                              r0,
+                              r1,
+                              0
+                            )
+                          )
+                        )
 
                     }
                     case l: PairElemNode => {
 
                         collector.insertUtil(UtilFlag.PCheckNullPointer)
-                        collector.addStatement(List(PushInstr(List(r0))))
                         transRHS(r, stackFrame)
+                        stackFrame.addTempOffset(WORD_SIZE)
                         collector.addStatement(
-                          List(BranchLinkInstr("p_check_null_pointer")) ++
-                              (l match {
-                                  case FirstPairElemNode(e) => {
-                                      List(
-                                        AddInstr(r0, r0, ImmOffset(0), false)
-                                      )
-                                  }
-                                  case SecondPairElemNode(e) => {
-                                      List(
-                                        AddInstr(
-                                          r0,
-                                          r0,
-                                          ImmOffset(WORD_SIZE),
-                                          false
-                                        )
-                                      )
-                                  }
-                              }) ++ List(
-                                LoadInstr(r0, r0, ImmOffset(0)),
-                                PushInstr(List(r0)),
-                                BranchLinkInstr("free"),
-                                MoveInstr(r0, ImmOffset(WORD_SIZE)),
-                                BranchLinkInstr("malloc"),
-                                PopInstr(List(r1)),
-                                StoreInstr(r0, r1, ImmOffset(0)),
-                                MoveInstr(r1, RegOp(r0)),
-                                PopInstr(List(r0)),
-                                StoreInstr(r0, r1, ImmOffset(0))
-                              )
+                          List(
+                            PushInstr(List(r0))
+                          )
                         )
+                        l match {
+                            case FirstPairElemNode(e) => {
+                                transExpression(e, stackFrame)
+                                collector.addStatement(
+                                  List(
+                                    BranchLinkInstr("p_check_null_pointer"),
+                                    AddInstr(r0, r0, ImmOffset(0), false)
+                                  )
+                                )
+                            }
+                            case SecondPairElemNode(e) => {
+                                transExpression(e, stackFrame)
+                                collector.addStatement(
+                                  List(
+                                    BranchLinkInstr("p_check_null_pointer"),
+                                    AddInstr(
+                                      r0,
+                                      r0,
+                                      ImmOffset(WORD_SIZE),
+                                      false
+                                    )
+                                  )
+                                )
+                            }
+                        }
+                        collector.addStatement(
+                          List(
+                            PushInstr(List(r0)),
+                            LoadInstr(r0, r0, ImmOffset(0)),
+                            BranchLinkInstr("free"),
+                            MoveInstr(
+                              r0,
+                              ImmOffset(getTypeSize(l.typeId.get.getType()))
+                            ),
+                            BranchLinkInstr("malloc"),
+                            PopInstr(List(r1)),
+                            StoreInstr(r0, r1, ImmOffset(0)),
+                            MoveInstr(r1, RegOp(r0)),
+                            PopInstr(List(r0)),
+                            determineStoreInstr(
+                              l.typeId.get.getType(),
+                              r0,
+                              r1,
+                              0
+                            )
+                          )
+                        )
+                        stackFrame.dropTempOffset(WORD_SIZE)
                     }
                 }
             }

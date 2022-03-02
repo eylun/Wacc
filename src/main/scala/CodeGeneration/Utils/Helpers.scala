@@ -32,10 +32,12 @@ object Helpers {
         )
     }
 
-    def getArraySize(t: Type, size: Int): Int = {
-        t match {
-            case BoolType() | CharType() => BIT_SIZE * size + WORD_SIZE
-            case _                       => WORD_SIZE * size + WORD_SIZE
+    def getArraySize(arrayType: Type, size: Int): Int = {
+        val ArrayType(t, _, d) = arrayType
+        (t, d) match {
+            case (BoolType(), 1) | (CharType(), 1) =>
+                BIT_SIZE * size + WORD_SIZE
+            case _ => WORD_SIZE * size + WORD_SIZE
         }
     }
 
@@ -64,6 +66,29 @@ object Helpers {
         }
         collector.addStatement(List(PushInstr(List(Reg(0)))))
         stackFrame.addTempOffset(WORD_SIZE)
+    }
+
+    def determineStoreInstr(
+        t: Type,
+        src: Register,
+        dst: Register,
+        offset: Int,
+        writeBack: Boolean = false
+    ): Instruction = t match {
+        case CharType() | BoolType() =>
+            StoreByteInstr(src, dst, ImmOffset(offset), writeBack)
+        case _ => StoreInstr(src, dst, ImmOffset(offset), writeBack)
+    }
+    def determineLoadInstr(
+        t: Type,
+        src: Register,
+        dst: Register,
+        offset: Int,
+        cond: Condition.Condition = Condition.AL
+    ): Instruction = t match {
+        case CharType() | BoolType() =>
+            LoadRegSignedByte(src, dst, ImmOffset(offset), cond)
+        case _ => LoadInstr(src, dst, ImmOffset(offset), cond)
     }
 
     /** PRINT STATEMENT HELPERS */
