@@ -460,4 +460,90 @@ class CodeGenSpec extends AnyFlatSpec {
             ))
         )
     }
+    it should "translate modulus expressions" in {
+        // Simple expression (230 % 9)
+        reset()
+        testExpr(
+            Mod(IntLiterNode(230)(0,0), IntLiterNode(9)(0,0))(0,0),
+
+            expectedDataSection(List(
+                expectedDivideByZeroDirective,
+                expectedPrintStrDirective
+            )) ++
+            expectedTextSection(List(
+                List(
+                    LoadImmIntInstr(r0, 230),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 9),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    BranchLinkInstr("p_check_divide_by_zero"),
+                    BranchLinkInstr("__aeabi_idivmod"),
+                    MoveInstr(r0, RegOp(r1))
+                ),
+                expectedDivideByZeroText(0),
+                expectedRuntimeErrText,
+                expectedPrintStrText(1)
+            ))
+        )
+
+        // Nested expression (10 % 9 % 8 % 7 % 6)
+        reset()
+        testExpr(
+            Mod(
+                Mod(
+                    Mod(
+                        Mod(
+                            IntLiterNode(10)(0,0), 
+                            IntLiterNode(9)(0,0)
+                        )(0,0),
+                        IntLiterNode(8)(0,0)
+                    )(0,0),
+                    IntLiterNode(7)(0,0)
+                )(0,0),
+                IntLiterNode(6)(0,0)                
+            )(0,0),
+
+            expectedDataSection(List(
+                expectedDivideByZeroDirective,
+                expectedPrintStrDirective
+            )) ++
+            expectedTextSection(List(
+                List(
+                    LoadImmIntInstr(r0, 10),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 9),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    BranchLinkInstr("p_check_divide_by_zero"),
+                    BranchLinkInstr("__aeabi_idivmod"),
+                    MoveInstr(r0, RegOp(r1)),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 8),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    BranchLinkInstr("p_check_divide_by_zero"),
+                    BranchLinkInstr("__aeabi_idivmod"),
+                    MoveInstr(r0, RegOp(r1)),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 7),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    BranchLinkInstr("p_check_divide_by_zero"),
+                    BranchLinkInstr("__aeabi_idivmod"),
+                    MoveInstr(r0, RegOp(r1)),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 6),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    BranchLinkInstr("p_check_divide_by_zero"),
+                    BranchLinkInstr("__aeabi_idivmod"),
+                    MoveInstr(r0, RegOp(r1))
+                ),
+                expectedDivideByZeroText(0),
+                expectedRuntimeErrText,
+                expectedPrintStrText(1)
+            ))
+        )
+    }
 }
