@@ -45,7 +45,7 @@ case class SubInstr(
 
 case class ReverseSubInstr(
     dst: Register,
-    fstOp: Register, 
+    fstOp: Register,
     sndOp: SecondOperand,
     setFlags: Boolean = false
 ) extends Instruction
@@ -101,7 +101,7 @@ case class StoreByteInstr(
 ) extends Instruction
 
 case class MoveInstr(
-    dst: Register, 
+    dst: Register,
     src: SecondOperand,
     condition: Condition.Condition = Condition.AL
 ) extends Instruction
@@ -119,26 +119,26 @@ case class BranchLinkInstr(
 
 /** Logic Operations */
 case class AndInstr(
-    dst: Register, 
-    src: Register, 
+    dst: Register,
+    src: Register,
     op2: SecondOperand,
     setFlags: Boolean = false,
     cond: Condition.Condition = Condition.AL
 ) extends Instruction
 
 case class XorInstr(
-    dst: Register, 
-    src: Register, 
-    op2: SecondOperand, 
+    dst: Register,
+    src: Register,
+    op2: SecondOperand,
     setFlags: Boolean = false,
     cond: Condition.Condition = Condition.AL
 ) extends Instruction
 
 case class OrInstr(
-    dst: Register, 
-    src: Register, 
-    op2: SecondOperand, 
-    setFlags: Boolean = false,        
+    dst: Register,
+    src: Register,
+    op2: SecondOperand,
+    setFlags: Boolean = false,
     cond: Condition.Condition = Condition.AL
 ) extends Instruction
 
@@ -153,10 +153,10 @@ sealed trait SecondOperand {
         this match {
             case ImmOffset(immOffset) => s"#$immOffset"
             case RegOp(regOp)         => regOp.toString()
-            case LSLRegOp(r, s)       => s"${r.toString()} LSL ${s.toString()}"
-            case LSRRegOp(r, s)       => s"${r.toString()} LSR ${s.toString()}"
-            case ASRRegOp(r, s)       => s"${r.toString()} ASR ${s.toString()}"
-            case RORRegOp(r, s)       => s"${r.toString()} ROR ${s.toString()}"
+            case LSLRegOp(r, s)       => s"${r.toString()}, LSL ${s.toString()}"
+            case LSRRegOp(r, s)       => s"${r.toString()}, LSR ${s.toString()}"
+            case ASRRegOp(r, s)       => s"${r.toString()}, ASR ${s.toString()}"
+            case RORRegOp(r, s)       => s"${r.toString()}, ROR ${s.toString()}"
         }
     }
 }

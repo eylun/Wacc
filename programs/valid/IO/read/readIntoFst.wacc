@@ -1,0 +1,20 @@
+# echo the user's input int
+
+# Input:
+# 10
+
+# Output:
+# enter an integer to echo
+# 10
+
+# Exit: 0
+
+# Program:
+
+begin
+  pair(int, int) x = newpair(1,1);
+  println "enter an integer to echo";
+  read fst x ; 
+  int output = fst x;
+  println output
+end

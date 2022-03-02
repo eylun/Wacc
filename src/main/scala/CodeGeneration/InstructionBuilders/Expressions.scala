@@ -50,7 +50,6 @@ object transExpression {
                   )
                 )
                 stackFrame.addTempOffset(ARRAY_EXP_OFFSET)
-                // slight duplication on this for loop, see if can merge
                 es.zipWithIndex.foreach {
                     case (e, idx) => {
                         transExpression(e, stackFrame)
@@ -124,7 +123,7 @@ object transExpression {
             }
             case Len(e) => {
                 transExpression(e, stackFrame)
-                // TODO
+                collector.addStatement(List(LoadInstr(r0, r0, ImmOffset(0))))
             }
             case Ord(e) => {
                 transExpression(e, stackFrame)
@@ -137,6 +136,7 @@ object transExpression {
             case Add(e1, e2) => {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(Reg(0)))))
+                stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
 
                 collector.insertUtil(PThrowOverflowError)
@@ -149,10 +149,12 @@ object transExpression {
                     BranchLinkInstr("p_throw_overflow_error", Condition.VS)
                   )
                 )
+                stackFrame.dropTempOffset(WORD_SIZE)
             }
             case Sub(e1, e2) => {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(Reg(0)))))
+                stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
 
                 collector.insertUtil(PThrowOverflowError)
@@ -165,10 +167,12 @@ object transExpression {
                     BranchLinkInstr("p_throw_overflow_error", Condition.VS)
                   )
                 )
+                stackFrame.dropTempOffset(WORD_SIZE)
             }
             case Mult(e1, e2) => {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(Reg(0)))))
+                stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
 
                 collector.insertUtil(PThrowOverflowError)
@@ -178,14 +182,16 @@ object transExpression {
                     MoveInstr(Reg(1), RegOp(Reg(0))),
                     PopInstr(List(Reg(0))),
                     SMullInstr(Reg(0), Reg(1), Reg(0), Reg(1)),
-                    CompareInstr(Reg(0), ASRRegOp(Reg(0), ShiftImm(31))),
+                    CompareInstr(Reg(1), ASRRegOp(Reg(0), ShiftImm(31))),
                     BranchLinkInstr("p_throw_overflow_error", Condition.NE)
                   )
                 )
+                stackFrame.dropTempOffset(WORD_SIZE)
             }
             case Div(e1, e2) => {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(Reg(0)))))
+                stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
 
                 collector.insertUtil(PCheckDivideByZero)
@@ -198,10 +204,12 @@ object transExpression {
                     BranchLinkInstr("__aeabi_idiv")
                   )
                 )
+                stackFrame.dropTempOffset(WORD_SIZE)
             }
             case Mod(e1, e2) => {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(Reg(0)))))
+                stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
 
                 collector.insertUtil(PCheckDivideByZero)
@@ -215,44 +223,48 @@ object transExpression {
                     MoveInstr(Reg(0), RegOp(Reg(1)))
                   )
                 )
+                stackFrame.dropTempOffset(WORD_SIZE)
             }
             case And(e1, e2) => {
+                val label = collector.tickGeneral()
                 transExpression(e1, stackFrame)
                 // Short-circuit evaluation
                 collector.addStatement(
                   List(
                     CompareInstr(Reg(0), ImmOffset(0)),
-                    BranchInstr("L0", Condition.EQ)
+                    BranchInstr(s"L$label", Condition.EQ)
                   )
                 )
                 transExpression(e2, stackFrame)
 
                 collector.addStatement(
                   List(
-                    Label("L0")
+                    Label(s"L$label")
                   )
                 )
             }
             case Or(e1, e2) => {
+                val label = collector.tickGeneral()
                 transExpression(e1, stackFrame)
                 // Short-circuit evaluation
                 collector.addStatement(
                   List(
                     CompareInstr(Reg(0), ImmOffset(1)),
-                    BranchInstr("L0", Condition.EQ)
+                    BranchInstr(s"L$label", Condition.EQ)
                   )
                 )
                 transExpression(e2, stackFrame)
 
                 collector.addStatement(
                   List(
-                    Label("L0")
+                    Label(s"L$label")
                   )
                 )
             }
             case GT(e1, e2) => {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(Reg(0)))))
+                stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
                 collector.addStatement(
                   List(
@@ -263,10 +275,12 @@ object transExpression {
                     MoveInstr(Reg(0), ImmOffset(0), Condition.LE)
                   )
                 )
+                stackFrame.dropTempOffset(WORD_SIZE)
             }
             case GTE(e1, e2) => {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(Reg(0)))))
+                stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
                 collector.addStatement(
                   List(
@@ -277,10 +291,12 @@ object transExpression {
                     MoveInstr(Reg(0), ImmOffset(0), Condition.LT)
                   )
                 )
+                stackFrame.dropTempOffset(WORD_SIZE)
             }
             case LT(e1, e2) => {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(Reg(0)))))
+                stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
                 collector.addStatement(
                   List(
@@ -291,10 +307,12 @@ object transExpression {
                     MoveInstr(Reg(0), ImmOffset(0), Condition.GE)
                   )
                 )
+                stackFrame.dropTempOffset(WORD_SIZE)
             }
             case LTE(e1, e2) => {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(Reg(0)))))
+                stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
                 collector.addStatement(
                   List(
@@ -305,10 +323,12 @@ object transExpression {
                     MoveInstr(Reg(0), ImmOffset(0), Condition.GT)
                   )
                 )
+                stackFrame.dropTempOffset(WORD_SIZE)
             }
             case Equal(e1, e2) => {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(Reg(0)))))
+                stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
                 collector.addStatement(
                   List(
@@ -319,10 +339,12 @@ object transExpression {
                     MoveInstr(Reg(0), ImmOffset(0), Condition.NE)
                   )
                 )
+                stackFrame.dropTempOffset(WORD_SIZE)
             }
             case NotEqual(e1, e2) => {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(Reg(0)))))
+                stackFrame.addTempOffset(WORD_SIZE)
                 transExpression(e2, stackFrame)
                 collector.addStatement(
                   List(
@@ -333,6 +355,7 @@ object transExpression {
                     MoveInstr(Reg(0), ImmOffset(0), Condition.EQ)
                   )
                 )
+                stackFrame.dropTempOffset(WORD_SIZE)
             }
             case _ => List[Instruction]().empty
         }

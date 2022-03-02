@@ -4,6 +4,7 @@ class SymbolTable(
     var encSymTable: Option[SymbolTable],
     var dict: Map[String, Identifier]
 ) {
+    var order: List[String] = List.empty
 
     /** Sets the parent of this symbol table. */
     def setParent(parent: SymbolTable): Unit = encSymTable = Some(parent)
@@ -13,6 +14,7 @@ class SymbolTable(
       */
     def add(name: String, obj: Identifier): Unit = {
         dict = dict + (name -> obj)
+        order ++= List(name)
     }
 
     /** Looks up an identifier string in the current symbol table. Returns a

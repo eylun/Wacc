@@ -4,6 +4,7 @@ class WaccBuffer {
     private var dataMsgCount = 0
     private var iteCount = 0
     private var wdCount = 0
+    private var generalCount = 0
     import constants._
     import Helpers._
     import Helpers.UtilFlag._
@@ -48,8 +49,7 @@ class WaccBuffer {
         mutable.ListBuffer[Instruction]().empty
 
     private val mainStatements: mutable.ListBuffer[Instruction] =
-        mutable.ListBuffer[Instruction](
-        )
+        mutable.ListBuffer[Instruction]().empty
 
     private val utilityStatements: mutable.ListBuffer[Instruction] =
         mutable.ListBuffer[Instruction]().empty
@@ -60,6 +60,11 @@ class WaccBuffer {
 
     def setupMain(): Unit = {
         mainStatements ++= mainSetup
+    }
+
+    def tickGeneral(): Int = {
+        generalCount += 1
+        generalCount - 1
     }
 
     def tickDataMsg(): Int = {

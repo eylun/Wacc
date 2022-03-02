@@ -1,0 +1,19 @@
+# echo the user's input int
+
+# Input:
+# 10
+
+# Output:
+# enter an integer to echo
+# 10
+
+# Exit: 0
+
+# Program:
+
+begin
+  int[] x = [1, 2, 3] ;
+  println "enter an integer to echo";
+  read x[0] ; 
+  println x[0] 
+end

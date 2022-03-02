@@ -165,6 +165,7 @@ object testUtils {
             InputStream,
             ByteArrayInputStream
         }
+        import regexHelper._
 
         println(s"---${f.getName()}---")
         this.testCodegen(f)
@@ -174,31 +175,45 @@ object testUtils {
         val (input, expectedOutput, expectedExit) = extractTest(f)
 
         val inputStream: InputStream = new ByteArrayInputStream(
-          expectedOutput.getBytes()
+          input.replace("\n", " ").getBytes()
         )
         val outputStream: OutputStream = new ByteArrayOutputStream()
         val actualExit =
             s"qemu-arm -L /usr/arm-linux-gnueabi/ ${cleanFilename(f.getPath())}" #< inputStream #> outputStream !
 
         val actualOutput = outputStream.toString().trim()
-
+        println("actual input")
+        println(input)
+        println("actual exit code")
         println(actualExit)
+        println("actual output")
         println(actualOutput)
         println("extracted from wacc file:")
-        println(s"input: $input")
-        println(s"output: $expectedOutput")
-        println(s"exit: $expectedExit")
+        println(s"expected input: $input")
+        println(s"expected output: $expectedOutput")
+        println(s"expected exit: $expectedExit")
 
         s"rm ${cleanFilename(f.getPath())}.s" !
 
         s"rm ${cleanFilename(f.getPath())}" !
 
-        if (expectedOutput != actualOutput)
-            fail(
-              s"Expected Output: [$expectedOutput]\nActual Output: [$actualOutput]"
-            )
+        inputStream.reset()
+
+        (expectedOutput.split("\n") zip actualOutput.split("\n")).foreach {
+            case (expectedAddrRegex(el, er), actualAddrRegex(al, _, ar))
+                if el == al && er == ar =>
+            case (expectedRuntimeErrRegex, actualRuntimeErrRegex(_*)) =>
+            case (e, a) if e == a                                     =>
+            case (e, a) =>
+                fail(
+                  s"${f.getName()}\nExpected Output : [$e]\nActual Output   : [$a]"
+                )
+
+        }
         if (expectedExit != actualExit)
-            fail(s"Expected Exit: [$expectedExit]\nActual Exit: [$actualExit]")
+            fail(
+              s"${f.getName()}\nExpected Exit : [$expectedExit]\nActual Exit   : [$actualExit]"
+            )
     }
 
     def extractTest(f: File): (String, String, Int) = {
@@ -214,23 +229,28 @@ object testUtils {
     }
 
     def extractInputOutput(str: String): String = {
-        println(
-          str.split("\n")
-              .map(s =>
-                  s.length match {
-                      case 0 => ""
-                      case _ => s.substring(2)
-                  }
-              )
-              .toList
-        )
+        println(s"STRING INPUT OUTPUT${str
+            .split("\n")
+            .map {
+                case regexHelper.startRegex(str) => str
+                case _                           => ""
+            }
+            .mkString("\n")}")
         str.split("\n")
-            .map(s =>
-                s.length match {
-                    case 0 => ""
-                    case _ => s.substring(2)
-                }
-            )
+            .map {
+                case regexHelper.startRegex(str) => str
+                case _                           => ""
+            }
             .mkString("\n")
+    }
+
+    object regexHelper {
+        val expectedAddrRegex = raw"(.*)#addrs#(.*)".r
+        val actualAddrRegex = raw"(.*)0x([0-9a-fA-F]+)(.*)".r
+
+        val expectedRuntimeErrRegex = raw"#runtime_error#".r
+        val actualRuntimeErrRegex = raw"(.*)Error(.*)".r
+
+        val startRegex = raw"# (.*)".r
     }
 }

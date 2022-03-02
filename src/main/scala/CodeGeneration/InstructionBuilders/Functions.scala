@@ -6,13 +6,13 @@ object transFunction {
         collector: WaccBuffer
     ): Unit = {
         val FuncNode(_, i, _, s) = funcNode
-        stackFrame.addTempOffset(WORD_SIZE)
-        collector.addStatement(List(Label(s"f_${i.s}"), PushInstr(List(lr))))
+        collector.addStatement(
+          List(Label(s"f_${i.s}"), PushInstr(List(lr))) ++ stackFrame.head
+        )
         transStatement(s, stackFrame)
 
         collector.addStatement(
           List(
-            PopInstr(List(pc)),
             Directive("ltorg")
           )
         )
