@@ -6,6 +6,7 @@ object Helpers {
     val BIT_SIZE = 1
     val ARRAY_LHS_OFFSET = 8
     val ARRAY_EXP_OFFSET = 4
+    val OFFSET_MAX = 1024
 
     val mainSetup = List(
       Directive("text"),

@@ -166,10 +166,9 @@ object testUtils {
             ByteArrayInputStream
         }
         import regexHelper._
-
         this.testCodegen(f)
 
-        s"arm-linux-gnueabi-gcc -o ${cleanFilename(f.getName())} -mcpu=arm1176jzf-s -mtune=arm1176jzf-s ${cleanFilename(f.getPath())}.s" !
+        s"arm-linux-gnueabi-gcc -o ${cleanFilename(f.getName())} -mcpu=arm1176jzf-s -mtune=arm1176jzf-s ${cleanFilename(f.getName())}.s" !
 
         val (input, expectedOutput, expectedExit) = extractTest(f)
 
@@ -186,13 +185,15 @@ object testUtils {
 
         s"rm ${cleanFilename(f.getName())}" !
 
-        inputStream.reset()
-
         (expectedOutput.split("\n") zip actualOutput.split("\n")).foreach {
             case (expectedAddrRegex(el, er), actualAddrRegex(al, _, ar))
                 if el == al && er == ar =>
-            case (expectedRuntimeErrRegex, actualRuntimeErrRegex(_*)) =>
-            case (e, a) if e == a                                     =>
+            case (
+                  expectedDuoAddrRegex(el, em, er),
+                  actualDuoAddrRegex(al, _, am, _, ar)
+                ) if el == al && er == ar && em == am =>
+            case (expectedRuntimeErrRegex(_*), actualRuntimeErrRegex(_*)) =>
+            case (e, a) if e == a                                         =>
             case (e, a) =>
                 fail(
                   s"${f.getName()}\nExpected Output : [$e]\nActual Output   : [$a]"
@@ -229,6 +230,10 @@ object testUtils {
     object regexHelper {
         val expectedAddrRegex = raw"(.*)#addrs#(.*)".r
         val actualAddrRegex = raw"(.*)0x([0-9a-fA-F]+)(.*)".r
+
+        val expectedDuoAddrRegex = raw"(.*)#addrs#(.*)#addrs#(.*)".r
+        val actualDuoAddrRegex =
+            raw"(.*)0x([0-9a-fA-F]+)(.*)0x([0-9a-fA-F]+)(.*)".r
 
         val expectedRuntimeErrRegex = raw"#runtime_error#".r
         val actualRuntimeErrRegex = raw"(.*)Error(.*)".r
