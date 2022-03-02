@@ -1,4 +1,5 @@
 import java.io.{File, BufferedWriter, FileWriter}
+
 object ARMRepresentation extends Representation {
 
     def apply(
@@ -13,8 +14,9 @@ object ARMRepresentation extends Representation {
         bw.close()
     }
 
-    // TODO: Make this match against all instruction cases and output the
-    // relevant assembly code
+    /** generateLine() matches an instruction to its relevant assembly code
+      * representation
+      */
     def generateLine(instr: Instruction): String =
         s"${instr match {
             case Label(labelName) => s"$labelName:"
@@ -22,7 +24,7 @@ object ARMRepresentation extends Representation {
             case PushInstr(reg)   => s"\tPUSH {${reg.mkString(", ")}}"
             case PopInstr(reg)    => s"\tPOP {${reg.mkString(", ")}}"
 
-            /* Logical Instructions */
+            /** Logical Instructions */
             case AndInstr(dst, fst, snd, false, cond) =>
                 s"\tAND$cond $dst, $fst, $snd"
             case AndInstr(dst, fst, snd, true, cond) =>
@@ -36,7 +38,7 @@ object ARMRepresentation extends Representation {
             case OrInstr(dst, fst, snd, true, cond) =>
                 s"\tORR${cond}S $dst, $fst, $snd"
 
-            /* Arithmetic Instructions*/
+            /** Arithmetic Instructions */
             case AddInstr(dst, fst, snd, true)  => s"\tADDS $dst, $fst, $snd"
             case AddInstr(dst, fst, snd, false) => s"\tADD $dst, $fst, $snd"
             case SubInstr(dst, fst, snd, true)  => s"\tSUBS $dst, $fst, $snd"
@@ -52,7 +54,7 @@ object ARMRepresentation extends Representation {
 
             case MoveInstr(dst, src, cond) => s"\tMOV$cond $dst, $src"
 
-            /* Load Instructions */
+            /** Load Instructions */
             case LoadLabelInstr(dst, label, cond) => s"\tLDR$cond $dst, =$label"
             case LoadImmIntInstr(dst, imm, cond)  => s"\tLDR$cond $dst, =$imm"
             case LoadInstr(dst, src, ImmOffset(0), cond) =>
@@ -84,11 +86,17 @@ object ARMRepresentation extends Representation {
             case StoreByteInstr(src, dst, ImmOffset(offset), false) =>
                 s"\tSTRB $src, [$dst, #$offset]"
 
+            /** Branch Instructions */
             case BranchInstr(label, condition)     => s"\tB$condition $label"
             case BranchLinkInstr(label, condition) => s"\tBL$condition $label"
 
+            /** Comparison Instructions */
             case CompareInstr(fstOp, sndOp, condition) =>
                 s"\tCMP$condition $fstOp, $sndOp"
+
+            /** For unmatched cases, "temp" will be generated. Used for
+              * debugging.
+              */
             case _ => "Temp"
         }}\n"
 }

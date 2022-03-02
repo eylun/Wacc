@@ -90,6 +90,9 @@ object Helpers {
         stackFrame.addTempOffset(WORD_SIZE)
     }
 
+    /** Identifiers with char or bool type uses the Store Byte Instruction
+      * instead of regular Store Instruction
+      */
     def determineStoreInstr(
         t: Type,
         src: Register,
