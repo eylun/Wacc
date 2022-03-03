@@ -3,19 +3,26 @@ import Condition._
 import constants._
 
 object transRHS {
-    /* Returns a list of instructions evaluating the RHS of an assignment */
+
+    /** Adds a list of instructions evaluating the RHS of an assignment to the
+      * Wacc Buffer collector
+      */
     def apply(rhs: AssignRHSNode, stackFrame: StackFrame)(implicit
         collector: WaccBuffer
     ): Unit = {
         rhs match {
+            /** EXPRESSION NODE */
             case e: ExprNode => transExpression(e, stackFrame)
+            /** ARRAY-LITER NODE */
             case al @ ArrayLiterNode(es) => {
+
+                /** Add appriopriate move instruction based on the array type */
                 al.typeId.get match {
                     case AnyType() => {
                         collector.addStatement(
                           List(
                             MoveInstr(
-                              Reg(0),
+                              r0,
                               ImmOffset(WORD_SIZE)
                             )
                           )
@@ -25,7 +32,7 @@ object transRHS {
                         collector.addStatement(
                           List(
                             MoveInstr(
-                              Reg(0),
+                              r0,
                               ImmOffset(getArraySize(a, es.length))
                             )
                           )
@@ -36,7 +43,7 @@ object transRHS {
                 collector.addStatement(
                   List(
                     BranchLinkInstr("malloc", Condition.AL),
-                    MoveInstr(Reg(3), RegOp(Reg(0)))
+                    MoveInstr(r3, RegOp(r0))
                   )
                 )
                 var ofs = WORD_SIZE
@@ -59,39 +66,48 @@ object transRHS {
                 collector.addStatement(
                   List(
                     MoveInstr(
-                      Reg(0),
+                      r0,
                       ImmOffset(es.length)
                     ),
                     StoreInstr(
-                      Reg(0),
-                      Reg(3),
+                      r0,
+                      r3,
                       ImmOffset(0)
                     ),
                     MoveInstr(
-                      Reg(0),
+                      r0,
                       RegOp(
-                        Reg(3)
+                        r3
                       )
                     )
                   )
                 )
             }
+            /** NEW PAIR NODE */
             case NewPairNode(e1, e2) => {
+
+                /** Evaluate the pair-elem expressions and stores it in the
+                  * stack
+                  */
                 addNewPairElem(e1, stackFrame)
                 addNewPairElem(e2, stackFrame)
                 collector.addStatement(
                   List(
-                    MoveInstr(Reg(0), ImmOffset(8)),
+                    MoveInstr(r0, ImmOffset(8)),
                     BranchLinkInstr("malloc", AL),
-                    PopInstr(List(Reg(1), Reg(2))),
-                    StoreInstr(Reg(2), Reg(0), ImmOffset(0), false),
-                    StoreInstr(Reg(1), Reg(0), ImmOffset(4), false)
+                    PopInstr(List(r1, r2)),
+                    StoreInstr(r2, r0, ImmOffset(0), false),
+                    StoreInstr(r1, r0, ImmOffset(4), false)
                   )
                 )
                 stackFrame.dropTempOffset(WORD_SIZE * 2)
             }
+            /** (FUNCTION) CALL NODE */
             case CallNode(i, args) => {
-                val FunctionId(t, plist, _) = stackFrame.st.lookupAll(i.s).get
+
+                /** Look up function Id from the stack frame */
+                val FunctionId(t, plist, _) =
+                    stackFrame.currST.lookupAll(i.s).get
                 var offset = 0
 
                 /** Push params into stack */
@@ -134,13 +150,19 @@ object transRHS {
                 stackFrame.dropTempOffset(offset)
 
             }
+            /** PAIR ELEM NODE */
             case e: PairElemNode => {
+
+                /** Include null pointer check */
                 collector.insertUtil(UtilFlag.PCheckNullPointer)
                 collector.addStatement(
                   List(
                     BranchLinkInstr("p_check_null_pointer")
                   ) ++
                       (e match {
+                          /** Offsets for load instructions differ for first
+                            * pair elem and second pair elem
+                            */
                           case FirstPairElemNode(f) => {
                               transExpression(f, stackFrame)
                               List(

@@ -6,12 +6,15 @@ object Helpers {
     val BIT_SIZE = 1
     val ARRAY_LHS_OFFSET = 8
     val ARRAY_EXP_OFFSET = 4
+    val OFFSET_MAX = 1024
 
+    /** .text and .global main directives */
     val mainSetup = List(
       Directive("text"),
       Directive("global main")
     )
 
+    /** Returns size of data associated with an identifier */
     def getTypeSize(t: Identifier): Int = {
         t match {
             case BoolType() | CharType() => BIT_SIZE
@@ -23,6 +26,7 @@ object Helpers {
         }
     }
 
+    /** Generates data message for strings */
     def getStringDirective(s: String, idx: Int): List[Instruction] = {
 
         /** Convert escape characters into printable escape characters */
@@ -34,6 +38,9 @@ object Helpers {
         )
     }
 
+    /** Adds backslashes so escape characters can be properly represented in
+      * generated instructions
+      */
     def escapeConvert(str: String): String = {
         val sb = new StringBuilder
         str.foreach { c =>
@@ -53,6 +60,7 @@ object Helpers {
         sb.toString()
     }
 
+    /** Returns size of the array */
     def getArraySize(arrayType: Type, size: Int): Int = {
         val ArrayType(t, _, d) = arrayType
         (t, d) match {
@@ -62,6 +70,9 @@ object Helpers {
         }
     }
 
+    /** Generates instructions for evaluating an expression stored in a pair and
+      * pushes it onto the stack
+      */
     def addNewPairElem(e: ExprNode, stackFrame: StackFrame)(implicit
         collector: WaccBuffer
     ): Unit = {
@@ -89,6 +100,9 @@ object Helpers {
         stackFrame.addTempOffset(WORD_SIZE)
     }
 
+    /** Identifiers with char or bool type uses the Store Byte Instruction
+      * instead of regular Store Instruction
+      */
     def determineStoreInstr(
         t: Type,
         src: Register,
@@ -100,6 +114,10 @@ object Helpers {
             StoreByteInstr(src, dst, ImmOffset(offset), writeBack)
         case _ => StoreInstr(src, dst, ImmOffset(offset), writeBack)
     }
+
+    /** Identifiers with char or bool type uses the Load Register Signed Byte
+      * Instruction instead of regular Load Instruction
+      */
     def determineLoadInstr(
         t: Type,
         src: Register,
@@ -114,6 +132,7 @@ object Helpers {
 
     /** PRINT STATEMENT HELPERS */
     /** Print Int Literal */
+    /** Generates data message */
     def getPrintIntDirective(idx: Int): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
@@ -122,6 +141,7 @@ object Helpers {
         )
     }
 
+    /** Generates p_print_int instruction sequence */
     def printIntLiterFunc(idx: Int): List[Instruction] = {
         List(
           Label("p_print_int"),
@@ -150,6 +170,7 @@ object Helpers {
     }
 
     /** Print Bool Literal */
+    /** Generates data message for a 'true' boolean value */
     def getPrintTrueDirective(idx: Int): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
@@ -158,6 +179,7 @@ object Helpers {
         )
     }
 
+    /** Generates data message for a 'false' boolean value */
     def getPrintFalseDirective(idx: Int): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
@@ -166,6 +188,7 @@ object Helpers {
         )
     }
 
+    /** Generates p_print_bool instruction sequence */
     def printBoolLiterFunc(idxTrue: Int, idxFalse: Int): List[Instruction] = {
         List(
           Label("p_print_bool"),
@@ -201,6 +224,7 @@ object Helpers {
     }
 
     /** Print String Literal */
+    /** Generates data message for printing strings */
     def getPrintStrDirective(idx: Int): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
@@ -209,6 +233,7 @@ object Helpers {
         )
     }
 
+    /** Generates p_print_string instruction sequence */
     def printStrLiterFunc(idx: Int): List[Instruction] = {
         List(
           Label("p_print_string"),
@@ -237,7 +262,8 @@ object Helpers {
 
     }
 
-    /** Print Reference */
+    /** Print (Memory) References */
+    /** Generates data message for printing memory references */
     def getPrintRefDirective(idx: Int): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
@@ -246,6 +272,7 @@ object Helpers {
         )
     }
 
+    /** Generates p_print_reference instruction sequence */
     def printRefFunc(idx: Int): List[Instruction] = {
         List(
           Label("p_print_reference"),
@@ -273,7 +300,8 @@ object Helpers {
 
     }
 
-    /** Print Newline */
+    /** Print New Line */
+    /** Generates data message for printing a new line */
     def getPrintNewLineDirective(idx: Int): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
@@ -282,6 +310,7 @@ object Helpers {
         )
     }
 
+    /** Generates p_print_ln instruction sequence */
     def printNewLineFunc(idx: Int): List[Instruction] = {
         List(
           Label("p_print_ln"),
@@ -307,7 +336,7 @@ object Helpers {
         )
     }
 
-    /** Print Throw Overflow */
+    /** Print Throw Overflow Error */
     def getPrintOverflowErrorDirective(idx: Int): List[Instruction] = {
         List(
           Label(s"msg_$idx"),

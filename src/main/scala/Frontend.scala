@@ -3,14 +3,19 @@ import scala.util.Try
 import parsley.io.{ParseFromIO}
 import scala.collection.mutable.ListBuffer
 
+/** Executes parser and generates code in the ARM representation */
 object frontend {
     import parsley.{Success, Failure}
     import Helpers.cleanFilename
     def main(args: Array[String]): Unit = {
+
+        /** Check that only one argument is provided */
         assert(args.length == 1, "Usage: ./compile <wacc filename>")
         val fn = args(0)
         implicit val eb = new WaccErrorBuilder
         val waccFile = new File(fn)
+
+        /** Parse the given .wacc file */
         val parseResult = syntax.parse.parseFromFile(waccFile).get
         parseResult match {
             case Success(result) =>
@@ -19,11 +24,11 @@ object frontend {
                 result.check(topLevelST, errorLog)
                 if (errorLog.length == 0) {
 
-                    /** Code Generation */
+                    /** No syntax errors, move on to code generation */
                     ARMRepresentation(
                       result,
                       topLevelST,
-                      cleanFilename(fn) + ".s"
+                      cleanFilename(waccFile.getName()) + ".s"
                     )
                     System.exit(0)
                 }
