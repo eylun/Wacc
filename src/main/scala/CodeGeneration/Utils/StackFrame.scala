@@ -67,11 +67,7 @@ class StackFrame(
             }
         }
         val newChildMap = StackFrame.generateOffsetMap(st)
-        // println("join...")
-        // println(s"new child map: $newChildMap")
-        // println(s"old child map: $childOffsetMap")
-        // println(s"new parent map: ${newParentMap.toMap}")
-        // println(s"old parent map: $parentOffsetMap")
+
         StackFrame(
           newChildMap,
           newParentMap.toMap,
@@ -83,7 +79,6 @@ class StackFrame(
 
     /** Get offset corresponding to an identifier existing in the stack frame */
     def getOffset(ident: String): Int = {
-        // println(s"getting $ident")
         if (unlocked.contains(ident)) {
             childOffsetMap.get(ident) match {
                 case Some(x) => return x + tempOffset
@@ -98,7 +93,6 @@ class StackFrame(
     }
 
     def unlock(ident: String): Unit = {
-        // println(s"unlocking $ident")
         unlocked.add(ident)
     }
 }
