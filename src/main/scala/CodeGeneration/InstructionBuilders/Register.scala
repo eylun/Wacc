@@ -1,5 +1,6 @@
 sealed trait Register
 
+/** toString functions for registers */
 case class StackPtrReg() extends Register {
     override def toString(): String = "sp"
 }
@@ -17,7 +18,8 @@ case class Reg(n: Int) extends Register {
 }
 
 object constants {
-    /* General Purpose Registers */
+
+    /** General Purpose Registers */
     val r0: Reg = Reg(0)
     val r1: Reg = Reg(1)
     val r2: Reg = Reg(2)
@@ -27,7 +29,7 @@ object constants {
     val r6: Reg = Reg(6)
     val r7: Reg = Reg(7)
 
-    /* Special Purpose Registers */
+    /** Special Purpose Registers */
     val sp: StackPtrReg = StackPtrReg()
     val lr: LinkReg = LinkReg()
     val pc: PCReg = PCReg()

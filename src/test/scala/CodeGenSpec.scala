@@ -564,6 +564,50 @@ class CodeGenSpec extends AnyFlatSpec {
         )
     }
 
+    it should "translate logical AND expressions" in {
+        // Simple expression false && true
+        reset()
+        testExpr(
+            And(BoolLiterNode(false)(0,0), BoolLiterNode(true)(0,0))(0,0),
+            
+            expectedTextSection(List(
+                List(
+                    MoveInstr(r0, ImmOffset(0)),
+                    CompareInstr(r0, ImmOffset(0)),
+                    BranchInstr("L0", Condition.EQ),
+                    MoveInstr(r0, ImmOffset(1)),
+                    Label("L0")
+                )
+            ))
+        )
+
+        // Nested expression (true && false) && false
+        reset()
+        testExpr(
+            And(
+                And(
+                    BoolLiterNode(true)(0,0),
+                    BoolLiterNode(false)(0,0)
+                )(0,0),
+                BoolLiterNode(false)(0,0)
+            )(0,0),
+
+            expectedTextSection(List(
+                List(
+                    MoveInstr(r0, ImmOffset(1)),
+                    CompareInstr(r0, ImmOffset(0)),
+                    BranchInstr("L0", Condition.EQ),
+                    MoveInstr(r0, ImmOffset(0)),
+                    Label("L0"),
+                    CompareInstr(r0, ImmOffset(0)),
+                    BranchInstr("L1", Condition.EQ),
+                    MoveInstr(r0, ImmOffset(0)),
+                    Label("L1")
+                )
+            ))
+        )
+    }
+
     behavior of "AssignRHS code generation"
     it should "translate expressions" in {
         reset()

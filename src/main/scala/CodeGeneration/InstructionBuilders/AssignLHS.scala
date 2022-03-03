@@ -3,29 +3,36 @@ import Condition._
 import constants._
 
 object transLHS {
-    /* Returns a list of instructions evaluating the RHS of an assignment */
+
+    /** Adds a list of instructions evaluating the LHS of an assignment to the
+      * Wacc Buffer collector
+      */
     def apply(lhs: AssignLHSNode, stackFrame: StackFrame)(implicit
         collector: WaccBuffer
     ): Unit = {
         lhs match {
+            /** IDENT NODE */
             case IdentNode(s) =>
+            /** ARRAY ELEM NODE */
             case ae @ ArrayElemNode(IdentNode(s), es) => {
                 collector.insertUtil(UtilFlag.PCheckArrayBounds)
                 stackFrame.addTempOffset(ARRAY_LHS_OFFSET)
                 collector.addStatement(
                   List(
-                    PushInstr(List(Reg(0), Reg(4))),
+                    PushInstr(List(r0, r4)),
                     LoadInstr(
-                      Reg(4),
+                      r4,
                       sp,
                       ImmOffset(stackFrame.getOffset(s))
                     )
                   )
                 )
-                //consider using zipWithIndex
+
                 es.zipWithIndex.foreach {
                     case (e, idx) => {
                         transExpression(e, stackFrame)
+
+                        /** Branch to check_array_bounds */
                         collector.addStatement(
                           List(
                             BranchLinkInstr(
@@ -33,29 +40,33 @@ object transLHS {
                               Condition.AL
                             ),
                             AddInstr(
-                              Reg(4),
-                              Reg(4),
+                              r4,
+                              r4,
                               ImmOffset(4),
                               false
                             )
                           )
                         )
+
+                        /** Include a different add instruction depending on
+                          * array type
+                          */
                         collector.addStatement(
                           if (idx == es.length - 1) {
                               List(
                                 ae.typeId.get.getType() match {
                                     case CharType() | BoolType() =>
                                         AddInstr(
-                                          Reg(4),
-                                          Reg(4),
-                                          RegOp(Reg(0)),
+                                          r4,
+                                          r4,
+                                          RegOp(r0),
                                           false
                                         )
                                     case _ =>
                                         AddInstr(
-                                          Reg(4),
-                                          Reg(4),
-                                          LSLRegOp(Reg(0), ShiftImm(2)),
+                                          r4,
+                                          r4,
+                                          LSLRegOp(r0, ShiftImm(2)),
                                           false
                                         )
                                 }
@@ -63,12 +74,12 @@ object transLHS {
                           } else {
                               List(
                                 AddInstr(
-                                  Reg(4),
-                                  Reg(4),
-                                  LSLRegOp(Reg(0), ShiftImm(2)),
+                                  r4,
+                                  r4,
+                                  LSLRegOp(r0, ShiftImm(2)),
                                   false
                                 ),
-                                LoadInstr(Reg(4), Reg(4), ImmOffset(0))
+                                LoadInstr(r4, r4, ImmOffset(0))
                               )
                           }
                         )
@@ -77,11 +88,12 @@ object transLHS {
                 stackFrame.dropTempOffset(ARRAY_LHS_OFFSET)
                 collector.addStatement(
                   List(
-                    MoveInstr(Reg(1), RegOp(Reg(4))),
-                    PopInstr(List(Reg(0), Reg(4)))
+                    MoveInstr(r1, RegOp(r4)),
+                    PopInstr(List(r0, r4))
                   )
                 )
             }
+            /** PAIR ELEM NODE */
             case pe: PairElemNode => {
                 collector.insertUtil(UtilFlag.PCheckNullPointer)
                 stackFrame.addTempOffset(WORD_SIZE)
@@ -91,6 +103,9 @@ object transLHS {
                   )
                 )
                 pe match {
+                    /** Add Instructions take different offsets for first pair
+                      * element and second pair element
+                      */
                     case FirstPairElemNode(e) => {
                         transExpression(e, stackFrame)
                         collector.addStatement(
