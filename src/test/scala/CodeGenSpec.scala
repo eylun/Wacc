@@ -589,4 +589,92 @@ class CodeGenSpec extends AnyFlatSpec {
             ))
         )
     }
+    it should "translate logical OR expressions" in {
+        // Simple expression (true || false)
+        reset()
+        testExpr(
+            Or(BoolLiterNode(true)(0,0), BoolLiterNode(false)(0,0))(0,0),
+
+            expectedTextSection(List(
+                List(
+                    MoveInstr(r0, ImmOffset(1)),
+                    CompareInstr(r0, ImmOffset(1)),
+                    BranchInstr("L0", Condition.EQ),
+                    MoveInstr(r0, ImmOffset(0)),
+                    Label("L0")
+                )
+            ))
+        )
+
+        // Nested expression (false || (true || false) || true)
+        reset()
+        testExpr(
+            Or(
+                Or(
+                    BoolLiterNode(false)(0,0),
+                    Or(
+                        BoolLiterNode(true)(0,0),
+                        BoolLiterNode(false)(0,0)
+                    )(0,0)
+                )(0,0),
+                BoolLiterNode(true)(0,0)
+            )(0,0),
+
+            expectedTextSection(List(
+                List(
+                    MoveInstr(r0, ImmOffset(0)),
+                    CompareInstr(r0, ImmOffset(1)),
+                    BranchInstr("L0", Condition.EQ),
+                    MoveInstr(r0, ImmOffset(1)),
+                    CompareInstr(r0, ImmOffset(1)),
+                    BranchInstr("L1", Condition.EQ),
+                    MoveInstr(r0, ImmOffset(0)),
+                    Label("L1"),
+                    Label("L0"),
+                    CompareInstr(r0, ImmOffset(1)),
+                    BranchInstr("L2", Condition.EQ),
+                    MoveInstr(r0, ImmOffset(1)),
+                    Label("L2")
+                )
+            ))
+        )
+    }
+    it should "translate greater-than expressions" in {
+        reset()
+        testExpr(
+            GT(CharLiterNode('a')(0,0), CharLiterNode('g')(0,0))(0,0),
+
+            expectedTextSection(List(
+                List(
+                    MoveInstr(r0, ImmOffset('a')),
+                    PushInstr(List(r0)),
+                    MoveInstr(r0, ImmOffset('g')),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    CompareInstr(r0, RegOp(r1)),
+                    MoveInstr(r0, ImmOffset(1), Condition.GT),
+                    MoveInstr(r0, ImmOffset(0), Condition.LE)
+                )
+            ))
+        )
+    }
+    it should "translate greater-than-or-equal expressions" in {
+        reset()
+        testExpr(
+            GTE(CharLiterNode('r')(0,0), CharLiterNode('q')(0,0))(0,0),
+
+            expectedTextSection(List(
+                List(
+                    MoveInstr(r0, ImmOffset('r')),
+                    PushInstr(List(r0)),
+                    MoveInstr(r0, ImmOffset('q')),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    CompareInstr(r0, RegOp(r1)),
+                    MoveInstr(r0, ImmOffset(1), Condition.GE),
+                    MoveInstr(r0, ImmOffset(0), Condition.LT)
+                )
+            ))
+        )
+    }
 }
