@@ -95,9 +95,9 @@ object transStatement {
                 val labelTrue = s"ite_${collector.tickIte()}"
 
                 /** Stack frames */
-                val trueSF = stackFrame.join(StackFrame(ite.trueST), ite.trueST)
+                val trueSF = stackFrame.join(ite.trueST)
                 val falseSF =
-                    stackFrame.join(StackFrame(ite.falseST), ite.falseST)
+                    stackFrame.join(ite.falseST)
 
                 /** Evaluate conditional expression and branch accordingly */
                 transExpression(e, stackFrame)
