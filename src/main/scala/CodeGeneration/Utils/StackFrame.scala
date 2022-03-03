@@ -12,6 +12,7 @@ class StackFrame(
     var tempOffset = 0;
     val varBytes = StackFrame.varBytes(offsetMap, st)
 
+    /** Decrement stack pointer */
     val head: List[Instruction] = varBytes match {
         case 0 => List.empty
         case _ =>
@@ -20,14 +21,7 @@ class StackFrame(
                 .map(n => SubInstr(sp, sp, ImmOffset(n), false))
     }
 
-    val returnTail: List[Instruction] = returnOffset match {
-        case 0 => List.empty
-        case _ =>
-            StackFrame
-                .splitOffsets(returnOffset)
-                .map(n => AddInstr(sp, sp, ImmOffset(n), false))
-    }
-
+    /** Increment stack pointer */
     val tail: List[Instruction] = varBytes match {
         case 0 => List.empty
         case _ =>
@@ -36,10 +30,20 @@ class StackFrame(
                 .map(n => AddInstr(sp, sp, ImmOffset(n), false))
     }
 
+    /** Special case for return statements */
+    val returnTail: List[Instruction] = returnOffset match {
+        case 0 => List.empty
+        case _ =>
+            StackFrame
+                .splitOffsets(returnOffset)
+                .map(n => AddInstr(sp, sp, ImmOffset(n), false))
+    }
+
     def addTempOffset(amount: Int): Unit = tempOffset += amount
 
     def dropTempOffset(amount: Int): Unit = tempOffset -= amount
 
+    /** Join a given stack frame to this stack frame */
     def join(sf: StackFrame, st: SymbolTable): StackFrame = {
         val newMap: mutable.Map[String, Int] = mutable.Map[String, Int]()
         offsetMap.foreach {
@@ -55,6 +59,7 @@ class StackFrame(
         )
     }
 
+    /** Get offset corresponding to an identifier existing in the stack frame */
     def getOffset(ident: String): Int = {
         offsetMap.get(ident) match {
             case Some(x) => x + tempOffset
@@ -77,6 +82,7 @@ object StackFrame {
     ) =
         new StackFrame(offsetMap, totalBytes, st, varBytes)
 
+    /** Total bytes of symbol table */
     private def totalBytes(st: SymbolTable) = {
         var sum = 0
         st.dict.foreach {
@@ -101,7 +107,7 @@ object StackFrame {
         var acc = totalBytes(st)
         val map = mutable.Map[String, Int]()
         st.order.foreach {
-            /** return is a only for semantic checking */
+            /** Return case is a only for semantic checking */
             case "return" =>
             case k => {
                 val v = st.lookup(k).get
@@ -121,6 +127,7 @@ object StackFrame {
         map.toMap
     }
 
+    /** Split offsets */
     private def splitOffsets(offset: Int): List[Int] = {
         import scala.collection.immutable.List
         val lb = mutable.ListBuffer[Int]()
