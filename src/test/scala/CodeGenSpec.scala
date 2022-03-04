@@ -88,6 +88,12 @@ class CodeGenSpec extends AnyFlatSpec {
       Directive(s"ascii \"$str\"")
     )
 
+    /** Expected directive for an integer in the data section */
+    def expectedIntDirective: List[Instruction] = List(
+      Directive("word 3"),
+      Directive("ascii \"%d\\0\"")
+    )
+
     /** Returns a list of expected instructions in the text section */
     def expectedTextSection(
         sections: List[List[Instruction]]
@@ -1216,7 +1222,7 @@ class CodeGenSpec extends AnyFlatSpec {
     }
 
     behavior of "Function code generation"
-    it should "translate function statements" in {
+    it should "translate functions that end in return" in {
         reset()
         var node = FuncNode(
           IntTypeNode()(0, 0),
@@ -1239,6 +1245,33 @@ class CodeGenSpec extends AnyFlatSpec {
           IntTypeNode()(0, 0),
           IdentNode("x")(0, 0),
           List().empty,
+          StatListNode(
+            List(
+              ReturnNode(IntLiterNode(1)(0, 0))(0, 0),
+              ReturnNode(IntLiterNode(5)(0, 0))(0, 0)
+            )
+          )(0, 0)
+        )(0, 0)
+        testFunction(
+          node,
+          List(
+            Label("f_x"),
+            PushInstr(List(lr)),
+            LoadImmIntInstr(r0, 1),
+            PopInstr(List(pc)),
+            LoadImmIntInstr(r0, 5),
+            PopInstr(List(pc)),
+            Directive("ltorg")
+          )
+        )
+    }
+    it should "translate functions that end in exit" in {
+
+        reset()
+        var node = FuncNode(
+          IntTypeNode()(0, 0),
+          IdentNode("x")(0, 0),
+          List().empty,
           StatListNode(List(ExitNode(IntLiterNode(1)(0, 0))(0, 0)))(0, 0)
         )(0, 0)
         testFunction(
@@ -1247,6 +1280,30 @@ class CodeGenSpec extends AnyFlatSpec {
             Label("f_x"),
             PushInstr(List(lr)),
             LoadImmIntInstr(r0, 1),
+            BranchLinkInstr("exit"),
+            Directive("ltorg")
+          )
+        )
+        reset()
+        node = FuncNode(
+          IntTypeNode()(0, 0),
+          IdentNode("x")(0, 0),
+          List().empty,
+          StatListNode(
+            List(
+              ExitNode(IntLiterNode(1)(0, 0))(0, 0),
+              ExitNode(IntLiterNode(255)(0, 0))(0, 0)
+            )
+          )(0, 0)
+        )(0, 0)
+        testFunction(
+          node,
+          List(
+            Label("f_x"),
+            PushInstr(List(lr)),
+            LoadImmIntInstr(r0, 1),
+            BranchLinkInstr("exit"),
+            LoadImmIntInstr(r0, 255),
             BranchLinkInstr("exit"),
             Directive("ltorg")
           )
@@ -1265,7 +1322,7 @@ class CodeGenSpec extends AnyFlatSpec {
 
     it should "translate new assignment statements" in {
         reset()
-        var node: StatNode = StatListNode(
+        var node: StatListNode = StatListNode(
           List(
             NewAssignNode(
               IntTypeNode()(0, 0),
@@ -1275,7 +1332,6 @@ class CodeGenSpec extends AnyFlatSpec {
           )
         )(0, 0)
 
-        node.typeId = Some(IntType())
         var st = SymbolTable()
         st.add("x", IntType())
         sf = StackFrame(st)
@@ -1289,5 +1345,56 @@ class CodeGenSpec extends AnyFlatSpec {
           )
         )
 
+    }
+
+    it should "translate exit statements" in {
+        reset()
+        testStat(
+          StatListNode(List(ExitNode(IntLiterNode(5)(0, 0))(0, 0)))(0, 0),
+          expectedTextSection(
+            List(
+              List(
+                LoadImmIntInstr(r0, 5),
+                BranchLinkInstr("exit")
+              )
+            )
+          )
+        )
+    }
+
+    it should "translate read statements" in {
+        reset()
+        var identifier = IdentNode("x")(0, 0)
+        identifier.typeId = Some(IntType())
+        var node: StatListNode =
+            StatListNode(List(ReadNode(identifier)(0, 0)))(0, 0)
+        var st = SymbolTable()
+        st.add("x", IntType())
+        sf = StackFrame(st)
+        sf.unlock("x")
+
+        val readIntInstructions: List[Instruction] = List(
+          Label("p_read_int"),
+          PushInstr(List(lr)),
+          MoveInstr(r1, RegOp(r0)),
+          LoadLabelInstr(r0, "msg_0"),
+          AddInstr(r0, r0, ImmOffset(4)),
+          BranchLinkInstr("scanf"),
+          PopInstr(List(pc))
+        )
+
+        testStat(
+          node,
+          expectedDataSection(
+            List(expectedIntDirective)
+          ) ++ expectedTextSection(
+            List(
+              List(
+                AddInstr(r0, sp, ImmOffset(0)),
+                BranchLinkInstr("p_read_int")
+              ) ++ readIntInstructions
+            )
+          )
+        )
     }
 }
