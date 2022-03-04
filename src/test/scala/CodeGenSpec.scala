@@ -63,6 +63,7 @@ class CodeGenSpec extends AnyFlatSpec {
       Directive("ascii \"DivideByZeroError: divide or modulo by zero\\n\\0\"")
     )
 
+    /** Expected directive for a null reference error in the data section */
     val expectedNullReferenceDirective: List[Instruction] = List(
       Directive("word 50"),
       Directive(
@@ -70,6 +71,7 @@ class CodeGenSpec extends AnyFlatSpec {
       )
     )
 
+    /** Expected directive for a string in the data section */
     def expectedStringDirective(str: String): List[Instruction] = List(
         Directive(s"word ${str.length()}"),
         Directive(s"ascii \"$str\"")
@@ -162,6 +164,91 @@ class CodeGenSpec extends AnyFlatSpec {
         testExpr(
           new PairLiterNode()(0, 0),
           List(MoveInstr(Reg(0), ImmOffset(0)))
+        )
+    }
+    it should "translate logical NOT expressions" in {
+        reset()
+        testExpr(
+            Not(BoolLiterNode(false)(0,0))(0,0),
+            expectedTextSection(
+                List(
+                    List(
+                        MoveInstr(r0, ImmOffset(0)),
+                        XorInstr(r0, r0, ImmOffset(1))
+                    )
+                )
+            )
+        )
+    }
+    it should "translate negation expressions" in {
+        reset()
+        testExpr(
+            Neg(IntLiterNode(53)(0,0))(0,0),
+            expectedDataSection(
+                List(
+                    expectedOverflowDirective,
+                    expectedPrintStrDirective
+                )
+            ) ++
+            expectedTextSection(
+                List(
+                    List(
+                        LoadImmIntInstr(r0, 53),
+                        ReverseSubInstr(r0, r0, ImmOffset(0), true),
+                        BranchLinkInstr("p_throw_overflow_error", Condition.VS)
+                    ),
+                    expectedOverflowText(0),
+                    expectedRuntimeErrText,
+                    expectedPrintStrText(1)
+                )
+            )
+        )
+    }
+    it should "translate len expressions" in {
+        reset()
+        val st = SymbolTable()
+        st.add(
+            "anArray", 
+            Variable(ArrayType(IntType(), List(3), 1))
+        )
+        sf = StackFrame(st)
+        sf.unlock("anArray")
+        testExpr(
+            Len(IdentNode("anArray")(0, 0))(0, 0),
+            expectedTextSection(
+                List(
+                    List(
+                        LoadInstr(r0, sp, ImmOffset(sf.getOffset("anArray"))),
+                        LoadInstr(r0, r0, ImmOffset(0))
+                    )
+                )
+            )
+        )
+    }
+    it should "translate ord expressions" in {
+        reset()
+        testExpr(
+            Ord(CharLiterNode('t')(0, 0))(0, 0),
+            expectedTextSection(
+                List(
+                    List(
+                        MoveInstr(r0, ImmOffset('t'))
+                    )
+                )
+            )
+        )
+    }
+    it should "translate chr expressions" in {
+        reset()
+        testExpr(
+            Chr(IntLiterNode(90)(0, 0))(0, 0),
+            expectedTextSection(
+                List(
+                    List(
+                        LoadImmIntInstr(r0, 90)
+                    )
+                )
+            )
         )
     }
     it should "translate addition expressions" in {
@@ -804,6 +891,7 @@ class CodeGenSpec extends AnyFlatSpec {
         )
     }
     it should "translate inequality expressions" in {
+        // String literal
         reset()
         testExpr(
             NotEqual(StringLiterNode("hello")(0, 0), StringLiterNode("goodbye")(0, 0))(0, 0),
