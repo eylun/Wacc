@@ -70,6 +70,11 @@ class CodeGenSpec extends AnyFlatSpec {
       )
     )
 
+    def expectedStringDirective(str: String): List[Instruction] = List(
+        Directive(s"word ${str.length()}"),
+        Directive(s"ascii \"$str\"")
+    )
+
     /** Returns a list of expected instructions in the text section */
     def expectedTextSection(
         sections: List[List[Instruction]]
@@ -736,6 +741,92 @@ class CodeGenSpec extends AnyFlatSpec {
               )
             )
           )
+        )
+    }
+    it should "translate less-than expressions" in {
+        reset()
+        testExpr(
+            LT(IntLiterNode(50)(0, 0), IntLiterNode(4)(0, 0))(0, 0),
+            expectedTextSection(
+                List(
+                    List(
+                        LoadImmIntInstr(r0, 50),
+                        PushInstr(List(r0)),
+                        LoadImmIntInstr(r0, 4),
+                        MoveInstr(r1, RegOp(r0)),
+                        PopInstr(List(r0)),
+                        CompareInstr(r0, RegOp(r1)),
+                        MoveInstr(r0, ImmOffset(1), Condition.LT),
+                        MoveInstr(r0, ImmOffset(0), Condition.GE) 
+                    )
+                )
+            )
+        )
+    }
+    it should "translate less-than-or-equal expressions" in {
+        reset()
+        testExpr(
+            LTE(CharLiterNode('t')(0, 0), CharLiterNode('p')(0, 0))(0, 0),
+            expectedTextSection(
+                List(
+                    List(
+                        MoveInstr(r0, ImmOffset('t')),
+                        PushInstr(List(r0)),
+                        MoveInstr(r0, ImmOffset('p')),
+                        MoveInstr(r1, RegOp(r0)),
+                        PopInstr(List(r0)),
+                        CompareInstr(r0, RegOp(r1)),
+                        MoveInstr(r0, ImmOffset(1), Condition.LE),
+                        MoveInstr(r0, ImmOffset(0), Condition.GT) 
+                    )
+                )
+            )
+        )
+    }
+    it should "translate equality expressions" in {
+        reset()
+        testExpr(
+            Equal(BoolLiterNode(true)(0, 0), BoolLiterNode(false)(0, 0))(0, 0),
+            expectedTextSection(
+                List(
+                    List(
+                        MoveInstr(r0, ImmOffset(1)),
+                        PushInstr(List(r0)),
+                        MoveInstr(r0, ImmOffset(0)),
+                        MoveInstr(r1, RegOp(r0)),
+                        PopInstr(List(r0)),
+                        CompareInstr(r0, RegOp(r1)),
+                        MoveInstr(r0, ImmOffset(1), Condition.EQ),
+                        MoveInstr(r0, ImmOffset(0), Condition.NE) 
+                    )
+                )
+            )
+        )
+    }
+    it should "translate inequality expressions" in {
+        reset()
+        testExpr(
+            NotEqual(StringLiterNode("hello")(0, 0), StringLiterNode("goodbye")(0, 0))(0, 0),
+            expectedDataSection(
+                List(
+                    expectedStringDirective("hello"),
+                    expectedStringDirective("goodbye")
+                )
+            ) ++
+            expectedTextSection(
+                List(
+                    List(
+                        LoadLabelInstr(r0, "msg_0"),
+                        PushInstr(List(r0)),
+                        LoadLabelInstr(r0, "msg_1"),
+                        MoveInstr(r1, RegOp(r0)),
+                        PopInstr(List(r0)),
+                        CompareInstr(r0, RegOp(r1)),
+                        MoveInstr(r0, ImmOffset(1), Condition.NE),
+                        MoveInstr(r0, ImmOffset(0), Condition.EQ) 
+                    )
+                )
+            )
         )
     }
 
