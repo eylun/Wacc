@@ -607,7 +607,6 @@ class CodeGenSpec extends AnyFlatSpec {
             ))
         )
     }
-<<<<<<< HEAD
     it should "translate logical OR expressions" in {
         // Simple expression (true || false)
         reset()
@@ -696,7 +695,6 @@ class CodeGenSpec extends AnyFlatSpec {
             ))
         )
     }
-=======
 
     behavior of "AssignRHS code generation"
     it should "translate expressions" in {
@@ -889,5 +887,4 @@ class CodeGenSpec extends AnyFlatSpec {
     }
     it should "translate call statements" in {}
 
->>>>>>> 166a98e539a6928df296d5d808dcda7b0dd1a545
 }
