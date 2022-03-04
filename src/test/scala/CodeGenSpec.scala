@@ -1439,4 +1439,17 @@ class CodeGenSpec extends AnyFlatSpec {
           )
         )
     }
+
+    it should "translate return statements" in {
+        reset()
+        var node =
+            StatListNode(List(ReturnNode(IntLiterNode(1)(0, 0))(0, 0)))(0, 0)
+        testStat(
+          node,
+          List(
+            LoadImmIntInstr(r0, 1),
+            PopInstr(List(pc))
+          )
+        )
+    }
 }
