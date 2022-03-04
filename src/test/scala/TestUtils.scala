@@ -30,7 +30,7 @@ object testUtils {
     ): Unit = {
         if (expected != actual)
             fail(
-              s"Instructions do not match\nexpected: $expected, actual: $actual."
+              s"Instructions do not match\nexpected: $expected\nactual: $actual."
             )
     }
 

@@ -233,8 +233,8 @@ object transExpression {
                 stackFrame.dropTempOffset(WORD_SIZE)
             }
             case And(e1, e2) => {
-                val label = collector.tickGeneral()
                 transExpression(e1, stackFrame)
+                val label = collector.tickGeneral()
 
                 /** short-circuit evaluation */
                 collector.addStatement(
@@ -252,8 +252,8 @@ object transExpression {
                 )
             }
             case Or(e1, e2) => {
-                val label = collector.tickGeneral()
                 transExpression(e1, stackFrame)
+                val label = collector.tickGeneral()
 
                 /** short-circuit evaluation */
                 collector.addStatement(
