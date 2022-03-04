@@ -84,8 +84,8 @@ class CodeGenSpec extends AnyFlatSpec {
 
     /** Expected directive for a string in the data section */
     def expectedStringDirective(str: String): List[Instruction] = List(
-        Directive(s"word ${str.length()}"),
-        Directive(s"ascii \"$str\"")
+      Directive(s"word ${str.length()}"),
+      Directive(s"ascii \"$str\"")
     )
 
     /** Returns a list of expected instructions in the text section */
@@ -180,104 +180,104 @@ class CodeGenSpec extends AnyFlatSpec {
     it should "translate string literals" in {
         reset()
         testExpr(
-            StringLiterNode("a string.")(0, 0),
-            expectedDataSection(
-                List(
-                    expectedStringDirective("a string.")
-                )
-            ) ++
-            expectedTextSection(
-                List(
-                    List(
-                        LoadLabelInstr(r0, "msg_0")
-                    )
-                )
+          StringLiterNode("a string.")(0, 0),
+          expectedDataSection(
+            List(
+              expectedStringDirective("a string.")
             )
+          ) ++
+              expectedTextSection(
+                List(
+                  List(
+                    LoadLabelInstr(r0, "msg_0")
+                  )
+                )
+              )
         )
     }
     it should "translate logical NOT expressions" in {
         reset()
         testExpr(
-            Not(BoolLiterNode(false)(0,0))(0,0),
-            expectedTextSection(
-                List(
-                    List(
-                        MoveInstr(r0, ImmOffset(0)),
-                        XorInstr(r0, r0, ImmOffset(1))
-                    )
-                )
+          Not(BoolLiterNode(false)(0, 0))(0, 0),
+          expectedTextSection(
+            List(
+              List(
+                MoveInstr(r0, ImmOffset(0)),
+                XorInstr(r0, r0, ImmOffset(1))
+              )
             )
+          )
         )
     }
     it should "translate negation expressions" in {
         reset()
         testExpr(
-            Neg(IntLiterNode(53)(0,0))(0,0),
-            expectedDataSection(
-                List(
-                    expectedOverflowDirective,
-                    expectedPrintStrDirective
-                )
-            ) ++
-            expectedTextSection(
-                List(
-                    List(
-                        LoadImmIntInstr(r0, 53),
-                        ReverseSubInstr(r0, r0, ImmOffset(0), true),
-                        BranchLinkInstr("p_throw_overflow_error", Condition.VS)
-                    ),
-                    expectedOverflowText(0),
-                    expectedRuntimeErrText,
-                    expectedPrintStrText(1)
-                )
+          Neg(IntLiterNode(53)(0, 0))(0, 0),
+          expectedDataSection(
+            List(
+              expectedOverflowDirective,
+              expectedPrintStrDirective
             )
+          ) ++
+              expectedTextSection(
+                List(
+                  List(
+                    LoadImmIntInstr(r0, 53),
+                    ReverseSubInstr(r0, r0, ImmOffset(0), true),
+                    BranchLinkInstr("p_throw_overflow_error", Condition.VS)
+                  ),
+                  expectedOverflowText(0),
+                  expectedRuntimeErrText,
+                  expectedPrintStrText(1)
+                )
+              )
         )
     }
     it should "translate len expressions" in {
         reset()
         val st = SymbolTable()
         st.add(
-            "anArray", 
-            Variable(ArrayType(IntType(), List(3), 1))
+          "anArray",
+          Variable(ArrayType(IntType(), List(3), 1))
         )
         sf = StackFrame(st)
         sf.unlock("anArray")
         testExpr(
-            Len(IdentNode("anArray")(0, 0))(0, 0),
-            expectedTextSection(
-                List(
-                    List(
-                        LoadInstr(r0, sp, ImmOffset(sf.getOffset("anArray"))),
-                        LoadInstr(r0, r0, ImmOffset(0))
-                    )
-                )
+          Len(IdentNode("anArray")(0, 0))(0, 0),
+          expectedTextSection(
+            List(
+              List(
+                LoadInstr(r0, sp, ImmOffset(sf.getOffset("anArray"))),
+                LoadInstr(r0, r0, ImmOffset(0))
+              )
             )
+          )
         )
     }
     it should "translate ord expressions" in {
         reset()
         testExpr(
-            Ord(CharLiterNode('t')(0, 0))(0, 0),
-            expectedTextSection(
-                List(
-                    List(
-                        MoveInstr(r0, ImmOffset('t'))
-                    )
-                )
+          Ord(CharLiterNode('t')(0, 0))(0, 0),
+          expectedTextSection(
+            List(
+              List(
+                MoveInstr(r0, ImmOffset('t'))
+              )
             )
+          )
         )
     }
     it should "translate chr expressions" in {
         reset()
         testExpr(
-            Chr(IntLiterNode(90)(0, 0))(0, 0),
-            expectedTextSection(
-                List(
-                    List(
-                        LoadImmIntInstr(r0, 90)
-                    )
-                )
+          Chr(IntLiterNode(90)(0, 0))(0, 0),
+          expectedTextSection(
+            List(
+              List(
+                LoadImmIntInstr(r0, 90)
+              )
             )
+          )
         )
     }
     it should "translate addition expressions" in {
@@ -862,88 +862,91 @@ class CodeGenSpec extends AnyFlatSpec {
     it should "translate less-than expressions" in {
         reset()
         testExpr(
-            LT(IntLiterNode(50)(0, 0), IntLiterNode(4)(0, 0))(0, 0),
-            expectedTextSection(
-                List(
-                    List(
-                        LoadImmIntInstr(r0, 50),
-                        PushInstr(List(r0)),
-                        LoadImmIntInstr(r0, 4),
-                        MoveInstr(r1, RegOp(r0)),
-                        PopInstr(List(r0)),
-                        CompareInstr(r0, RegOp(r1)),
-                        MoveInstr(r0, ImmOffset(1), Condition.LT),
-                        MoveInstr(r0, ImmOffset(0), Condition.GE) 
-                    )
-                )
+          LT(IntLiterNode(50)(0, 0), IntLiterNode(4)(0, 0))(0, 0),
+          expectedTextSection(
+            List(
+              List(
+                LoadImmIntInstr(r0, 50),
+                PushInstr(List(r0)),
+                LoadImmIntInstr(r0, 4),
+                MoveInstr(r1, RegOp(r0)),
+                PopInstr(List(r0)),
+                CompareInstr(r0, RegOp(r1)),
+                MoveInstr(r0, ImmOffset(1), Condition.LT),
+                MoveInstr(r0, ImmOffset(0), Condition.GE)
+              )
             )
+          )
         )
     }
     it should "translate less-than-or-equal expressions" in {
         reset()
         testExpr(
-            LTE(CharLiterNode('t')(0, 0), CharLiterNode('p')(0, 0))(0, 0),
-            expectedTextSection(
-                List(
-                    List(
-                        MoveInstr(r0, ImmOffset('t')),
-                        PushInstr(List(r0)),
-                        MoveInstr(r0, ImmOffset('p')),
-                        MoveInstr(r1, RegOp(r0)),
-                        PopInstr(List(r0)),
-                        CompareInstr(r0, RegOp(r1)),
-                        MoveInstr(r0, ImmOffset(1), Condition.LE),
-                        MoveInstr(r0, ImmOffset(0), Condition.GT) 
-                    )
-                )
+          LTE(CharLiterNode('t')(0, 0), CharLiterNode('p')(0, 0))(0, 0),
+          expectedTextSection(
+            List(
+              List(
+                MoveInstr(r0, ImmOffset('t')),
+                PushInstr(List(r0)),
+                MoveInstr(r0, ImmOffset('p')),
+                MoveInstr(r1, RegOp(r0)),
+                PopInstr(List(r0)),
+                CompareInstr(r0, RegOp(r1)),
+                MoveInstr(r0, ImmOffset(1), Condition.LE),
+                MoveInstr(r0, ImmOffset(0), Condition.GT)
+              )
             )
+          )
         )
     }
     it should "translate equality expressions" in {
         reset()
         testExpr(
-            Equal(BoolLiterNode(true)(0, 0), BoolLiterNode(false)(0, 0))(0, 0),
-            expectedTextSection(
-                List(
-                    List(
-                        MoveInstr(r0, ImmOffset(1)),
-                        PushInstr(List(r0)),
-                        MoveInstr(r0, ImmOffset(0)),
-                        MoveInstr(r1, RegOp(r0)),
-                        PopInstr(List(r0)),
-                        CompareInstr(r0, RegOp(r1)),
-                        MoveInstr(r0, ImmOffset(1), Condition.EQ),
-                        MoveInstr(r0, ImmOffset(0), Condition.NE) 
-                    )
-                )
+          Equal(BoolLiterNode(true)(0, 0), BoolLiterNode(false)(0, 0))(0, 0),
+          expectedTextSection(
+            List(
+              List(
+                MoveInstr(r0, ImmOffset(1)),
+                PushInstr(List(r0)),
+                MoveInstr(r0, ImmOffset(0)),
+                MoveInstr(r1, RegOp(r0)),
+                PopInstr(List(r0)),
+                CompareInstr(r0, RegOp(r1)),
+                MoveInstr(r0, ImmOffset(1), Condition.EQ),
+                MoveInstr(r0, ImmOffset(0), Condition.NE)
+              )
             )
+          )
         )
     }
     it should "translate inequality expressions" in {
         // String literal
         reset()
         testExpr(
-            NotEqual(StringLiterNode("hello")(0, 0), StringLiterNode("goodbye")(0, 0))(0, 0),
-            expectedDataSection(
-                List(
-                    expectedStringDirective("hello"),
-                    expectedStringDirective("goodbye")
-                )
-            ) ++
-            expectedTextSection(
-                List(
-                    List(
-                        LoadLabelInstr(r0, "msg_0"),
-                        PushInstr(List(r0)),
-                        LoadLabelInstr(r0, "msg_1"),
-                        MoveInstr(r1, RegOp(r0)),
-                        PopInstr(List(r0)),
-                        CompareInstr(r0, RegOp(r1)),
-                        MoveInstr(r0, ImmOffset(1), Condition.NE),
-                        MoveInstr(r0, ImmOffset(0), Condition.EQ) 
-                    )
-                )
+          NotEqual(
+            StringLiterNode("hello")(0, 0),
+            StringLiterNode("goodbye")(0, 0)
+          )(0, 0),
+          expectedDataSection(
+            List(
+              expectedStringDirective("hello"),
+              expectedStringDirective("goodbye")
             )
+          ) ++
+              expectedTextSection(
+                List(
+                  List(
+                    LoadLabelInstr(r0, "msg_0"),
+                    PushInstr(List(r0)),
+                    LoadLabelInstr(r0, "msg_1"),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    CompareInstr(r0, RegOp(r1)),
+                    MoveInstr(r0, ImmOffset(1), Condition.NE),
+                    MoveInstr(r0, ImmOffset(0), Condition.EQ)
+                  )
+                )
+              )
         )
     }
 
@@ -1250,4 +1253,41 @@ class CodeGenSpec extends AnyFlatSpec {
         )
     }
 
+    behavior of "Statements code generation"
+    it should "translate skip statements" in {
+        reset()
+        var node: StatListNode = StatListNode(List(SkipNode()(0, 0)))(0, 0)
+        testStat(
+          node,
+          List()
+        )
+    }
+
+    it should "translate new assignment statements" in {
+        reset()
+        var node: StatNode = StatListNode(
+          List(
+            NewAssignNode(
+              IntTypeNode()(0, 0),
+              IdentNode("x")(0, 0),
+              IntLiterNode(0)(0, 0)
+            )(0, 0)
+          )
+        )(0, 0)
+
+        node.typeId = Some(IntType())
+        var st = SymbolTable()
+        st.add("x", IntType())
+        sf = StackFrame(st)
+        sf.unlock("x")
+
+        testStat(
+          node,
+          List(
+            LoadImmIntInstr(r0, 0),
+            StoreInstr(r0, sp, ImmOffset(0), false)
+          )
+        )
+
+    }
 }
