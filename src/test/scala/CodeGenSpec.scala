@@ -3,6 +3,7 @@ import org.scalatest.matchers.should.Matchers._
 import scala.collection.mutable.ListBuffer
 import constants._
 import Helpers._
+import parsley.internal.machine.instructions.Pop
 
 class CodeGenSpec extends AnyFlatSpec {
     import parsley.{Success, Failure}
@@ -27,6 +28,11 @@ class CodeGenSpec extends AnyFlatSpec {
 
     def testRHS(node: AssignRHSNode, expected: List[Instruction]): Unit = {
         transRHS(node, sf)
+        assertCodegenEquals(expected, wbuffer.emit())
+    }
+
+    def testStat(node: StatNode, expected: List[Instruction]): Unit = {
+        transStatement(node, sf)
         assertCodegenEquals(expected, wbuffer.emit())
     }
 
@@ -1193,6 +1199,42 @@ class CodeGenSpec extends AnyFlatSpec {
                 AddInstr(sp,sp,ImmOffset(1),false)
                 )
             )
+
+    }
+
+    it should "translate skip statements" in {
+        reset()
+        var node: StatNode = SkipNode()(0, 0)
+        testStat(
+          node,
+          List(
+            PushInstr(List(lr)),
+            MoveInstr(r0, ImmOffset(0)),
+            PopInstr(List(pc))
+          )
+        )
+    }
+
+    it should "translate new assignment statements" in {
+        reset()
+        var node: StatNode = NewAssignNode(
+          IntTypeNode()(0, 0),
+          IdentNode("x")(0, 0),
+          IntLiterNode(0)(0, 0)
+        )(0, 0)
+
+        testStat(
+          node,
+          List(
+            PushInstr(List(lr)),
+            SubInstr(sp, sp, ImmOffset(4)),
+            LoadImmIntInstr(r0, 0),
+            StoreInstr(r0, sp, ImmOffset(0), false),
+            AddInstr(sp, sp, ImmOffset(4)),
+            MoveInstr(r0, ImmOffset(0)),
+            PopInstr(List(pc))
+          )
+        )
 
     }
 
