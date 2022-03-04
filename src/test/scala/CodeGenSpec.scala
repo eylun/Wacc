@@ -1535,4 +1535,44 @@ class CodeGenSpec extends AnyFlatSpec {
         testStat(node, List())
     }
 
+    it should "translate do-while statements (false conditional)" in {
+        reset()
+        var loopBody = List(Label("wd_0"))
+        var whileLoopInstr = List(
+          Label("wd_1"),
+          MoveInstr(r0, ImmOffset(0)),
+          CompareInstr(r0, ImmOffset(1)),
+          BranchInstr("wd_0", Condition.EQ)
+        )
+        var node = StatListNode(
+          List(
+            WhileDoNode(
+              BoolLiterNode(false)(0, 0),
+              StatListNode(List(SkipNode()(0, 0)))(0, 0)
+            )(0, 0)
+          )
+        )(0, 0)
+        testStat(node, List(BranchInstr("wd_1")) ++ loopBody ++ whileLoopInstr)
+    }
+
+    it should "translate do-while statements (true conditional)" in {
+        reset()
+        var loopBody = List(Label("wd_0"))
+        var whileLoopInstr = List(
+          Label("wd_1"),
+          MoveInstr(r0, ImmOffset(1)),
+          CompareInstr(r0, ImmOffset(1)),
+          BranchInstr("wd_0", Condition.EQ)
+        )
+        var node = StatListNode(
+          List(
+            WhileDoNode(
+              BoolLiterNode(true)(0, 0),
+              StatListNode(List(SkipNode()(0, 0)))(0, 0)
+            )(0, 0)
+          )
+        )(0, 0)
+        testStat(node, List(BranchInstr("wd_1")) ++ loopBody ++ whileLoopInstr)
+    }
+
 }
