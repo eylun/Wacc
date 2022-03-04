@@ -42,6 +42,11 @@ class CodeGenSpec extends AnyFlatSpec {
         assertCodegenEquals(expected, wbuffer.emit())
     }
 
+    def testLHS(node: AssignLHSNode, expected: List[Instruction]): Unit = {
+        transLHS(node, sf)
+        assertCodegenEquals(expected, wbuffer.emit())
+    }
+
     def expectedDataSection(
         directives: List[List[Instruction]]
     ): List[Instruction] = {
@@ -101,6 +106,16 @@ class CodeGenSpec extends AnyFlatSpec {
       Directive(
         "ascii \"NullReferenceError: dereference a null reference\\n\\0\""
       )
+    )
+
+    val expectedArrayNegIndexDirective: List[Instruction] = List(
+      Directive("word 44"),
+      Directive("ascii \"ArrayIndexOutOfBoundsError: negative index\\n\\0\"")
+    )
+
+    val expectedArrayIndexTooLargeDirective: List[Instruction] = List(
+      Directive("word 45"),
+      Directive("ascii \"ArrayIndexOutOfBoundsError: index too large\\n\\0\"")
     )
 
     /** Expected directive for a string in the data section */
@@ -232,6 +247,22 @@ class CodeGenSpec extends AnyFlatSpec {
       BranchLinkInstr("p_throw_runtime_error", Condition.EQ),
       PopInstr(List(pc))
     )
+
+    def expectedCheckArrayBoundsText(msgNo: Int): List[Instruction] = {
+        val next_msg: Int = msgNo + 1
+        List(
+          Label("p_check_array_bounds"),
+          PushInstr(List(lr)),
+          CompareInstr(r0, ImmOffset(0), Condition.AL),
+          LoadLabelInstr(r0, s"msg_$msgNo", Condition.LT),
+          BranchLinkInstr("p_throw_runtime_error", Condition.LT),
+          LoadInstr(r1, r4, ImmOffset(0), Condition.AL),
+          CompareInstr(r0, RegOp(r1), Condition.AL),
+          LoadLabelInstr(r0, s"msg_$next_msg", Condition.CS),
+          BranchLinkInstr("p_throw_runtime_error", Condition.CS),
+          PopInstr(List(pc))
+        )
+    }
 
     behavior of "expression code generation"
     it should "translate integer literals" in {
@@ -1742,4 +1773,141 @@ class CodeGenSpec extends AnyFlatSpec {
           )
         )
     }
+    behavior of "AssignLHS Code Generation"
+    it should "translate identifiers" in {
+        reset()
+        val node: IdentNode = IdentNode("x")(0, 0)
+        node.typeId = Some(IntType())
+        val st = SymbolTable()
+        st.add("x", IntType())
+        sf = StackFrame(st)
+        sf.unlock("x")
+        testLHS(
+          node,
+          List()
+        )
+    }
+    it should "translate array elements" in {
+        reset()
+        var node: AssignLHSNode =
+            ArrayElemNode(
+              IdentNode("arr")(0, 0),
+              List(IntLiterNode(0)(0, 0))
+            )(0, 0)
+        node.typeId = Some(IntType())
+        var st = SymbolTable()
+        st.add("arr", ArrayType(IntType(), List(1), 1))
+        sf = StackFrame(st)
+        sf.unlock("arr")
+
+        testLHS(
+          node,
+          expectedDataSection(
+            List(
+              expectedArrayNegIndexDirective,
+              expectedArrayIndexTooLargeDirective,
+              expectedPrintStrDirective
+            )
+          ) ++
+              expectedTextSection(
+                List(
+                  List(
+                    PushInstr(List(r0, r4)),
+                    LoadInstr(r4, sp, ImmOffset(8), Condition.AL),
+                    LoadImmIntInstr(r0, 0, Condition.AL),
+                    BranchLinkInstr("p_check_array_bounds", Condition.AL),
+                    AddInstr(r4, r4, ImmOffset(4), false),
+                    AddInstr(r4, r4, LSLRegOp(r0, ShiftImm(2)), false),
+                    MoveInstr(r1, RegOp(r4), Condition.AL),
+                    PopInstr(List(r0, r4))
+                  ),
+                  expectedCheckArrayBoundsText(0),
+                  expectedRuntimeErrText,
+                  expectedPrintStrText(2)
+                )
+              )
+        )
+    }
+
+    it should "translate pair elements" in {
+        reset()
+        var node: PairElemNode = FirstPairElemNode(IdentNode("x")(0, 0))(0, 0)
+        node.typeId = Some(IntType())
+        var st = SymbolTable()
+        st.add("x", PairType(IntType(), CharType()))
+        sf = StackFrame(st)
+        sf.unlock("x")
+
+        testLHS(
+          node,
+          expectedDataSection(
+            List(
+              expectedNullReferenceDirective,
+              expectedPrintStrDirective
+            )
+          ) ++
+              expectedTextSection(
+                List(
+                  List(
+                    PushInstr(List(r0)),
+                    LoadInstr(r0, sp, ImmOffset(4), Condition.AL),
+                    BranchLinkInstr("p_check_null_pointer", Condition.AL),
+                    AddInstr(r0, r0, ImmOffset(0), false),
+                    PushInstr(List(r0)),
+                    LoadInstr(r0, r0, ImmOffset(0), Condition.AL),
+                    BranchLinkInstr("free", Condition.AL),
+                    MoveInstr(r0, ImmOffset(4), Condition.AL),
+                    BranchLinkInstr("malloc", Condition.AL),
+                    PopInstr(List(r1)),
+                    StoreInstr(r0, r1, ImmOffset(0), false),
+                    MoveInstr(r1, RegOp(r0), Condition.AL),
+                    PopInstr(List(r0))
+                  ),
+                  expectedNullPointerText(0),
+                  expectedRuntimeErrText,
+                  expectedPrintStrText(1)
+                )
+              )
+        )
+
+        reset()
+        node = SecondPairElemNode(IdentNode("x")(0, 0))(0, 0)
+        node.typeId = Some(CharType())
+        st = SymbolTable()
+        st.add("x", PairType(IntType(), CharType()))
+        sf = StackFrame(st)
+        sf.unlock("x")
+        testLHS(
+          node,
+          expectedDataSection(
+            List(
+              expectedNullReferenceDirective,
+              expectedPrintStrDirective
+            )
+          ) ++
+              expectedTextSection(
+                List(
+                  List(
+                    PushInstr(List(r0)),
+                    LoadInstr(r0, sp, ImmOffset(4), Condition.AL),
+                    BranchLinkInstr("p_check_null_pointer", Condition.AL),
+                    AddInstr(r0, r0, ImmOffset(4), false),
+                    PushInstr(List(r0)),
+                    LoadInstr(r0, r0, ImmOffset(0), Condition.AL),
+                    BranchLinkInstr("free", Condition.AL),
+                    MoveInstr(r0, ImmOffset(1), Condition.AL),
+                    BranchLinkInstr("malloc", Condition.AL),
+                    PopInstr(List(r1)),
+                    StoreInstr(r0, r1, ImmOffset(0), false),
+                    MoveInstr(r1, RegOp(r0), Condition.AL),
+                    PopInstr(List(r0))
+                  ),
+                  expectedNullPointerText(0),
+                  expectedRuntimeErrText,
+                  expectedPrintStrText(1)
+                )
+              )
+        )
+    }
+
 }
