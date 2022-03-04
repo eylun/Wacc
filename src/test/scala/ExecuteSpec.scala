@@ -71,7 +71,7 @@ class ExecuteSpec extends AnyFlatSpec {
     }
     behavior of "pair programs"
     it should "execute pair programs" in {
-        waccProgramsInDir(new File("./programs/valid/pair"))
+        waccProgramsInDir(new File("./programs/valid/pairs"))
             .foreach(executeAndCompare(_))
     }
     behavior of "runtime error programs"
