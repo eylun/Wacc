@@ -4,6 +4,7 @@ import scala.collection.mutable.ListBuffer
 import constants._
 import Helpers._
 import parsley.internal.machine.instructions.Pop
+import parsley.internal.machine.instructions.Pop
 
 class CodeGenSpec extends AnyFlatSpec {
     import parsley.{Success, Failure}
@@ -1452,4 +1453,16 @@ class CodeGenSpec extends AnyFlatSpec {
           )
         )
     }
+
+    it should "translate begin-end statements" in {
+        reset()
+        var node =
+            StatListNode(
+              List(
+                BeginEndNode(StatListNode(List(SkipNode()(0, 0)))(0, 0))(0, 0)
+              )
+            )(0, 0)
+        testStat(node, List())
+    }
+
 }
