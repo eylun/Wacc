@@ -841,6 +841,7 @@ class CodeGenSpec extends AnyFlatSpec {
         var st = SymbolTable()
         st.add("x", PairType(IntType(), CharType()))
         sf = StackFrame(st)
+		sf.unlock("x")
 
         testRHS(
             node,

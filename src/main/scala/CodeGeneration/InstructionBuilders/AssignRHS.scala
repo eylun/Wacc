@@ -38,7 +38,7 @@ object transRHS {
                           )
                         )
                     }
-                    case _ => 
+                    case _ =>
                 }
                 collector.addStatement(
                   List(
@@ -159,23 +159,22 @@ object transRHS {
                   List(
                     BranchLinkInstr("p_check_null_pointer")
                   )
+                      ++
+                          (e match {
+                              case FirstPairElemNode(f) => {
+                                  transExpression(f, stackFrame)
+                                  List(
+                                    LoadInstr(r0, r0, ImmOffset(0))
+                                  )
+                              }
+                              case SecondPairElemNode(s) => {
+                                  transExpression(s, stackFrame)
+                                  List(
+                                    LoadInstr(r0, r0, ImmOffset(WORD_SIZE))
+                                  )
+                              }
+                          })
                 )
-                collector.addStatement(   
-                    (e match {
-                        case FirstPairElemNode(f) => {
-                            transExpression(f, stackFrame)
-                            List(
-                            LoadInstr(r0, r0, ImmOffset(0))
-                            )
-                        }
-                        case SecondPairElemNode(s) => {
-                            transExpression(s, stackFrame)
-                            List(
-                            LoadInstr(r0, r0, ImmOffset(WORD_SIZE))
-                            )
-                        }
-                    })
-                    )
 
                 collector.addStatement(
                   List(determineLoadInstr(e.typeId.get.getType(), r0, r0, 0))
