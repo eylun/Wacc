@@ -94,6 +94,12 @@ class CodeGenSpec extends AnyFlatSpec {
       Directive("ascii \"%d\\0\"")
     )
 
+    /** Expected directive for a char in the data section */
+    def expectedCharDirective: List[Instruction] = List(
+      Directive("word 4"),
+      Directive("ascii \" %c\\0\"")
+    )
+
     /** Returns a list of expected instructions in the text section */
     def expectedTextSection(
         sections: List[List[Instruction]]
@@ -1362,7 +1368,7 @@ class CodeGenSpec extends AnyFlatSpec {
         )
     }
 
-    it should "translate read statements" in {
+    it should "translate read (int) statements" in {
         reset()
         var identifier = IdentNode("x")(0, 0)
         identifier.typeId = Some(IntType())
@@ -1393,6 +1399,42 @@ class CodeGenSpec extends AnyFlatSpec {
                 AddInstr(r0, sp, ImmOffset(0)),
                 BranchLinkInstr("p_read_int")
               ) ++ readIntInstructions
+            )
+          )
+        )
+    }
+
+    it should "translate read (char) statements" in {
+        reset()
+        var identifier = IdentNode("x")(0, 0)
+        identifier.typeId = Some(CharType())
+        var node: StatListNode =
+            StatListNode(List(ReadNode(identifier)(0, 0)))(0, 0)
+        var st = SymbolTable()
+        st.add("x", CharType())
+        sf = StackFrame(st)
+        sf.unlock("x")
+
+        val readCharInstructions: List[Instruction] = List(
+          Label("p_read_char"),
+          PushInstr(List(lr)),
+          MoveInstr(r1, RegOp(r0)),
+          LoadLabelInstr(r0, "msg_0"),
+          AddInstr(r0, r0, ImmOffset(4)),
+          BranchLinkInstr("scanf"),
+          PopInstr(List(pc))
+        )
+
+        testStat(
+          node,
+          expectedDataSection(
+            List(expectedCharDirective)
+          ) ++ expectedTextSection(
+            List(
+              List(
+                AddInstr(r0, sp, ImmOffset(0)),
+                BranchLinkInstr("p_read_char")
+              ) ++ readCharInstructions
             )
           )
         )
