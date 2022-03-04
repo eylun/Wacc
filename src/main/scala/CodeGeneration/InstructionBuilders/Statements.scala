@@ -212,8 +212,25 @@ object transStatement {
             /** FREE STATEMENT: ‘free’ ⟨expr ⟩ */
             case FreeNode(e) => {
                 transExpression(e, stackFrame)
-                collector.insertUtil(UtilFlag.PFreePair)
-                collector.addStatement(List(BranchLinkInstr("p_free_pair")))
+                e.typeId.get.getType() match {
+                    case ArrayType(_, _, _) => {
+                        collector.addStatement(
+                          List(
+                            BranchLinkInstr("free")
+                          )
+                        )
+                    }
+                    case PairType(_, _) => {
+                        collector.insertUtil(UtilFlag.PFreePair)
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_free_pair"))
+                        )
+                    }
+                    case _ =>
+                        throw new RuntimeException(
+                          "Invalid Target Type for Free Statement"
+                        )
+                }
             }
             /** RETURN STATEMENT: ‘return’ ⟨expr ⟩ */
             case ReturnNode(e) => {

@@ -139,6 +139,25 @@ class CodeGenSpec extends AnyFlatSpec {
       PopInstr(List(PCReg()))
     )
 
+    def expectedFreePairText(msgNo: Int): List[Instruction] = {
+        List(
+          Label("p_free_pair"),
+          PushInstr(List(lr)),
+          CompareInstr(r0, ImmOffset(0)),
+          LoadLabelInstr(r0, s"msg_$msgNo", Condition.EQ),
+          BranchInstr("p_throw_runtime_error", Condition.EQ),
+          PushInstr(List(r0)),
+          LoadInstr(r0, r0, ImmOffset(0)),
+          BranchLinkInstr("free"),
+          LoadInstr(r0, sp, ImmOffset(0)),
+          LoadInstr(r0, r0, ImmOffset(4)),
+          BranchLinkInstr("free"),
+          PopInstr(List(r0)),
+          BranchLinkInstr("free"),
+          PopInstr(List(pc))
+        )
+    }
+
     def expectedDivideByZeroText(msgNo: Int): List[Instruction] = List(
       Label("p_check_divide_by_zero"),
       PushInstr(List(lr)),
@@ -1352,6 +1371,57 @@ class CodeGenSpec extends AnyFlatSpec {
           )
         )
 
+    }
+
+    it should "translate free statements" in {
+        // Free pair
+        reset()
+        val pairST = SymbolTable()
+        val pair = IdentNode("a_pair")(0, 0)
+        pairST.add("a_pair", Variable(PairType(IntType(), IntType())))
+        pair.check(pairST, ListBuffer())
+        sf = StackFrame(pairST)
+        sf.unlock("a_pair")
+        testStat(
+          StatListNode(List(FreeNode(pair)(0, 0)))(0, 0),
+          expectedDataSection(
+            List(
+              expectedNullReferenceDirective,
+              expectedPrintStrDirective
+            )
+          ) ++
+              expectedTextSection(
+                List(
+                  List(
+                    LoadInstr(r0, sp, ImmOffset(sf.getOffset("a_pair"))),
+                    BranchLinkInstr("p_free_pair")
+                  ),
+                  expectedFreePairText(0),
+                  expectedRuntimeErrText,
+                  expectedPrintStrText(1)
+                )
+              )
+        )
+
+        // Free array
+        reset()
+        val arrST = SymbolTable()
+        val node = IdentNode("arr1")(0, 0)
+        arrST.add("arr1", Variable(ArrayType(IntType(), List(5), 1)))
+        node.check(arrST, ListBuffer())
+        sf = StackFrame(arrST)
+        sf.unlock("arr1")
+        testStat(
+          StatListNode(List(FreeNode(node)(0, 0)))(0, 0),
+          expectedTextSection(
+            List(
+              List(
+                LoadInstr(r0, sp, ImmOffset(sf.getOffset("arr1"))),
+                BranchLinkInstr("free")
+              )
+            )
+          )
+        )
     }
 
     it should "translate exit statements" in {
