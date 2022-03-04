@@ -69,6 +69,26 @@ class CodeGenSpec extends AnyFlatSpec {
       Directive("ascii \"%.*s\\0\"")
     )
 
+    val expectedPrintIntDirective: List[Instruction] = List(
+      Directive(s"word 3"),
+      Directive(s"ascii \"%d\\0\"")
+    )
+
+    val expectedPrintCharDirective: List[Instruction] = List(
+      Directive(s"word 4"),
+      Directive(s"ascii \" %c\\0\"")
+    )
+
+    val expectedPrintRefDirective: List[Instruction] = List(
+      Directive(s"word 3"),
+      Directive(s"ascii \"%p\\0\"")
+    )
+
+    val expectedPrintLnDirective: List[Instruction] = List(
+      Directive(s"word 1"),
+      Directive(s"ascii \"\\0\"")
+    )
+
     /** Expected directive for a divide by zero error in the data section */
     val expectedDivideByZeroDirective: List[Instruction] = List(
       Directive("word 45"),
@@ -154,6 +174,43 @@ class CodeGenSpec extends AnyFlatSpec {
           BranchLinkInstr("free"),
           PopInstr(List(r0)),
           BranchLinkInstr("free"),
+          PopInstr(List(pc))
+        )
+    }
+    def expectedPrintIntText(msgNo: Int): List[Instruction] = List(
+      Label("p_print_int"),
+      PushInstr(List(lr)),
+      MoveInstr(Reg(1), RegOp(Reg(0))),
+      LoadLabelInstr(Reg(0), s"msg_$msgNo"),
+      AddInstr(Reg(0), Reg(0), ImmOffset(4), false),
+      BranchLinkInstr("printf"),
+      MoveInstr(Reg(0), ImmOffset(0)),
+      BranchLinkInstr("fflush"),
+      PopInstr(List(pc))
+    )
+
+    def expectedPrintRefText(msgNo: Int): List[Instruction] =
+        List(
+          Label("p_print_reference"),
+          PushInstr(List(lr)),
+          MoveInstr(Reg(1), RegOp(Reg(0))),
+          LoadLabelInstr(Reg(0), s"msg_$msgNo"),
+          AddInstr(Reg(0), Reg(0), ImmOffset(4), false),
+          BranchLinkInstr("printf"),
+          MoveInstr(Reg(0), ImmOffset(0)),
+          BranchLinkInstr("fflush"),
+          PopInstr(List(pc))
+        )
+
+    def expectedPrintLnText(msgNo: Int): List[Instruction] = {
+        List(
+          Label("p_print_ln"),
+          PushInstr(List(lr)),
+          LoadLabelInstr(Reg(0), s"msg_$msgNo"),
+          AddInstr(Reg(0), Reg(0), ImmOffset(4), false),
+          BranchLinkInstr("puts"),
+          MoveInstr(Reg(0), ImmOffset(0)),
+          BranchLinkInstr("fflush"),
           PopInstr(List(pc))
         )
     }
@@ -1247,91 +1304,44 @@ class CodeGenSpec extends AnyFlatSpec {
 
     }
 
-    behavior of "Function code generation"
-    it should "translate functions that end in return" in {
+    it should "translate print int statements" in {
         reset()
-        var node = FuncNode(
-          IntTypeNode()(0, 0),
-          IdentNode("x")(0, 0),
-          List().empty,
-          StatListNode(List(ReturnNode(IntLiterNode(1)(0, 0))(0, 0)))(0, 0)
-        )(0, 0)
-        testFunction(
+
+        var node =
+            StatListNode(List(PrintNode(IntLiterNode(1)(0, 0))(0, 0)))(0, 0)
+        testStat(
           node,
-          List(
-            Label("f_x"),
-            PushInstr(List(lr)),
-            LoadImmIntInstr(r0, 1),
-            PopInstr(List(pc)),
-            Directive("ltorg")
-          )
-        )
-        reset()
-        node = FuncNode(
-          IntTypeNode()(0, 0),
-          IdentNode("x")(0, 0),
-          List().empty,
-          StatListNode(
-            List(
-              ReturnNode(IntLiterNode(1)(0, 0))(0, 0),
-              ReturnNode(IntLiterNode(5)(0, 0))(0, 0)
-            )
-          )(0, 0)
-        )(0, 0)
-        testFunction(
-          node,
-          List(
-            Label("f_x"),
-            PushInstr(List(lr)),
-            LoadImmIntInstr(r0, 1),
-            PopInstr(List(pc)),
-            LoadImmIntInstr(r0, 5),
-            PopInstr(List(pc)),
-            Directive("ltorg")
-          )
+          expectedDataSection(List(expectedPrintIntDirective))
+              ++ List(
+                LoadImmIntInstr(r0, 1),
+                BranchLinkInstr("p_print_int")
+              )
+              ++ expectedPrintIntText(0)
         )
     }
-    it should "translate functions that end in exit" in {
-
+    it should "translate print string statements" in {
         reset()
-        var node = FuncNode(
-          IntTypeNode()(0, 0),
-          IdentNode("x")(0, 0),
-          List().empty,
-          StatListNode(List(ExitNode(IntLiterNode(1)(0, 0))(0, 0)))(0, 0)
-        )(0, 0)
-        testFunction(
+        var node =
+            StatListNode(List(PrintNode(IntLiterNode(1)(0, 0))(0, 0)))(0, 0)
+        testStat(
           node,
-          List(
-            Label("f_x"),
-            PushInstr(List(lr)),
-            LoadImmIntInstr(r0, 1),
-            BranchLinkInstr("exit"),
-            Directive("ltorg")
-          )
+          expectedDataSection(List(expectedPrintIntDirective))
+              ++ List(
+                LoadImmIntInstr(r0, 1),
+                BranchLinkInstr("p_print_int")
+              )
+              ++ expectedPrintIntText(0)
         )
+    }
+    it should "translate print char statements" in {
         reset()
-        node = FuncNode(
-          IntTypeNode()(0, 0),
-          IdentNode("x")(0, 0),
-          List().empty,
-          StatListNode(
-            List(
-              ExitNode(IntLiterNode(1)(0, 0))(0, 0),
-              ExitNode(IntLiterNode(255)(0, 0))(0, 0)
-            )
-          )(0, 0)
-        )(0, 0)
-        testFunction(
+        var node =
+            StatListNode(List(PrintNode(CharLiterNode('c')(0, 0))(0, 0)))(0, 0)
+        testStat(
           node,
           List(
-            Label("f_x"),
-            PushInstr(List(lr)),
-            LoadImmIntInstr(r0, 1),
-            BranchLinkInstr("exit"),
-            LoadImmIntInstr(r0, 255),
-            BranchLinkInstr("exit"),
-            Directive("ltorg")
+            MoveInstr(r0, ImmOffset('c')),
+            BranchLinkInstr("putchar")
           )
         )
     }
@@ -1574,5 +1584,162 @@ class CodeGenSpec extends AnyFlatSpec {
         )(0, 0)
         testStat(node, List(BranchInstr("wd_1")) ++ loopBody ++ whileLoopInstr)
     }
+    it should "translate print reference statements" in {
+        reset()
+        val st = SymbolTable()
+        st.add(
+          "anArray",
+          Variable(ArrayType(IntType(), List(3), 1))
+        )
+        sf = StackFrame(st)
+        sf.unlock("anArray")
+        var node =
+            StatListNode(
+              List(PrintNode(IdentNode("anArray")(0, 0))(0, 0))
+            )(0, 0)
+        testStat(
+          node,
+          expectedDataSection(List(expectedPrintRefDirective))
+              ++ List(
+                LoadInstr(r0, sp, ImmOffset(0)),
+                BranchLinkInstr("p_print_reference")
+              )
+              ++ expectedPrintRefText(0)
+        )
+    }
+    it should "translate println statements" in {
+        reset()
+        var node =
+            StatListNode(
+              List(PrintlnNode(CharLiterNode('c')(0, 0))(0, 0))
+            )(0, 0)
+        testStat(
+          node,
+          expectedDataSection(List(expectedPrintLnDirective))
+              ++ List(
+                MoveInstr(r0, ImmOffset('c')),
+                BranchLinkInstr("putchar"),
+                BranchLinkInstr("p_print_ln")
+              )
+              ++ expectedPrintLnText(0)
+        )
+    }
 
+    it should "translate if then else statements" in {
+        reset()
+        var node =
+            StatListNode(
+              List(
+                IfThenElseNode(
+                  BoolLiterNode(true)(0, 0),
+                  StatListNode(
+                    List(SkipNode()(0, 0))
+                  )(0, 0),
+                  StatListNode(
+                    List(SkipNode()(0, 0))
+                  )(0, 0)
+                )(0, 0)
+              )
+            )(0, 0)
+        testStat(
+          node,
+          List(
+            MoveInstr(r0, ImmOffset(1)),
+            CompareInstr(r0, ImmOffset(0)),
+            BranchInstr("ite_0", Condition.EQ),
+            BranchInstr("ite_1"),
+            Label("ite_0"),
+            Label("ite_1")
+          )
+        )
+    }
+
+    behavior of "Function code generation"
+    it should "translate functions that end in return" in {
+        reset()
+        var node = FuncNode(
+          IntTypeNode()(0, 0),
+          IdentNode("x")(0, 0),
+          List().empty,
+          StatListNode(List(ReturnNode(IntLiterNode(1)(0, 0))(0, 0)))(0, 0)
+        )(0, 0)
+        testFunction(
+          node,
+          List(
+            Label("f_x"),
+            PushInstr(List(lr)),
+            LoadImmIntInstr(r0, 1),
+            PopInstr(List(pc)),
+            Directive("ltorg")
+          )
+        )
+        reset()
+        node = FuncNode(
+          IntTypeNode()(0, 0),
+          IdentNode("x")(0, 0),
+          List().empty,
+          StatListNode(
+            List(
+              ReturnNode(IntLiterNode(1)(0, 0))(0, 0),
+              ReturnNode(IntLiterNode(5)(0, 0))(0, 0)
+            )
+          )(0, 0)
+        )(0, 0)
+        testFunction(
+          node,
+          List(
+            Label("f_x"),
+            PushInstr(List(lr)),
+            LoadImmIntInstr(r0, 1),
+            PopInstr(List(pc)),
+            LoadImmIntInstr(r0, 5),
+            PopInstr(List(pc)),
+            Directive("ltorg")
+          )
+        )
+    }
+    it should "translate functions that end in exit" in {
+
+        reset()
+        var node = FuncNode(
+          IntTypeNode()(0, 0),
+          IdentNode("x")(0, 0),
+          List().empty,
+          StatListNode(List(ExitNode(IntLiterNode(1)(0, 0))(0, 0)))(0, 0)
+        )(0, 0)
+        testFunction(
+          node,
+          List(
+            Label("f_x"),
+            PushInstr(List(lr)),
+            LoadImmIntInstr(r0, 1),
+            BranchLinkInstr("exit"),
+            Directive("ltorg")
+          )
+        )
+        reset()
+        node = FuncNode(
+          IntTypeNode()(0, 0),
+          IdentNode("x")(0, 0),
+          List().empty,
+          StatListNode(
+            List(
+              ExitNode(IntLiterNode(1)(0, 0))(0, 0),
+              ExitNode(IntLiterNode(255)(0, 0))(0, 0)
+            )
+          )(0, 0)
+        )(0, 0)
+        testFunction(
+          node,
+          List(
+            Label("f_x"),
+            PushInstr(List(lr)),
+            LoadImmIntInstr(r0, 1),
+            BranchLinkInstr("exit"),
+            LoadImmIntInstr(r0, 255),
+            BranchLinkInstr("exit"),
+            Directive("ltorg")
+          )
+        )
+    }
 }
