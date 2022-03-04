@@ -1141,6 +1141,59 @@ class CodeGenSpec extends AnyFlatSpec {
               )
         )
     }
-    it should "translate call statements" in {}
+    it should "translate call statements" in {
+        reset()
+        var node = CallNode(IdentNode("f")(0,0), List())(0, 0)
+        node.typeId = Some(CharType())
+        var st = SymbolTable()
+        st.add("f", FunctionId(IntType(), Array(), st))
+        sf = StackFrame(st)
+        sf.unlock("f")
+        testRHS(
+            node, 
+            List(BranchLinkInstr("f_f",Condition.AL)
+            )
+        )
+
+        reset()
+        node = CallNode(IdentNode("f")(0,0), 
+                        List(IdentNode("x")(0,0), IntLiterNode(1)(0,0)))(0,0)
+        node.typeId = Some(BoolType())
+        st = SymbolTable()
+        st.add("x", BoolType())
+        st.add("f", FunctionId(IntType(), Array(Param(BoolType()), Param(IntType())), st))
+        sf = StackFrame(st)
+        sf.unlock("x")
+        sf.unlock("f")
+        testRHS(
+            node, 
+            List(
+                LoadImmIntInstr(r0,1,Condition.AL), 
+                StoreInstr(r0,sp,ImmOffset(-4),true), 
+                LoadRegSignedByte(r0,sp,ImmOffset(4),Condition.AL), 
+                StoreByteInstr(r0,sp,ImmOffset(-1),true), 
+                BranchLinkInstr("f_f",Condition.AL), 
+                AddInstr(sp,sp,ImmOffset(5),false)
+                )
+            )
+
+        reset()
+        node = CallNode(IdentNode("f")(0,0), List(CharLiterNode('a')(0,0)))(0,0)
+        node.typeId = Some(CharType())
+        st = SymbolTable()
+        st.add("f", FunctionId(IntType(), Array(Param(CharType())), st))
+        sf = StackFrame(st)
+        sf.unlock("f")
+        testRHS(
+            node, 
+            List(
+                MoveInstr(r0,ImmOffset('a'),Condition.AL), 
+                StoreByteInstr(r0,sp,ImmOffset(-1),true), 
+                BranchLinkInstr("f_f",Condition.AL), 
+                AddInstr(sp,sp,ImmOffset(1),false)
+                )
+            )
+
+    }
 
 }
