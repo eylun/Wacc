@@ -36,6 +36,11 @@ class CodeGenSpec extends AnyFlatSpec {
         assertCodegenEquals(expected, wbuffer.emit())
     }
 
+    def testFunction(node: FuncNode, expected: List[Instruction]): Unit = {
+        transFunction(node, sf)
+        assertCodegenEquals(expected, wbuffer.emit())
+    }
+
     def expectedDataSection(
         directives: List[List[Instruction]]
     ): List[Instruction] = {
@@ -1202,9 +1207,48 @@ class CodeGenSpec extends AnyFlatSpec {
 
     }
 
+    behavior of "Function code generation"
+    it should "translate function statements" in {
+        reset()
+        var node = FuncNode(
+          IntTypeNode()(0, 0),
+          IdentNode("x")(0, 0),
+          List().empty,
+          StatListNode(List(ReturnNode(IntLiterNode(1)(0, 0))(0, 0)))(0, 0)
+        )(0, 0)
+        testFunction(
+          node,
+          List(
+            Label("f_x"),
+            PushInstr(List(lr)),
+            LoadImmIntInstr(r0, 1),
+            PopInstr(List(pc)),
+            Directive("ltorg")
+          )
+        )
+        reset()
+        node = FuncNode(
+          IntTypeNode()(0, 0),
+          IdentNode("x")(0, 0),
+          List().empty,
+          StatListNode(List(ExitNode(IntLiterNode(1)(0, 0))(0, 0)))(0, 0)
+        )(0, 0)
+        testFunction(
+          node,
+          List(
+            Label("f_x"),
+            PushInstr(List(lr)),
+            LoadImmIntInstr(r0, 1),
+            BranchLinkInstr("exit"),
+            Directive("ltorg")
+          )
+        )
+    }
+//StatListNode(List(ReturnNode(IntLiterNode(1)(0, 0))(0, 0)))(0, 0)
+    behavior of "Statements code generation"
     it should "translate skip statements" in {
         reset()
-        var node: StatNode = SkipNode()(0, 0)
+        var node: StatListNode = StatListNode(List(SkipNode()(0, 0)))(0, 0)
         testStat(
           node,
           List(
