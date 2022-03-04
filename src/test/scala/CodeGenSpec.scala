@@ -166,6 +166,24 @@ class CodeGenSpec extends AnyFlatSpec {
           List(MoveInstr(Reg(0), ImmOffset(0)))
         )
     }
+    it should "translate string literals" in {
+        reset()
+        testExpr(
+            StringLiterNode("a string.")(0, 0),
+            expectedDataSection(
+                List(
+                    expectedStringDirective("a string.")
+                )
+            ) ++
+            expectedTextSection(
+                List(
+                    List(
+                        LoadLabelInstr(r0, "msg_0")
+                    )
+                )
+            )
+        )
+    }
     it should "translate logical NOT expressions" in {
         reset()
         testExpr(
