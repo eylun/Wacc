@@ -463,6 +463,7 @@ object Helpers {
         /** Add DataMsg for index too large and negative index errors */
         val negIdx: Int = collector.tickDataMsg()
         val largeIdx: Int = collector.tickDataMsg()
+
         collector.addDataMsg(printCheckArrayBoundsDirective(largeIdx, negIdx))
 
         /** Add p_check_array_bounds function */
