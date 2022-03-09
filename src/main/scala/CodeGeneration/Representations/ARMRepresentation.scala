@@ -141,4 +141,11 @@ object ARMRepresentation extends Representation {
             case _ => ""
         }
     }
+
+    def generateCompare(i: Instruction)(implicit collector: WaccBuffer): String = {
+        i match {
+            case CompareInstr(fst, snd, cond) => s"\tCMP$cond $fst, $snd"
+            case _ => ""
+        }
+    }
 }

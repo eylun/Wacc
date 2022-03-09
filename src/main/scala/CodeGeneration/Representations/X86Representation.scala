@@ -68,12 +68,12 @@ object X86Representation extends Representation {
                 sb.toString
             }
             case AndInstr(dst, fst, snd, _, Condition.EQ) => {
-                val labelNo: String = s"andeq_${collector.tickGeneral()}:"
+                val label: String = s"andeq_${collector.tickGeneral()}:"
                 sb.append(s"\tcmpl $fst, $snd\n")
-                sb.append(s"\tjne $labelNo\n")
+                sb.append(s"\tjne $label\n")
                 sb.append(s"\tmovl $dst, $fst\n")
                 sb.append(s"\tandl $dst, $snd\n")
-                sb.append(s"\t$labelNo:\n")
+                sb.append(s"$label:\n")
                 sb.toString
             }
             case XorInstr(dst, fst, snd, _, Condition.AL) => {
@@ -82,12 +82,12 @@ object X86Representation extends Representation {
                 sb.toString
             }
             case XorInstr(dst, fst, snd, _, Condition.EQ) => {
-                val labelNo: String = s"xoreq_${collector.tickGeneral()}:"
+                val label: String = s"xoreq_${collector.tickGeneral()}:"
                 sb.append(s"\tcmpl $fst, $snd\n")
-                sb.append(s"\tjne $labelNo\n")
+                sb.append(s"\tjne $label\n")
                 sb.append(s"\tmovl $dst, $fst\n")
                 sb.append(s"\txorl $dst, $snd\n")
-                sb.append(s"\t$labelNo:\n")
+                sb.append(s"$label:\n")
                 sb.toString
             }
             case OrInstr(dst, fst, snd, _, Condition.AL) => {
@@ -96,12 +96,12 @@ object X86Representation extends Representation {
                 sb.toString
             }
             case OrInstr(dst, fst, snd, _, Condition.EQ) => {
-                val labelNo: String = s"oreq_${collector.tickGeneral()}:"
+                val label: String = s"oreq_${collector.tickGeneral()}:"
                 sb.append(s"\tcmpl $fst, $snd\n")
-                sb.append(s"\tjne $labelNo\n")
+                sb.append(s"\tjne $label\n")
                 sb.append(s"\tmovl $dst, $fst\n")
                 sb.append(s"\torl $dst, $snd\n")
-                sb.append(s"\t$labelNo:\n")
+                sb.append(s"$label:\n")
                 sb.toString
             }
             case _ => ""
@@ -161,6 +161,21 @@ object X86Representation extends Representation {
             case BranchInstr(label, Condition.LE) => s"\tjle $label"
             case BranchInstr(label, Condition.VS) => s"\tjo $label"
 
+            case _ => ""
+        }
+    }
+
+    def generateCompare(i: Instruction)(implicit collector: WaccBuffer): String = {
+        i match {
+            case CompareInstr(fst, snd, Condition.AL) => s"\tcmpl $fst, $snd"
+            case CompareInstr(fst, snd, Condition.EQ) => {
+                val label: String = s"cmpeq_${collector.tickGeneral()}:"
+                val sb: StringBuilder = new StringBuilder
+                sb.append(s"\tjne $label\n")
+                sb.append(s"\tcmpl $fst, $snd")
+                sb.append(s"$label:")
+                sb.toString
+            }
             case _ => ""
         }
     }
