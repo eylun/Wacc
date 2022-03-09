@@ -17,42 +17,26 @@ object ARMRepresentation extends Representation {
     /** generateLine() matches an instruction to its relevant assembly code
       * representation
       */
-    def generateLine(instr: Instruction): String =
+    def generateLine(instr: Instruction)(implicit collector: WaccBuffer): String =
         s"${instr match {
             case Label(labelName) => s"$labelName:"
             case Directive(name)  => s".$name"
             case PushInstr(reg)   => s"\tPUSH {${reg.mkString(", ")}}"
-            case PopInstr(reg)    => s"\tPOP {${reg.mkString(", ")}}"
+            case PopInstr(_)      => generatePop(instr)
 
             /** Logical Instructions */
-            case AndInstr(dst, fst, snd, false, cond) =>
-                s"\tAND$cond $dst, $fst, $snd"
-            case AndInstr(dst, fst, snd, true, cond) =>
-                s"\tAND${cond}S $dst, $fst, $snd"
-            case XorInstr(dst, fst, snd, false, cond) =>
-                s"\tEOR$cond $dst, $fst, $snd"
-            case XorInstr(dst, fst, snd, true, cond) =>
-                s"\tEOR${cond}S $dst, $fst, $snd"
-            case OrInstr(dst, fst, snd, false, cond) =>
-                s"\tORR$cond $dst, $fst, $snd"
-            case OrInstr(dst, fst, snd, true, cond) =>
-                s"\tORR${cond}S $dst, $fst, $snd"
+            case AndInstr(_, _, _, _, _) | OrInstr(_, _, _, _, _) | XorInstr(_, _, _, _, _) 
+                => generateLogicalBinOp(instr)
 
             /** Arithmetic Instructions */
-            case AddInstr(dst, fst, snd, true)  => s"\tADDS $dst, $fst, $snd"
-            case AddInstr(dst, fst, snd, false) => s"\tADD $dst, $fst, $snd"
-            case SubInstr(dst, fst, snd, true)  => s"\tSUBS $dst, $fst, $snd"
-            case SubInstr(dst, fst, snd, false) => s"\tSUB $dst, $fst, $snd"
-            case ReverseSubInstr(dst, fst, snd, true) =>
-                s"\tRSBS $dst, $fst, $snd"
-            case ReverseSubInstr(dst, fst, snd, false) =>
-                s"\tRSB $dst, $fst, $snd"
+            case AddInstr(_, _, _, _) => generateAdd(instr)
+            case SubInstr(_, _, _, _) | ReverseSubInstr(_, _, _, _) => generateSub(instr)
             case SMullInstr(rdLo, rdHi, fst, snd, true) =>
                 s"\tSMULLS $rdLo, $rdHi, $fst, $snd"
             case SMullInstr(rdLo, rdHi, fst, snd, false) =>
                 s"\tSMULL $rdLo, $rdHi, $fst, $snd"
 
-            case MoveInstr(dst, src, cond) => s"\tMOV$cond $dst, $src"
+            case MoveInstr(dst, src, cond)        => generateMove(instr)
 
             /** Load Instructions */
             case LoadLabelInstr(dst, label, cond) => s"\tLDR$cond $dst, =$label"
@@ -87,7 +71,7 @@ object ARMRepresentation extends Representation {
                 s"\tSTRB $src, [$dst, #$offset]"
 
             /** Branch Instructions */
-            case BranchInstr(label, condition)     => s"\tB$condition $label"
+            case BranchInstr(label, condition)     => generateBranch(instr)
             case BranchLinkInstr(label, condition) => s"\tBL$condition $label"
 
             /** Comparison Instructions */
@@ -99,4 +83,62 @@ object ARMRepresentation extends Representation {
               */
             case _ => "Temp"
         }}\n"
+
+    def generatePush(i: Instruction): String = {
+        i match {
+            case PushInstr(regs) => s"\tPUSH {${regs.mkString(", ")}}"
+            case _ => ""
+        }
+    }
+
+    def generatePop(i: Instruction): String = {
+        i match {
+            case PopInstr(regs) => s"\tPOP {${regs.mkString(", ")}}"
+            case _ => ""
+        }
+    }
+
+    def generateLogicalBinOp(i: Instruction)(implicit collector: WaccBuffer): String = {
+        i match {
+            case AndInstr(dst, fst, snd, false, cond) => s"\tAND$cond $dst, $fst, $snd"
+            case AndInstr(dst, fst, snd, true, cond) => s"\tANDS$cond $dst, $fst, $snd"
+            case XorInstr(dst, fst, snd, false, cond) => s"\tEOR$cond $dst, $fst, $snd"
+            case XorInstr(dst, fst, snd, true, cond) => s"\tEOR${cond}S $dst, $fst, $snd"
+            case OrInstr(dst, fst, snd, false, cond) => s"\tORR$cond $dst, $fst, $snd"
+            case OrInstr(dst, fst, snd, true, cond) => s"\tORR${cond}S $dst, $fst, $snd"
+            case _ => ""
+        }
+    }
+
+    def generateAdd(i: Instruction): String = {
+        i match {
+            case AddInstr(dst, fst, snd, true)  => s"\tADDS $dst, $fst, $snd"
+            case AddInstr(dst, fst, snd, false) => s"\tADD $dst, $fst, $snd"
+            case _ => ""
+        }
+    }
+
+    def generateSub(i: Instruction): String = {
+        i match {
+            case SubInstr(dst, fst, snd, true) => s"\tSUBS $dst, $fst, $snd"
+            case SubInstr(dst, fst, snd, false) => s"\tSUB $dst, $fst, $snd"
+            case ReverseSubInstr(dst, fst, snd, true) => s"\tRSBS $dst, $fst, $snd"
+            case ReverseSubInstr(dst, fst, snd, false) => s"\tRSB $dst, $fst, $snd"
+            case _ => ""
+        }
+    }
+
+    def generateMove(i: Instruction): String = {
+        i match {
+            case MoveInstr(dst, src, cond) => s"\tMOV$cond $dst, $src"
+            case _ => ""
+        }
+    }
+
+    def generateBranch(i: Instruction): String = {
+        i match {
+            case BranchInstr(label, cond) => s"\tB$cond $label"
+            case _ => ""
+        }
+    }
 }

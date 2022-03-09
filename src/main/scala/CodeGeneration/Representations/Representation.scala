@@ -1,3 +1,17 @@
 trait Representation {
-    def generateLine(instr: Instruction): String
+    def generateLine(i: Instruction)(implicit collector: WaccBuffer): String
+
+    def generateAdd(i: Instruction): String
+
+    def generateLogicalBinOp(i: Instruction)(implicit collector: WaccBuffer): String
+
+    def generateBranch(i: Instruction): String
+
+    def generateMove(i: Instruction): String
+
+    def generatePush(i: Instruction): String
+
+    def generatePop(i: Instruction): String
+
+    def generateSub(i: Instruction): String
 }
