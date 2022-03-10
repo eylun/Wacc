@@ -1,0 +1,21 @@
+# Recover Division by zero
+
+# Input:
+
+# Output:
+# #runtime_error#
+
+# Exit: 0
+
+# Program:
+
+begin
+  int x = 5;
+  try
+    x = x / 0;
+	println x
+  catch(string e)
+	x = x / 1;
+	println x
+  end
+end

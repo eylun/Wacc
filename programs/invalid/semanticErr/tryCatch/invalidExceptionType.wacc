@@ -1,0 +1,17 @@
+# Exception type is not string
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  try
+	skip
+  catch(int e)
+	skip
+  end
+end

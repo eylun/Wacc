@@ -143,19 +143,6 @@ case class ParamNode(t: TypeNode, i: IdentNode)(val pos: (Int, Int))
     extends ASTNode {
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         st.lookup(i.s) match {
-            case Some(FunctionId(_, _, _)) => {
-                st.lookupAll(i.s + "$") match {
-                    case None => {
-                        st.add(i.s + "$", Param(t.typeId.get.getType()))
-                    }
-                    case Some(_) =>
-                        /** Checks that parameter has not been defined */
-                        errors += WaccError(
-                          pos,
-                          s"parameter ${i.s} is already defined in this scope"
-                        )
-                }
-            }
             case Some(_) =>
                 errors += WaccError(
                   pos,
@@ -187,6 +174,43 @@ case class SkipNode()(val pos: (Int, Int)) extends StatNode {
 
 object SkipNode extends ParserBuilderPos0[SkipNode]
 
+case class TryCatchNode(s1: StatNode, t: TypeNode, i: IdentNode, s2: StatNode)(
+    val pos: (Int, Int)
+) extends StatNode {
+    val tryST = SymbolTable()
+    val catchST = SymbolTable()
+    def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
+        t.check(st, errors)
+        if (t.typeId.get.getType() != StringType()) {
+            errors += WaccError(
+              pos,
+              s"Exception $i has to be type String."
+            )
+            return
+        }
+        tryST.setParent(st)
+        catchST.setParent(st)
+        catchST.add(i.s, Variable(t.typeId.get.getType()))
+
+        /** Ensure that expression has checked successfully. Expr must be a
+          * conditional expr (boolean)
+          */
+
+        s1.check(tryST, errors)
+        s2.check(catchST, errors)
+    }
+}
+
+object TryCatchNode {
+    def apply(
+        s1: => Parsley[StatNode],
+        t: => Parsley[TypeNode],
+        i: => Parsley[IdentNode],
+        s2: => Parsley[StatNode]
+    ): Parsley[TryCatchNode] =
+        pos <**> (s1, t, i, s2).zipped(TryCatchNode(_, _, _, _) _)
+}
+
 case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode)(
     val pos: (Int, Int)
 ) extends StatNode {
@@ -213,22 +237,6 @@ case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode)(
         st.lookup(i.s) match {
             case None => {
                 st.add(i.s, Variable(t.typeId.get.getType()))
-            }
-            case Some(FunctionId(_, _, _)) => {
-                /* When a function node already exists, manually rename the
-                 * identifer in the AST node and insert into the symbol table
-                 */
-                st.lookup(i.s + "$") match {
-                    case None => {
-                        i.s += "$"
-                        st.add(i.s, Variable(t.typeId.get.getType()))
-                    }
-                    case Some(_) =>
-                        errors += WaccError(
-                          pos,
-                          s"variable ${i.s} is assigned within the scope"
-                        )
-                }
             }
             case _ =>
                 errors += WaccError(

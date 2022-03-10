@@ -1,0 +1,17 @@
+# e cannot be re-assigned in the first scope
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  try
+	skip
+  catch(string e)
+	e = 5
+  end
+end
