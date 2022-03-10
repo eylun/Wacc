@@ -1,17 +1,18 @@
-# while missing opening do
+# Recover from a negative index access
+# Input:
 
 # Output:
-# #syntax_error#
+# #runtime_error#
 
-# Exit:
-# 100
+# Exit: 0
 
 # Program:
 
 begin
+  int[] x = [1,2,3];
   try
-  	skip
-  catch(e)
-    skip
+	println x[-1]
+  catch(string e)
+	print x[1]
   end
 end

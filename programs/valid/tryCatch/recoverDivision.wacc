@@ -1,16 +1,21 @@
-# catch has no statement in it
+# Recover Division by zero
+
+# Input:
 
 # Output:
-# #syntax_error#
+# #runtime_error#
 
-# Exit:
-# 100
+# Exit: 0
 
 # Program:
 
 begin
+  int x = 5;
   try
-  	skip
+    x = x / 0;
+	println x
   catch(string e)
+	x = x / 1;
+	println x
   end
 end

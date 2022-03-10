@@ -1,17 +1,23 @@
-# try-catch has no end
+# Recover from integer overflow
+# Input:
 
 # Output:
-# #syntax_error#
+# #runtime_error#
 
-# Exit:
-# 100
+# Exit: 0
 
 # Program:
 
 begin
+  int x = 2147483 ;
   try
-	skip
-  catch(e)
-	skip;
-  println 5
+    x = x * 1000 ;
+    x = x * 1000 ;
+    x = x * 1000 ;
+	println x
+  catch(string e)
+    x = x * 1000 ;
+    x = x * 1000 ;
+	println x
+  end
 end

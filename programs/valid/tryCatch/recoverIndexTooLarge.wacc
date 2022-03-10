@@ -1,17 +1,19 @@
-# try-catch has no end
+# Recover from index too large
+
+# Input:
 
 # Output:
-# #syntax_error#
+# #runtime_error#
 
-# Exit:
-# 100
+# Exit: 0
 
 # Program:
 
 begin
+  int[] x = [1,2,3];
   try
-	skip
-  catch(e)
-	skip;
-  println 5
+	println x[3]
+  catch(string e)
+	println x[1]
+  end
 end
