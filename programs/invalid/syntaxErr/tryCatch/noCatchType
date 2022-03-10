@@ -1,4 +1,4 @@
-# try-catch has no try
+# while missing opening do
 
 # Output:
 # #syntax_error#
@@ -9,7 +9,9 @@
 # Program:
 
 begin
-  catch(string e)
-	skip
+  try
+  	skip
+  catch(e)
+    skip
   end
 end

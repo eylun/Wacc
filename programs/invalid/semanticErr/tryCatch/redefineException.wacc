@@ -1,5 +1,4 @@
-# done typo
-
+# a new value of e cannot be reassigned in the same scope
 # Output:
 # #syntax_error#
 
@@ -11,7 +10,7 @@
 begin
   try
 	skip
-  catch(e)
+  catch(string e)
 	int e = 5
   end
 end

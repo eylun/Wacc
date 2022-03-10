@@ -1,4 +1,4 @@
-# try-catch has no try
+# Exception type is not string
 
 # Output:
 # #syntax_error#
@@ -9,7 +9,9 @@
 # Program:
 
 begin
-  catch(string e)
+  try
+	skip
+  catch(int e)
 	skip
   end
 end

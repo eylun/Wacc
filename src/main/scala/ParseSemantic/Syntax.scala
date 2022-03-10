@@ -410,7 +410,7 @@ object syntax {
             .label("statement(s)")
 
     lazy val statAtoms: Parsley[StatNode] =
-        (skipStat <|> newAssignStat <|> lrAssignStat <|> readStat <|>
+        (skipStat <|> tryCatchStat <|> newAssignStat <|> lrAssignStat <|> readStat <|>
             freeStat <|> returnStat <|> exitStat <|> printStat <|>
             printlnStat <|> ifThenElseStat <|> whileDoStat <|> beginEndStat)
             .label("statement atoms")

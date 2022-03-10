@@ -186,35 +186,11 @@ case class TryCatchNode(s1: StatNode, t: TypeNode, i: IdentNode, s2: StatNode)(
               pos,
               s"Exception $i has to be type String."
             )
+            return
         }
         tryST.setParent(st)
         catchST.setParent(st)
-        catchST.lookup(i.s) match {
-            case None => {
-                catchST.add(i.s, Variable(t.typeId.get.getType()))
-            }
-            case Some(FunctionId(_, _, _)) => {
-                /* When a function node already exists, manually rename the
-                 * identifer in the AST node and insert into the symbol table
-                 */
-                catchST.lookup(i.s + "$") match {
-                    case None => {
-                        i.s += "$"
-                        catchST.add(i.s, Variable(t.typeId.get.getType()))
-                    }
-                    case Some(_) =>
-                        errors += WaccError(
-                          pos,
-                          s"variable ${i.s} is assigned within the scope"
-                        )
-                }
-            }
-            case _ =>
-                errors += WaccError(
-                  pos,
-                  s"variable ${i.s} is assigned within the scope"
-                )
-        }
+        catchST.add(i.s, Variable(t.typeId.get.getType()))
 
         /** Ensure that expression has checked successfully. Expr must be a
           * conditional expr (boolean)

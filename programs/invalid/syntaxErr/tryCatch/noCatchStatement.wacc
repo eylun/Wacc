@@ -1,4 +1,4 @@
-# while missing opening do
+# catch has no statement in it
 
 # Output:
 # #syntax_error#
@@ -11,6 +11,6 @@
 begin
   try
   	skip
-  catch(e)
+  catch(string e)
   end
 end
