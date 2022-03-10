@@ -1,0 +1,19 @@
+# Catch a negative array index error
+
+# Input:
+
+# Output:
+# #runtime_error#
+
+# Exit: 0
+
+# Program:
+
+begin
+  try
+    int[] x = [1,2,3];
+	x[-5] = 5
+  catch(string e)
+	print e
+  end
+end
