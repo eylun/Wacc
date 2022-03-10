@@ -1,0 +1,17 @@
+# while typo
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  try
+	skip
+  catch(e)
+	skip;
+  println 5
+end

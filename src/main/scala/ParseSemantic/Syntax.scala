@@ -65,6 +65,15 @@ object lexer {
             s"keyword $v may not be used as an identifier"
     }).label("identifier")
 
+    val funcIdent = IdentNode(
+      lexer.identifier
+          .filterOut {
+              case v if lang.keywords(v) =>
+                  s"keyword $v may not be used as an identifier"
+          }
+          .map("f_" + _)
+    ).label("function identifier")
+
     val number =
         lexer
             .lexeme(
@@ -181,7 +190,16 @@ object lexer {
   * Contains parsing for values that are that require other parsers
   */
 object syntax {
-    import lexer.{baseType, pairBaseType, fully, exprAtoms, number, ident, _kw}
+    import lexer.{
+        baseType,
+        pairBaseType,
+        fully,
+        exprAtoms,
+        number,
+        ident,
+        funcIdent,
+        _kw
+    }
     import lexer.implicits.implicitLexeme
     import parsley.debug.{DebugCombinators, FullBreak}
     import parsley.combinator.{
@@ -218,7 +236,7 @@ object syntax {
     lazy val func: Parsley[FuncNode] =
         FuncNode(
           anyType,
-          ident,
+          funcIdent,
           "(" ~> (sepBy(param, ",").label("function parameters") <~ ")"
               <|> _semiFunc),
           "is" ~> stat
@@ -354,7 +372,7 @@ object syntax {
     /** call := ‘call’ ⟨ident⟩ ‘(’ ⟨arg-list⟩? ‘)’ */
     lazy val call =
         CallNode(
-          "call".label("function call") *> ident.label("function name"),
+          "call".label("function call") *> funcIdent.label("function name"),
           "(".label("\"(\" <function arguments> \")\"") *> exprArgList.label(
             "function arguments"
           ) <* ")"
@@ -401,7 +419,12 @@ object syntax {
 			  |Return, Exit, Print, Conditional or Begin-end statements
 			  |""".stripMargin.replaceAll("\n", " ")
             )
-
+    lazy val tryCatchStat = TryCatchNode(
+      "try" ~> stat,
+      "catch" ~> "(" ~> anyType,
+      ident <~ ")",
+      stat <~ "end"
+    ).label("try-catch-block")
     lazy val skipStat = SkipNode <# "skip".label("skip statement")
     lazy val newAssignStat =
         NewAssignNode(

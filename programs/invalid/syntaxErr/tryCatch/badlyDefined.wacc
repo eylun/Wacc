@@ -1,0 +1,16 @@
+# done typo
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  tryprintln x
+  catch
+	skip
+  end
+end
