@@ -14,16 +14,20 @@ object frontend {
         val fn = args(0)
         implicit val eb = new WaccErrorBuilder
         val waccFile = new File(fn)
-
+        println("after assertion")
         /** Parse the given .wacc file */
         val parseResult = syntax.parse.parseFromFile(waccFile).get
+        println("before match")
         parseResult match {
             case Success(result) =>
                 val topLevelST = SymbolTable()
                 val errorLog = ListBuffer[WaccError]()
+                println("before check")
+                var length = errorLog.length
                 result.check(topLevelST, errorLog)
+                length = errorLog.length
                 if (errorLog.length == 0) {
-
+                    println("successful")
                     /** No syntax errors, move on to code generation */
                     ARMRepresentation(
                       result,

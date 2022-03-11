@@ -11,6 +11,9 @@ import parsley.errors.combinator.ErrorMethods
 import java.util.function.UnaryOperator
 import scala.collection.mutable.ListBuffer
 import Utility.{lrTypeCheck}
+import java.io.File
+import parsley.io.{ParseFromIO}
+import parsley.{Success, Failure}
 
 /** ASTNode trait which all other Nodes extend from */
 sealed trait ASTNode {
@@ -31,16 +34,32 @@ sealed trait ASTNode {
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit
 }
 
+
 /** Program Node */
-case class ProgramNode(flist: List[FuncNode], s: StatNode)(val pos: (Int, Int))
+case class ProgramNode(imps: List[ImportNode], flist: List[FuncNode], s: StatNode)(val pos: (Int, Int))
     extends ASTNode {
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
+
+        var importedFiles: Set[String] = Set()
+        var funcList: List[FuncNode] = List()
+        imps.foreach {
+            case imp @ ImportNode(fn) => {
+                if (!importedFiles.contains(fn)){
+                    funcList = imp.getFuncs(st, importedFiles) ::: funcList
+                    importedFiles += fn
+                }
+            }
+        }
+
+        funcList = flist ::: funcList
 
         /** Check all functions to prevent name clashes. Insert into top level
           * symbol table upon completion, then call each function's check() to
           * check the statements within each function
           */
-        flist.foreach {
+        val length = funcList.size
+        println(s"func list size: $length")  
+        funcList.foreach {
             case f @ FuncNode(t, i, plist, s) => {
                 val funcST = SymbolTable(st)
                 st.lookup(i.s) match {
@@ -85,7 +104,7 @@ case class ProgramNode(flist: List[FuncNode], s: StatNode)(val pos: (Int, Int))
                 }
             }
         }
-        flist.foreach { f =>
+        funcList.foreach { f =>
             {
                 f.typeId.get match {
                     case FunctionId(_, _, funcST) => f.check(funcST, errors)
@@ -106,11 +125,62 @@ case class ProgramNode(flist: List[FuncNode], s: StatNode)(val pos: (Int, Int))
 
 object ProgramNode {
     def apply(
+        imps: => Parsley[List[ImportNode]],
         flist: => Parsley[List[FuncNode]],
         s: => Parsley[StatNode]
     ): Parsley[ProgramNode] =
-        pos <**> (flist, s.label("program statements"))
-            .lazyZipped(ProgramNode(_, _) _)
+        pos <**> (imps, flist, s.label("program statements"))
+            .lazyZipped(ProgramNode(_, _, _) _)
+}
+
+case class ImportNode(fn: String)(val pos: (Int, Int)) extends ASTNode {
+    def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {}
+    
+    def getFuncs(st: SymbolTable, impSet: Set[String]): List[FuncNode] = {
+        var importedSet: Set[String] = impSet
+        val importFile = new File(fn)
+         /** Parse the given .wacc file */
+        val parseResult = syntax.parse.parseFromFile(importFile).get
+        parseResult match {
+            case Success(result@ProgramNode(imps, flist, _)) => 
+                /** get functions for each nested imports */
+                // TODO: have a list of imported files to cross check before getting function
+                println("called")
+                var impsToProcess: List[ImportNode] = List()
+                imps.foreach{
+                    case imp@ImportNode(fn) => {
+                        if (!impSet.contains(fn)) {
+                            impsToProcess = imp :: impsToProcess
+                            importedSet += fn
+                        }
+                    }
+                }
+                val funclist: List[FuncNode] = impsToProcess.flatMap(imp => imp.getFuncs(st, impSet))
+                val errorLog = ListBuffer[WaccError]()
+                /** checks the correctness of import file body */
+                result.check(SymbolTable(), errorLog)
+                if (errorLog.length == 0) {
+                    println("adding functions")
+                    funclist ++ flist
+                } else {
+                    /** SEMANTIC ERROR */
+                    errorLog.foreach(e => e.render())
+                    System.exit(200)
+                null
+                }
+
+            case Failure(err) =>
+                /** SYNTAX ERROR */
+                // err.render()
+                System.exit(100)
+                null
+        }
+    }
+}
+
+object ImportNode {
+    def apply(f: => Parsley[String]): Parsley[ImportNode] =
+        pos <**> f.map(ImportNode(_) _)
 }
 
 /** Function Node */
