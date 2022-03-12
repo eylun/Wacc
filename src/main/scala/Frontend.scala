@@ -20,17 +20,17 @@ object frontend {
         println("before match")
         parseResult match {
             case Success(result) =>
+                println(result)
                 val topLevelST = SymbolTable()
                 val errorLog = ListBuffer[WaccError]()
                 println("before check")
                 var length = errorLog.length
                 result.check(topLevelST, errorLog)
-                length = errorLog.length
                 if (errorLog.length == 0) {
                     println("successful")
                     /** No syntax errors, move on to code generation */
                     ARMRepresentation(
-                      result,
+                      result.updatedNode(),
                       topLevelST,
                       cleanFilename(waccFile.getName()) + ".s"
                     )

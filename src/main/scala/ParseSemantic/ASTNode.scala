@@ -38,10 +38,15 @@ sealed trait ASTNode {
 /** Program Node */
 case class ProgramNode(imps: List[ImportNode], flist: List[FuncNode], s: StatNode)(val pos: (Int, Int))
     extends ASTNode {
+
+    var funcList: List[FuncNode] = List()  
+
+    def updatedNode(): ProgramNode = {
+        ProgramNode(imps, funcList, s)(0,0)
+    } 
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
 
         var importedFiles: Set[String] = Set()
-        var funcList: List[FuncNode] = List()
         imps.foreach {
             case imp @ ImportNode(fn) => {
                 if (!importedFiles.contains(fn)){
@@ -57,8 +62,9 @@ case class ProgramNode(imps: List[ImportNode], flist: List[FuncNode], s: StatNod
           * symbol table upon completion, then call each function's check() to
           * check the statements within each function
           */
-        val length = funcList.size
-        println(s"func list size: $length")  
+        // val length = funcList.size
+        // println(s"func list size: $length")  
+        // println(funcList)
         funcList.foreach {
             case f @ FuncNode(t, i, plist, s) => {
                 val funcST = SymbolTable(st)
