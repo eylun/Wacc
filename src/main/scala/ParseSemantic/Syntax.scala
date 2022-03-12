@@ -170,6 +170,8 @@ object lexer {
     lazy val charType = CharTypeNode <# lexer.keyword("char").label("Char Type")
     lazy val stringType =
         StringTypeNode <# lexer.keyword("string").label("String Type")
+    lazy val exceptionType =
+        ExceptionTypeNode <# lexer.keyword("exception").label("Exception Type")
     lazy val baseType: Parsley[BaseTypeNode] =
         (intType <|> boolType <|> charType <|> stringType)
             .label("Base Types: int, bool, char, string")
@@ -192,6 +194,7 @@ object lexer {
 object syntax {
     import lexer.{
         baseType,
+        exceptionType,
         pairBaseType,
         fully,
         exprAtoms,
@@ -213,6 +216,7 @@ object syntax {
     }
     import parsley.expr.{precedence, Ops, InfixL, Prefix, Postfix, chain}
     import parsley.errors.combinator.{ErrorMethods, fail}
+    import scala.collection.mutable
 
     /** Entry point into parser */
     val parse = fully(program)
@@ -410,21 +414,42 @@ object syntax {
             .label("statement(s)")
 
     lazy val statAtoms: Parsley[StatNode] =
-        (skipStat <|> tryCatchStat <|> newAssignStat <|> lrAssignStat <|> readStat <|>
+        (skipStat <|> throwStat <|> tryCatchStat <|> newAssignStat <|>
+            lrAssignStat <|> readStat <|>
             freeStat <|> returnStat <|> exitStat <|> printStat <|>
             printlnStat <|> ifThenElseStat <|> whileDoStat <|> beginEndStat)
             .label("statement atoms")
             .explain(
-              """- Statement atoms include: 'skip', Assignment, Read, Free, 
+              """- Statement atoms include: Skip, Throw, Try-Catch, Assignment, Read, Free, 
 			  |Return, Exit, Print, Conditional or Begin-end statements
 			  |""".stripMargin.replaceAll("\n", " ")
             )
+    lazy val throwStat = ThrowNode("throw" ~> expr)
+    lazy val catchAtom =
+        CatchNode(
+          "catch" ~> "(" ~> (baseType <|> exceptionType),
+          ident <~ ")",
+          stat
+        )
+            .label("catch-block")
+    lazy val catchList = sepBy1(
+      catchAtom,
+      "or".hide
+    ).collectMsg(
+      "Catch types cannot be occur more than once"
+    ) { case x if catchesNoDupe(x) => x }
     lazy val tryCatchStat = TryCatchNode(
       "try" ~> stat,
-      "catch" ~> "(" ~> anyType,
-      ident <~ ")",
-      stat <~ "end"
+      catchList <~ "end"
     ).label("try-catch-block")
+    def catchesNoDupe(base: List[CatchNode]): Boolean = {
+        val typeSet = mutable.Set[TypeNode]()
+        base.foreach { c =>
+            if (typeSet.contains(c.t)) return false
+            typeSet += c.t
+        }
+        true
+    }
     lazy val skipStat = SkipNode <# "skip".label("skip statement")
     lazy val newAssignStat =
         NewAssignNode(

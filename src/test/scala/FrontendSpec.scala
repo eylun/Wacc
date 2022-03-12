@@ -34,7 +34,7 @@ class FrontendSpec extends AnyFlatSpec {
         }
         if (syntaxFailed.length > 0) {
             fail(
-              s"""semantic errors found in valid programs ${syntaxFailed
+              s"""syntax errors found in valid programs ${syntaxFailed
                   .toString()}""".stripMargin.replaceAll("\n", " ")
             )
         }
@@ -90,18 +90,18 @@ class FrontendSpec extends AnyFlatSpec {
             }
         }
 
-        if (semanticPassed.length > 0) {
-            fail(
-              s"""semantic error should have been produced in 
-                |programs ${semanticPassed
-                  .toString()}""".stripMargin.replaceAll("\n", " ")
-            )
-        }
         if (syntaxFailed.length > 0) {
             fail(
               s"""syntax errors found in syntactically valid 
               |programs ${syntaxFailed.toString()}""".stripMargin
                   .replaceAll("\n", " ")
+            )
+        }
+        if (semanticPassed.length > 0) {
+            fail(
+              s"""semantic error should have been produced in 
+                |programs ${semanticPassed
+                  .toString()}""".stripMargin.replaceAll("\n", " ")
             )
         }
     }

@@ -15,7 +15,7 @@ begin
     x = x * 1000 ;
     x = x * 1000 ;
     x = x * 1000
-  catch(string e)
+  catch(exception e)
 	print e
   end
 end

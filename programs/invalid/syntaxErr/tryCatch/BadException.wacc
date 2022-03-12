@@ -1,4 +1,4 @@
-# e cannot be re-assigned in the first scope
+# try is merged with the statement after
 
 # Output:
 # #syntax_error#
@@ -10,8 +10,8 @@
 
 begin
   try
+  	println x
+  catch (excepion x)
 	skip
-  catch(string e)
-	e = 5
   end
 end

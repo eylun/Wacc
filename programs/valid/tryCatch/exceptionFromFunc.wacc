@@ -1,0 +1,23 @@
+# Catch a thrown value from within a function
+
+# Input:
+
+# Output:
+# 5
+
+# Exit: 0
+
+# Program:
+
+begin
+  int func() is
+    throw 5;
+	return 5
+  end
+
+  try
+  	int x = call func()
+  catch (int x)
+	println x
+  end
+end
