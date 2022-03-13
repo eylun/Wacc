@@ -1,0 +1,19 @@
+# Exception inside try-catch not handled in catch
+
+# Input:
+
+# Output:
+# #runtime_error#
+
+# Exit: 255
+
+# Program:
+
+begin
+  try
+    int x = 5 / 0
+  catch (int x)
+    println x
+  end
+end
+

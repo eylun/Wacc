@@ -688,7 +688,7 @@ sealed trait TypeNode extends ASTNode
 sealed trait BaseTypeNode extends TypeNode with PairElemTypeNode
 
 case class ExceptionTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
-    typeId = Some(StringType())
+    typeId = Some(ExceptionType())
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {}
 }
 

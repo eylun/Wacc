@@ -4,20 +4,22 @@
 
 # Output:
 # 5
+# Finishing...
 
 # Exit: 0
 
 # Program:
 
 begin
-  int func() is
+  int function() is
     throw 5;
 	return 5
   end
 
   try
-  	int x = call func()
+  	int x = call function()
   catch (int x)
 	println x
-  end
+  end;
+  println "Finishing..."
 end

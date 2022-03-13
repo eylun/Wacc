@@ -4,7 +4,7 @@
 
 # Output:
 # thrown from first try block
-# 1
+# false
 # y
 # zzz
 # thrown from second try block

@@ -100,6 +100,15 @@ object Helpers {
         stackFrame.addTempOffset(WORD_SIZE)
     }
 
+    def typeNumConvert(t: Type): Int = t match {
+        case IntType()       => 1
+        case BoolType()      => 2
+        case CharType()      => 3
+        case StringType()    => 4
+        case ExceptionType() => 5
+        case _               => throw new RuntimeException("Invalid Catch Type")
+    }
+
     /** Identifiers with char or bool type uses the Store Byte Instruction
       * instead of regular Store Instruction
       */
@@ -372,6 +381,13 @@ object Helpers {
     def printRuntimeErrorFunc(): List[Instruction] = {
         List(
           Label("p_throw_runtime_error"),
+          /** Check if there is a catch_address active first */
+          LoadImmIntInstr(r7, 5),
+          LoadLabelInstr(r2, "catch_address"),
+          LoadInstr(r2, r2, ImmOffset(0)),
+          CompareInstr(r2, ImmOffset(0)),
+          MoveInstr(pc, RegOp(r2), Condition.NE),
+          /** Continue on to exit if catch_address is null */
           BranchLinkInstr("p_print_string"),
           MoveInstr(r0, ImmOffset(-1)),
           BranchLinkInstr("exit")
@@ -605,13 +621,43 @@ object Helpers {
         collector.insertUtil(UtilFlag.PRuntimeError)
     }
 
+    /** Print Exception Error */
+    def printExceptionErrorDirective(idx: Int): List[Instruction] = {
+        List(
+          Label(s"msg_$idx"),
+          Directive(s"word 58"),
+          Directive(
+            s"ascii \"ExceptionError: no appropriate catch for throw statement\\n\\0\""
+          )
+        )
+    }
+    def printExceptionErrorFunc(idx: Int): List[Instruction] = {
+        List(
+          Label("p_exception_error"),
+          LoadLabelInstr(r0, s"msg_$idx"),
+          BranchLinkInstr("p_throw_runtime_error")
+        )
+    }
+    def printExceptionError(implicit collector: WaccBuffer) = {
+
+        /** Add DataMsg for CheckNullPointer Directive */
+        val idx: Int = collector.tickDataMsg()
+        collector.addDataMsg(printExceptionErrorDirective(idx))
+
+        /** Add p_check_null_pointer */
+        collector.addUtilStatement(printExceptionErrorFunc(idx))
+
+        /** Add p_throw_runtime_error to the asm file */
+        collector.insertUtil(UtilFlag.PRuntimeError)
+    }
+
     /** Enumerations: Condition Codes, Flags */
     object UtilFlag extends Enumeration {
         type UtilFlag = Value
         val PPrintInt, PPrintBool, PPrintChar, PPrintString, PPrintRef,
             PPrintNewLine, PThrowOverflowError, PRuntimeError,
             PCheckDivideByZero, PCheckArrayBounds, PReadChar, PReadInt,
-            PFreePair, PCheckNullPointer = Value
+            PFreePair, PCheckNullPointer, PExceptionError = Value
     }
 
     def cleanFilename(fn: String): String = fn.take(fn.lastIndexOf("."))

@@ -60,6 +60,14 @@ class CodeGenSpec extends AnyFlatSpec {
         expected.toList
     }
 
+    def expectedBssSection = List(
+      Directive("bss"),
+      Label("catch_address"),
+      Directive("skip 4"),
+      Label("prev_sp"),
+      Directive("skip 4")
+    )
+
     /** Expected directive for an overflow error in the data section */
     val expectedOverflowDirective: List[Instruction] = List(
       Directive("word 83"),
@@ -155,6 +163,11 @@ class CodeGenSpec extends AnyFlatSpec {
     /** Expected instruction output for runtime errors */
     val expectedRuntimeErrText: List[Instruction] = List(
       Label("p_throw_runtime_error"),
+      LoadImmIntInstr(r7, 5),
+      LoadLabelInstr(r2, "catch_address"),
+      LoadInstr(r2, r2, ImmOffset(0)),
+      CompareInstr(r2, ImmOffset(0)),
+      MoveInstr(pc, RegOp(r2), Condition.NE),
       BranchLinkInstr("p_print_string"),
       MoveInstr(Reg(0), ImmOffset(-1)),
       BranchLinkInstr("exit")
@@ -267,45 +280,52 @@ class CodeGenSpec extends AnyFlatSpec {
     behavior of "expression code generation"
     it should "translate integer literals" in {
         reset()
-        testExpr(IntLiterNode(1)(0, 0), List(LoadImmIntInstr(Reg(0), 1)))
+        testExpr(
+          IntLiterNode(1)(0, 0),
+          expectedBssSection ++: List(LoadImmIntInstr(Reg(0), 1))
+        )
         reset()
-        testExpr(IntLiterNode(-23)(0, 0), List(LoadImmIntInstr(Reg(0), -23)))
+        testExpr(
+          IntLiterNode(-23)(0, 0),
+          expectedBssSection ++: List(LoadImmIntInstr(Reg(0), -23))
+        )
     }
     it should "translate character literals" in {
         reset()
         testExpr(
           CharLiterNode('d')(0, 0),
-          List(MoveInstr(Reg(0), ImmOffset('d')))
+          expectedBssSection ++: List(MoveInstr(Reg(0), ImmOffset('d')))
         )
     }
     it should "translate boolean literals" in {
         reset()
         testExpr(
           BoolLiterNode(true)(0, 0),
-          List(MoveInstr(Reg(0), ImmOffset(1)))
+          expectedBssSection ++: List(MoveInstr(Reg(0), ImmOffset(1)))
         )
         reset()
         testExpr(
           BoolLiterNode(false)(0, 0),
-          List(MoveInstr(Reg(0), ImmOffset(0)))
+          expectedBssSection ++: List(MoveInstr(Reg(0), ImmOffset(0)))
         )
     }
     it should "translate pair literals" in {
         reset()
         testExpr(
           new PairLiterNode()(0, 0),
-          List(MoveInstr(Reg(0), ImmOffset(0)))
+          expectedBssSection ++: List(MoveInstr(Reg(0), ImmOffset(0)))
         )
     }
     it should "translate string literals" in {
         reset()
         testExpr(
           StringLiterNode("a string.")(0, 0),
-          expectedDataSection(
-            List(
-              expectedStringDirective("a string.")
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedStringDirective("a string.")
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
@@ -319,26 +339,28 @@ class CodeGenSpec extends AnyFlatSpec {
         reset()
         testExpr(
           Not(BoolLiterNode(false)(0, 0))(0, 0),
-          expectedTextSection(
-            List(
-              List(
-                MoveInstr(r0, ImmOffset(0)),
-                XorInstr(r0, r0, ImmOffset(1))
+          expectedBssSection ++:
+              expectedTextSection(
+                List(
+                  List(
+                    MoveInstr(r0, ImmOffset(0)),
+                    XorInstr(r0, r0, ImmOffset(1))
+                  )
+                )
               )
-            )
-          )
         )
     }
     it should "translate negation expressions" in {
         reset()
         testExpr(
           Neg(IntLiterNode(53)(0, 0))(0, 0),
-          expectedDataSection(
-            List(
-              expectedOverflowDirective,
-              expectedPrintStrDirective
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedOverflowDirective,
+                  expectedPrintStrDirective
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
@@ -364,40 +386,43 @@ class CodeGenSpec extends AnyFlatSpec {
         sf.unlock("anArray")
         testExpr(
           Len(IdentNode("anArray")(0, 0))(0, 0),
-          expectedTextSection(
-            List(
-              List(
-                LoadInstr(r0, sp, ImmOffset(sf.getOffset("anArray"))),
-                LoadInstr(r0, r0, ImmOffset(0))
+          expectedBssSection ++:
+              expectedTextSection(
+                List(
+                  List(
+                    LoadInstr(r0, sp, ImmOffset(sf.getOffset("anArray"))),
+                    LoadInstr(r0, r0, ImmOffset(0))
+                  )
+                )
               )
-            )
-          )
         )
     }
     it should "translate ord expressions" in {
         reset()
         testExpr(
           Ord(CharLiterNode('t')(0, 0))(0, 0),
-          expectedTextSection(
-            List(
-              List(
-                MoveInstr(r0, ImmOffset('t'))
+          expectedBssSection ++:
+              expectedTextSection(
+                List(
+                  List(
+                    MoveInstr(r0, ImmOffset('t'))
+                  )
+                )
               )
-            )
-          )
         )
     }
     it should "translate chr expressions" in {
         reset()
         testExpr(
           Chr(IntLiterNode(90)(0, 0))(0, 0),
-          expectedTextSection(
-            List(
-              List(
-                LoadImmIntInstr(r0, 90)
+          expectedBssSection ++:
+              expectedTextSection(
+                List(
+                  List(
+                    LoadImmIntInstr(r0, 90)
+                  )
+                )
               )
-            )
-          )
         )
     }
     it should "translate addition expressions" in {
@@ -405,12 +430,13 @@ class CodeGenSpec extends AnyFlatSpec {
         reset()
         testExpr(
           Add(IntLiterNode(4)(0, 0), IntLiterNode(12)(0, 0))(0, 0),
-          expectedDataSection(
-            List(
-              expectedOverflowDirective,
-              expectedPrintStrDirective
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedOverflowDirective,
+                  expectedPrintStrDirective
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
@@ -442,12 +468,13 @@ class CodeGenSpec extends AnyFlatSpec {
               Add(IntLiterNode(6)(0, 0), IntLiterNode(10)(0, 0))(0, 0)
             )(0, 0)
           )(0, 0),
-          expectedDataSection(
-            List(
-              expectedOverflowDirective,
-              expectedPrintStrDirective
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedOverflowDirective,
+                  expectedPrintStrDirective
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
@@ -501,12 +528,13 @@ class CodeGenSpec extends AnyFlatSpec {
         reset()
         testExpr(
           Sub(IntLiterNode(10)(0, 0), IntLiterNode(25)(0, 0))(0, 0),
-          expectedDataSection(
-            List(
-              expectedOverflowDirective,
-              expectedPrintStrDirective
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedOverflowDirective,
+                  expectedPrintStrDirective
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
@@ -538,12 +566,13 @@ class CodeGenSpec extends AnyFlatSpec {
               IntLiterNode(6)(0, 0)
             )(0, 0)
           )(0, 0),
-          expectedDataSection(
-            List(
-              expectedOverflowDirective,
-              expectedPrintStrDirective
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedOverflowDirective,
+                  expectedPrintStrDirective
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
@@ -591,12 +620,13 @@ class CodeGenSpec extends AnyFlatSpec {
         reset()
         testExpr(
           Mult(IntLiterNode(5)(0, 0), IntLiterNode(7)(0, 0))(0, 0),
-          expectedDataSection(
-            List(
-              expectedOverflowDirective,
-              expectedPrintStrDirective
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedOverflowDirective,
+                  expectedPrintStrDirective
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
@@ -623,12 +653,13 @@ class CodeGenSpec extends AnyFlatSpec {
             Mult(IntLiterNode(4)(0, 0), IntLiterNode(2)(0, 0))(0, 0),
             Mult(IntLiterNode(-5)(0, 0), IntLiterNode(10)(0, 0))(0, 0)
           )(0, 0),
-          expectedDataSection(
-            List(
-              expectedOverflowDirective,
-              expectedPrintStrDirective
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedOverflowDirective,
+                  expectedPrintStrDirective
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
@@ -667,12 +698,13 @@ class CodeGenSpec extends AnyFlatSpec {
         reset()
         testExpr(
           Div(IntLiterNode(-4)(0, 0), IntLiterNode(-9)(0, 0))(0, 0),
-          expectedDataSection(
-            List(
-              expectedDivideByZeroDirective,
-              expectedPrintStrDirective
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedDivideByZeroDirective,
+                  expectedPrintStrDirective
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
@@ -707,12 +739,13 @@ class CodeGenSpec extends AnyFlatSpec {
               )(0, 0)
             )(0, 0)
           )(0, 0),
-          expectedDataSection(
-            List(
-              expectedDivideByZeroDirective,
-              expectedPrintStrDirective
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedDivideByZeroDirective,
+                  expectedPrintStrDirective
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
@@ -754,12 +787,13 @@ class CodeGenSpec extends AnyFlatSpec {
         reset()
         testExpr(
           Mod(IntLiterNode(230)(0, 0), IntLiterNode(9)(0, 0))(0, 0),
-          expectedDataSection(
-            List(
-              expectedDivideByZeroDirective,
-              expectedPrintStrDirective
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedDivideByZeroDirective,
+                  expectedPrintStrDirective
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
@@ -795,12 +829,13 @@ class CodeGenSpec extends AnyFlatSpec {
             )(0, 0),
             IntLiterNode(6)(0, 0)
           )(0, 0),
-          expectedDataSection(
-            List(
-              expectedDivideByZeroDirective,
-              expectedPrintStrDirective
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedDivideByZeroDirective,
+                  expectedPrintStrDirective
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
@@ -847,17 +882,18 @@ class CodeGenSpec extends AnyFlatSpec {
         reset()
         testExpr(
           And(BoolLiterNode(false)(0, 0), BoolLiterNode(true)(0, 0))(0, 0),
-          expectedTextSection(
-            List(
-              List(
-                MoveInstr(r0, ImmOffset(0)),
-                CompareInstr(r0, ImmOffset(0)),
-                BranchInstr("L0", Condition.EQ),
-                MoveInstr(r0, ImmOffset(1)),
-                Label("L0")
+          expectedBssSection ++:
+              expectedTextSection(
+                List(
+                  List(
+                    MoveInstr(r0, ImmOffset(0)),
+                    CompareInstr(r0, ImmOffset(0)),
+                    BranchInstr("L0", Condition.EQ),
+                    MoveInstr(r0, ImmOffset(1)),
+                    Label("L0")
+                  )
+                )
               )
-            )
-          )
         )
 
         // Nested expression (true && false) && false
@@ -870,21 +906,22 @@ class CodeGenSpec extends AnyFlatSpec {
             )(0, 0),
             BoolLiterNode(false)(0, 0)
           )(0, 0),
-          expectedTextSection(
-            List(
-              List(
-                MoveInstr(r0, ImmOffset(1)),
-                CompareInstr(r0, ImmOffset(0)),
-                BranchInstr("L0", Condition.EQ),
-                MoveInstr(r0, ImmOffset(0)),
-                Label("L0"),
-                CompareInstr(r0, ImmOffset(0)),
-                BranchInstr("L1", Condition.EQ),
-                MoveInstr(r0, ImmOffset(0)),
-                Label("L1")
+          expectedBssSection ++:
+              expectedTextSection(
+                List(
+                  List(
+                    MoveInstr(r0, ImmOffset(1)),
+                    CompareInstr(r0, ImmOffset(0)),
+                    BranchInstr("L0", Condition.EQ),
+                    MoveInstr(r0, ImmOffset(0)),
+                    Label("L0"),
+                    CompareInstr(r0, ImmOffset(0)),
+                    BranchInstr("L1", Condition.EQ),
+                    MoveInstr(r0, ImmOffset(0)),
+                    Label("L1")
+                  )
+                )
               )
-            )
-          )
         )
     }
     it should "translate logical OR expressions" in {
@@ -892,17 +929,18 @@ class CodeGenSpec extends AnyFlatSpec {
         reset()
         testExpr(
           Or(BoolLiterNode(true)(0, 0), BoolLiterNode(false)(0, 0))(0, 0),
-          expectedTextSection(
-            List(
-              List(
-                MoveInstr(r0, ImmOffset(1)),
-                CompareInstr(r0, ImmOffset(1)),
-                BranchInstr("L0", Condition.EQ),
-                MoveInstr(r0, ImmOffset(0)),
-                Label("L0")
+          expectedBssSection ++:
+              expectedTextSection(
+                List(
+                  List(
+                    MoveInstr(r0, ImmOffset(1)),
+                    CompareInstr(r0, ImmOffset(1)),
+                    BranchInstr("L0", Condition.EQ),
+                    MoveInstr(r0, ImmOffset(0)),
+                    Label("L0")
+                  )
+                )
               )
-            )
-          )
         )
 
         // Nested expression (false || (true || false) || true)
@@ -918,125 +956,131 @@ class CodeGenSpec extends AnyFlatSpec {
             )(0, 0),
             BoolLiterNode(true)(0, 0)
           )(0, 0),
-          expectedTextSection(
-            List(
-              List(
-                MoveInstr(r0, ImmOffset(0)),
-                CompareInstr(r0, ImmOffset(1)),
-                BranchInstr("L0", Condition.EQ),
-                MoveInstr(r0, ImmOffset(1)),
-                CompareInstr(r0, ImmOffset(1)),
-                BranchInstr("L1", Condition.EQ),
-                MoveInstr(r0, ImmOffset(0)),
-                Label("L1"),
-                Label("L0"),
-                CompareInstr(r0, ImmOffset(1)),
-                BranchInstr("L2", Condition.EQ),
-                MoveInstr(r0, ImmOffset(1)),
-                Label("L2")
+          expectedBssSection ++:
+              expectedTextSection(
+                List(
+                  List(
+                    MoveInstr(r0, ImmOffset(0)),
+                    CompareInstr(r0, ImmOffset(1)),
+                    BranchInstr("L0", Condition.EQ),
+                    MoveInstr(r0, ImmOffset(1)),
+                    CompareInstr(r0, ImmOffset(1)),
+                    BranchInstr("L1", Condition.EQ),
+                    MoveInstr(r0, ImmOffset(0)),
+                    Label("L1"),
+                    Label("L0"),
+                    CompareInstr(r0, ImmOffset(1)),
+                    BranchInstr("L2", Condition.EQ),
+                    MoveInstr(r0, ImmOffset(1)),
+                    Label("L2")
+                  )
+                )
               )
-            )
-          )
         )
     }
     it should "translate greater-than expressions" in {
         reset()
         testExpr(
           GT(CharLiterNode('a')(0, 0), CharLiterNode('g')(0, 0))(0, 0),
-          expectedTextSection(
-            List(
-              List(
-                MoveInstr(r0, ImmOffset('a')),
-                PushInstr(List(r0)),
-                MoveInstr(r0, ImmOffset('g')),
-                MoveInstr(r1, RegOp(r0)),
-                PopInstr(List(r0)),
-                CompareInstr(r0, RegOp(r1)),
-                MoveInstr(r0, ImmOffset(1), Condition.GT),
-                MoveInstr(r0, ImmOffset(0), Condition.LE)
+          expectedBssSection ++:
+              expectedTextSection(
+                List(
+                  List(
+                    MoveInstr(r0, ImmOffset('a')),
+                    PushInstr(List(r0)),
+                    MoveInstr(r0, ImmOffset('g')),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    CompareInstr(r0, RegOp(r1)),
+                    MoveInstr(r0, ImmOffset(1), Condition.GT),
+                    MoveInstr(r0, ImmOffset(0), Condition.LE)
+                  )
+                )
               )
-            )
-          )
         )
     }
     it should "translate greater-than-or-equal expressions" in {
         reset()
         testExpr(
           GTE(CharLiterNode('r')(0, 0), CharLiterNode('q')(0, 0))(0, 0),
-          expectedTextSection(
-            List(
-              List(
-                MoveInstr(r0, ImmOffset('r')),
-                PushInstr(List(r0)),
-                MoveInstr(r0, ImmOffset('q')),
-                MoveInstr(r1, RegOp(r0)),
-                PopInstr(List(r0)),
-                CompareInstr(r0, RegOp(r1)),
-                MoveInstr(r0, ImmOffset(1), Condition.GE),
-                MoveInstr(r0, ImmOffset(0), Condition.LT)
+          expectedBssSection ++:
+              expectedTextSection(
+                List(
+                  List(
+                    MoveInstr(r0, ImmOffset('r')),
+                    PushInstr(List(r0)),
+                    MoveInstr(r0, ImmOffset('q')),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    CompareInstr(r0, RegOp(r1)),
+                    MoveInstr(r0, ImmOffset(1), Condition.GE),
+                    MoveInstr(r0, ImmOffset(0), Condition.LT)
+                  )
+                )
               )
-            )
-          )
         )
     }
     it should "translate less-than expressions" in {
         reset()
         testExpr(
           LT(IntLiterNode(50)(0, 0), IntLiterNode(4)(0, 0))(0, 0),
-          expectedTextSection(
-            List(
-              List(
-                LoadImmIntInstr(r0, 50),
-                PushInstr(List(r0)),
-                LoadImmIntInstr(r0, 4),
-                MoveInstr(r1, RegOp(r0)),
-                PopInstr(List(r0)),
-                CompareInstr(r0, RegOp(r1)),
-                MoveInstr(r0, ImmOffset(1), Condition.LT),
-                MoveInstr(r0, ImmOffset(0), Condition.GE)
+          expectedBssSection ++:
+              expectedTextSection(
+                List(
+                  List(
+                    LoadImmIntInstr(r0, 50),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 4),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    CompareInstr(r0, RegOp(r1)),
+                    MoveInstr(r0, ImmOffset(1), Condition.LT),
+                    MoveInstr(r0, ImmOffset(0), Condition.GE)
+                  )
+                )
               )
-            )
-          )
         )
     }
     it should "translate less-than-or-equal expressions" in {
         reset()
         testExpr(
           LTE(CharLiterNode('t')(0, 0), CharLiterNode('p')(0, 0))(0, 0),
-          expectedTextSection(
-            List(
-              List(
-                MoveInstr(r0, ImmOffset('t')),
-                PushInstr(List(r0)),
-                MoveInstr(r0, ImmOffset('p')),
-                MoveInstr(r1, RegOp(r0)),
-                PopInstr(List(r0)),
-                CompareInstr(r0, RegOp(r1)),
-                MoveInstr(r0, ImmOffset(1), Condition.LE),
-                MoveInstr(r0, ImmOffset(0), Condition.GT)
+          expectedBssSection ++:
+              expectedTextSection(
+                List(
+                  List(
+                    MoveInstr(r0, ImmOffset('t')),
+                    PushInstr(List(r0)),
+                    MoveInstr(r0, ImmOffset('p')),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    CompareInstr(r0, RegOp(r1)),
+                    MoveInstr(r0, ImmOffset(1), Condition.LE),
+                    MoveInstr(r0, ImmOffset(0), Condition.GT)
+                  )
+                )
               )
-            )
-          )
         )
     }
     it should "translate equality expressions" in {
         reset()
         testExpr(
           Equal(BoolLiterNode(true)(0, 0), BoolLiterNode(false)(0, 0))(0, 0),
-          expectedTextSection(
-            List(
-              List(
-                MoveInstr(r0, ImmOffset(1)),
-                PushInstr(List(r0)),
-                MoveInstr(r0, ImmOffset(0)),
-                MoveInstr(r1, RegOp(r0)),
-                PopInstr(List(r0)),
-                CompareInstr(r0, RegOp(r1)),
-                MoveInstr(r0, ImmOffset(1), Condition.EQ),
-                MoveInstr(r0, ImmOffset(0), Condition.NE)
+          expectedBssSection ++:
+              expectedTextSection(
+                List(
+                  List(
+                    MoveInstr(r0, ImmOffset(1)),
+                    PushInstr(List(r0)),
+                    MoveInstr(r0, ImmOffset(0)),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    CompareInstr(r0, RegOp(r1)),
+                    MoveInstr(r0, ImmOffset(1), Condition.EQ),
+                    MoveInstr(r0, ImmOffset(0), Condition.NE)
+                  )
+                )
               )
-            )
-          )
         )
     }
     it should "translate inequality expressions" in {
@@ -1047,12 +1091,13 @@ class CodeGenSpec extends AnyFlatSpec {
             StringLiterNode("hello")(0, 0),
             StringLiterNode("goodbye")(0, 0)
           )(0, 0),
-          expectedDataSection(
-            List(
-              expectedStringDirective("hello"),
-              expectedStringDirective("goodbye")
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedStringDirective("hello"),
+                  expectedStringDirective("goodbye")
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
@@ -1073,16 +1118,20 @@ class CodeGenSpec extends AnyFlatSpec {
     behavior of "AssignRHS code generation"
     it should "translate expressions" in {
         reset()
-        testRHS(IntLiterNode(-10)(0, 0), List(LoadImmIntInstr(Reg(0), -10)))
+        testRHS(
+          IntLiterNode(-10)(0, 0),
+          expectedBssSection ++: List(LoadImmIntInstr(Reg(0), -10))
+        )
         reset()
         testRHS(
           Add(IntLiterNode(3)(0, 0), IntLiterNode(-4)(0, 0))(0, 0),
-          expectedDataSection(
-            List(
-              expectedOverflowDirective,
-              expectedPrintStrDirective
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedOverflowDirective,
+                  expectedPrintStrDirective
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
@@ -1103,7 +1152,7 @@ class CodeGenSpec extends AnyFlatSpec {
         reset()
         testRHS(
           new PairLiterNode()(0, 0),
-          List(MoveInstr(Reg(0), ImmOffset(0)))
+          expectedBssSection ++: List(MoveInstr(Reg(0), ImmOffset(0)))
         )
     }
 
@@ -1113,30 +1162,32 @@ class CodeGenSpec extends AnyFlatSpec {
         node.typeId = Some(AnyType())
         testRHS(
           node,
-          List(
-            MoveInstr(Reg(0), ImmOffset(WORD_SIZE)),
-            BranchLinkInstr("malloc", Condition.AL),
-            MoveInstr(Reg(3), RegOp(Reg(0))),
-            MoveInstr(Reg(0), ImmOffset(0)),
-            StoreInstr(Reg(0), Reg(3), ImmOffset(0)),
-            MoveInstr(Reg(0), RegOp(Reg(3)))
-          )
+          expectedBssSection ++:
+              List(
+                MoveInstr(Reg(0), ImmOffset(WORD_SIZE)),
+                BranchLinkInstr("malloc", Condition.AL),
+                MoveInstr(Reg(3), RegOp(Reg(0))),
+                MoveInstr(Reg(0), ImmOffset(0)),
+                StoreInstr(Reg(0), Reg(3), ImmOffset(0)),
+                MoveInstr(Reg(0), RegOp(Reg(3)))
+              )
         )
         reset()
         node = ArrayLiterNode(List(IntLiterNode(3)(0, 0)))(0, 0)
         node.typeId = Some(ArrayType(IntType(), List(1), 1))
         testRHS(
           node,
-          List(
-            MoveInstr(Reg(0), ImmOffset(8)),
-            BranchLinkInstr("malloc", Condition.AL),
-            MoveInstr(Reg(3), RegOp(Reg(0))),
-            LoadImmIntInstr(Reg(0), 3),
-            StoreInstr(Reg(0), Reg(3), ImmOffset(4)),
-            MoveInstr(Reg(0), ImmOffset(1)),
-            StoreInstr(Reg(0), Reg(3), ImmOffset(0)),
-            MoveInstr(Reg(0), RegOp(Reg(3)))
-          )
+          expectedBssSection ++:
+              List(
+                MoveInstr(Reg(0), ImmOffset(8)),
+                BranchLinkInstr("malloc", Condition.AL),
+                MoveInstr(Reg(3), RegOp(Reg(0))),
+                LoadImmIntInstr(Reg(0), 3),
+                StoreInstr(Reg(0), Reg(3), ImmOffset(4)),
+                MoveInstr(Reg(0), ImmOffset(1)),
+                StoreInstr(Reg(0), Reg(3), ImmOffset(0)),
+                MoveInstr(Reg(0), RegOp(Reg(3)))
+              )
         )
         reset()
         node = ArrayLiterNode(
@@ -1145,45 +1196,47 @@ class CodeGenSpec extends AnyFlatSpec {
         node.typeId = Some(ArrayType(CharType(), List(2), 1))
         testRHS(
           node,
-          List(
-            MoveInstr(Reg(0), ImmOffset(6)),
-            BranchLinkInstr("malloc", Condition.AL),
-            MoveInstr(Reg(3), RegOp(Reg(0))),
-            MoveInstr(Reg(0), ImmOffset('a')),
-            StoreByteInstr(Reg(0), Reg(3), ImmOffset(4)),
-            MoveInstr(Reg(0), ImmOffset('b')),
-            StoreByteInstr(Reg(0), Reg(3), ImmOffset(5)),
-            MoveInstr(Reg(0), ImmOffset(2)),
-            StoreInstr(Reg(0), Reg(3), ImmOffset(0)),
-            MoveInstr(Reg(0), RegOp(Reg(3)))
-          )
+          expectedBssSection ++:
+              List(
+                MoveInstr(Reg(0), ImmOffset(6)),
+                BranchLinkInstr("malloc", Condition.AL),
+                MoveInstr(Reg(3), RegOp(Reg(0))),
+                MoveInstr(Reg(0), ImmOffset('a')),
+                StoreByteInstr(Reg(0), Reg(3), ImmOffset(4)),
+                MoveInstr(Reg(0), ImmOffset('b')),
+                StoreByteInstr(Reg(0), Reg(3), ImmOffset(5)),
+                MoveInstr(Reg(0), ImmOffset(2)),
+                StoreInstr(Reg(0), Reg(3), ImmOffset(0)),
+                MoveInstr(Reg(0), RegOp(Reg(3)))
+              )
         )
     }
     it should "translate newpair constructor" in {
         reset()
         testRHS(
           NewPairNode(IntLiterNode(1)(0, 0), IntLiterNode(2)(0, 0))(0, 0),
-          List(
-            LoadImmIntInstr(Reg(0), 1),
-            PushInstr(List(Reg(0))),
-            MoveInstr(Reg(0), ImmOffset(4)),
-            BranchLinkInstr("malloc", Condition.AL),
-            PopInstr(List(Reg(1))),
-            StoreInstr(Reg(1), Reg(0), ImmOffset(0)),
-            PushInstr(List(Reg(0))),
-            LoadImmIntInstr(Reg(0), 2),
-            PushInstr(List(Reg(0))),
-            MoveInstr(Reg(0), ImmOffset(4)),
-            BranchLinkInstr("malloc", Condition.AL),
-            PopInstr(List(Reg(1))),
-            StoreInstr(Reg(1), Reg(0), ImmOffset(0)),
-            PushInstr(List(Reg(0))),
-            MoveInstr(Reg(0), ImmOffset(8)),
-            BranchLinkInstr("malloc", Condition.AL),
-            PopInstr(List(Reg(1), Reg(2))),
-            StoreInstr(Reg(2), Reg(0), ImmOffset(0), false),
-            StoreInstr(Reg(1), Reg(0), ImmOffset(4), false)
-          )
+          expectedBssSection ++:
+              List(
+                LoadImmIntInstr(Reg(0), 1),
+                PushInstr(List(Reg(0))),
+                MoveInstr(Reg(0), ImmOffset(4)),
+                BranchLinkInstr("malloc", Condition.AL),
+                PopInstr(List(Reg(1))),
+                StoreInstr(Reg(1), Reg(0), ImmOffset(0)),
+                PushInstr(List(Reg(0))),
+                LoadImmIntInstr(Reg(0), 2),
+                PushInstr(List(Reg(0))),
+                MoveInstr(Reg(0), ImmOffset(4)),
+                BranchLinkInstr("malloc", Condition.AL),
+                PopInstr(List(Reg(1))),
+                StoreInstr(Reg(1), Reg(0), ImmOffset(0)),
+                PushInstr(List(Reg(0))),
+                MoveInstr(Reg(0), ImmOffset(8)),
+                BranchLinkInstr("malloc", Condition.AL),
+                PopInstr(List(Reg(1), Reg(2))),
+                StoreInstr(Reg(2), Reg(0), ImmOffset(0), false),
+                StoreInstr(Reg(1), Reg(0), ImmOffset(4), false)
+              )
         )
         reset()
         testRHS(
@@ -1191,27 +1244,28 @@ class CodeGenSpec extends AnyFlatSpec {
             0,
             0
           ),
-          List(
-            MoveInstr(Reg(0), ImmOffset('z')),
-            PushInstr(List(Reg(0))),
-            MoveInstr(Reg(0), ImmOffset(1)),
-            BranchLinkInstr("malloc", Condition.AL),
-            PopInstr(List(Reg(1))),
-            StoreByteInstr(Reg(1), Reg(0), ImmOffset(0)),
-            PushInstr(List(Reg(0))),
-            MoveInstr(Reg(0), ImmOffset(1)),
-            PushInstr(List(Reg(0))),
-            MoveInstr(Reg(0), ImmOffset(1)),
-            BranchLinkInstr("malloc", Condition.AL),
-            PopInstr(List(Reg(1))),
-            StoreByteInstr(Reg(1), Reg(0), ImmOffset(0)),
-            PushInstr(List(Reg(0))),
-            MoveInstr(Reg(0), ImmOffset(8)),
-            BranchLinkInstr("malloc", Condition.AL),
-            PopInstr(List(Reg(1), Reg(2))),
-            StoreInstr(Reg(2), Reg(0), ImmOffset(0), false),
-            StoreInstr(Reg(1), Reg(0), ImmOffset(4), false)
-          )
+          expectedBssSection ++:
+              List(
+                MoveInstr(Reg(0), ImmOffset('z')),
+                PushInstr(List(Reg(0))),
+                MoveInstr(Reg(0), ImmOffset(1)),
+                BranchLinkInstr("malloc", Condition.AL),
+                PopInstr(List(Reg(1))),
+                StoreByteInstr(Reg(1), Reg(0), ImmOffset(0)),
+                PushInstr(List(Reg(0))),
+                MoveInstr(Reg(0), ImmOffset(1)),
+                PushInstr(List(Reg(0))),
+                MoveInstr(Reg(0), ImmOffset(1)),
+                BranchLinkInstr("malloc", Condition.AL),
+                PopInstr(List(Reg(1))),
+                StoreByteInstr(Reg(1), Reg(0), ImmOffset(0)),
+                PushInstr(List(Reg(0))),
+                MoveInstr(Reg(0), ImmOffset(8)),
+                BranchLinkInstr("malloc", Condition.AL),
+                PopInstr(List(Reg(1), Reg(2))),
+                StoreInstr(Reg(2), Reg(0), ImmOffset(0), false),
+                StoreInstr(Reg(1), Reg(0), ImmOffset(4), false)
+              )
         )
     }
     it should "translate pair elements" in {
@@ -1225,12 +1279,13 @@ class CodeGenSpec extends AnyFlatSpec {
 
         testRHS(
           node,
-          expectedDataSection(
-            List(
-              expectedNullReferenceDirective,
-              expectedPrintStrDirective
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedNullReferenceDirective,
+                  expectedPrintStrDirective
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
@@ -1254,12 +1309,13 @@ class CodeGenSpec extends AnyFlatSpec {
         sf.unlock("x")
         testRHS(
           node,
-          expectedDataSection(
-            List(
-              expectedNullReferenceDirective,
-              expectedPrintStrDirective
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedNullReferenceDirective,
+                  expectedPrintStrDirective
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
@@ -1285,7 +1341,8 @@ class CodeGenSpec extends AnyFlatSpec {
         sf.unlock("f")
         testRHS(
           node,
-          List(BranchLinkInstr("f_f", Condition.AL))
+          expectedBssSection ++:
+              List(BranchLinkInstr("f_f", Condition.AL))
         )
 
         reset()
@@ -1305,14 +1362,15 @@ class CodeGenSpec extends AnyFlatSpec {
         sf.unlock("f")
         testRHS(
           node,
-          List(
-            LoadImmIntInstr(r0, 1, Condition.AL),
-            StoreInstr(r0, sp, ImmOffset(-4), true),
-            LoadRegSignedByte(r0, sp, ImmOffset(4), Condition.AL),
-            StoreByteInstr(r0, sp, ImmOffset(-1), true),
-            BranchLinkInstr("f_f", Condition.AL),
-            AddInstr(sp, sp, ImmOffset(5), false)
-          )
+          expectedBssSection ++:
+              List(
+                LoadImmIntInstr(r0, 1, Condition.AL),
+                StoreInstr(r0, sp, ImmOffset(-4), true),
+                LoadRegSignedByte(r0, sp, ImmOffset(4), Condition.AL),
+                StoreByteInstr(r0, sp, ImmOffset(-1), true),
+                BranchLinkInstr("f_f", Condition.AL),
+                AddInstr(sp, sp, ImmOffset(5), false)
+              )
         )
 
         reset()
@@ -1325,12 +1383,13 @@ class CodeGenSpec extends AnyFlatSpec {
         sf.unlock("f")
         testRHS(
           node,
-          List(
-            MoveInstr(r0, ImmOffset('a'), Condition.AL),
-            StoreByteInstr(r0, sp, ImmOffset(-1), true),
-            BranchLinkInstr("f_f", Condition.AL),
-            AddInstr(sp, sp, ImmOffset(1), false)
-          )
+          expectedBssSection ++:
+              List(
+                MoveInstr(r0, ImmOffset('a'), Condition.AL),
+                StoreByteInstr(r0, sp, ImmOffset(-1), true),
+                BranchLinkInstr("f_f", Condition.AL),
+                AddInstr(sp, sp, ImmOffset(1), false)
+              )
         )
 
     }
@@ -1342,12 +1401,13 @@ class CodeGenSpec extends AnyFlatSpec {
             StatListNode(List(PrintNode(IntLiterNode(1)(0, 0))(0, 0)))(0, 0)
         testStat(
           node,
-          expectedDataSection(List(expectedPrintIntDirective))
-              ++ List(
+          expectedBssSection ++:
+              expectedDataSection(List(expectedPrintIntDirective))
+              ++: List(
                 LoadImmIntInstr(r0, 1),
                 BranchLinkInstr("p_print_int")
               )
-              ++ expectedPrintIntText(0)
+              ++: expectedPrintIntText(0)
         )
     }
     it should "translate print string statements" in {
@@ -1356,12 +1416,13 @@ class CodeGenSpec extends AnyFlatSpec {
             StatListNode(List(PrintNode(IntLiterNode(1)(0, 0))(0, 0)))(0, 0)
         testStat(
           node,
-          expectedDataSection(List(expectedPrintIntDirective))
-              ++ List(
+          expectedBssSection ++:
+              expectedDataSection(List(expectedPrintIntDirective))
+              ++: List(
                 LoadImmIntInstr(r0, 1),
                 BranchLinkInstr("p_print_int")
               )
-              ++ expectedPrintIntText(0)
+              ++: expectedPrintIntText(0)
         )
     }
     it should "translate print char statements" in {
@@ -1370,10 +1431,11 @@ class CodeGenSpec extends AnyFlatSpec {
             StatListNode(List(PrintNode(CharLiterNode('c')(0, 0))(0, 0)))(0, 0)
         testStat(
           node,
-          List(
-            MoveInstr(r0, ImmOffset('c')),
-            BranchLinkInstr("putchar")
-          )
+          expectedBssSection ++:
+              List(
+                MoveInstr(r0, ImmOffset('c')),
+                BranchLinkInstr("putchar")
+              )
         )
     }
 
@@ -1383,7 +1445,7 @@ class CodeGenSpec extends AnyFlatSpec {
         var node: StatListNode = StatListNode(List(SkipNode()(0, 0)))(0, 0)
         testStat(
           node,
-          List()
+          expectedBssSection
         )
     }
 
@@ -1406,10 +1468,11 @@ class CodeGenSpec extends AnyFlatSpec {
 
         testStat(
           node,
-          List(
-            LoadImmIntInstr(r0, 0),
-            StoreInstr(r0, sp, ImmOffset(0), false)
-          )
+          expectedBssSection ++:
+              List(
+                LoadImmIntInstr(r0, 0),
+                StoreInstr(r0, sp, ImmOffset(0), false)
+              )
         )
 
     }
@@ -1425,12 +1488,13 @@ class CodeGenSpec extends AnyFlatSpec {
         sf.unlock("a_pair")
         testStat(
           StatListNode(List(FreeNode(pair)(0, 0)))(0, 0),
-          expectedDataSection(
-            List(
-              expectedNullReferenceDirective,
-              expectedPrintStrDirective
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedNullReferenceDirective,
+                  expectedPrintStrDirective
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
@@ -1454,14 +1518,15 @@ class CodeGenSpec extends AnyFlatSpec {
         sf.unlock("arr1")
         testStat(
           StatListNode(List(FreeNode(node)(0, 0)))(0, 0),
-          expectedTextSection(
-            List(
-              List(
-                LoadInstr(r0, sp, ImmOffset(sf.getOffset("arr1"))),
-                BranchLinkInstr("free")
+          expectedBssSection ++:
+              expectedTextSection(
+                List(
+                  List(
+                    LoadInstr(r0, sp, ImmOffset(sf.getOffset("arr1"))),
+                    BranchLinkInstr("free")
+                  )
+                )
               )
-            )
-          )
         )
     }
 
@@ -1469,14 +1534,15 @@ class CodeGenSpec extends AnyFlatSpec {
         reset()
         testStat(
           StatListNode(List(ExitNode(IntLiterNode(5)(0, 0))(0, 0)))(0, 0),
-          expectedTextSection(
-            List(
-              List(
-                LoadImmIntInstr(r0, 5),
-                BranchLinkInstr("exit")
+          expectedBssSection ++:
+              expectedTextSection(
+                List(
+                  List(
+                    LoadImmIntInstr(r0, 5),
+                    BranchLinkInstr("exit")
+                  )
+                )
               )
-            )
-          )
         )
     }
 
@@ -1503,16 +1569,17 @@ class CodeGenSpec extends AnyFlatSpec {
 
         testStat(
           node,
-          expectedDataSection(
-            List(expectedIntDirective)
-          ) ++ expectedTextSection(
-            List(
-              List(
-                AddInstr(r0, sp, ImmOffset(0)),
-                BranchLinkInstr("p_read_int")
-              ) ++ readIntInstructions
-            )
-          )
+          expectedBssSection ++:
+              expectedDataSection(
+                List(expectedIntDirective)
+              ) ++: expectedTextSection(
+                List(
+                  List(
+                    AddInstr(r0, sp, ImmOffset(0)),
+                    BranchLinkInstr("p_read_int")
+                  ) ++: readIntInstructions
+                )
+              )
         )
     }
 
@@ -1539,16 +1606,17 @@ class CodeGenSpec extends AnyFlatSpec {
 
         testStat(
           node,
-          expectedDataSection(
-            List(expectedCharDirective)
-          ) ++ expectedTextSection(
-            List(
-              List(
-                AddInstr(r0, sp, ImmOffset(0)),
-                BranchLinkInstr("p_read_char")
-              ) ++ readCharInstructions
-            )
-          )
+          expectedBssSection ++:
+              expectedDataSection(
+                List(expectedCharDirective)
+              ) ++: expectedTextSection(
+                List(
+                  List(
+                    AddInstr(r0, sp, ImmOffset(0)),
+                    BranchLinkInstr("p_read_char")
+                  ) ++: readCharInstructions
+                )
+              )
         )
     }
 
@@ -1558,10 +1626,11 @@ class CodeGenSpec extends AnyFlatSpec {
             StatListNode(List(ReturnNode(IntLiterNode(1)(0, 0))(0, 0)))(0, 0)
         testStat(
           node,
-          List(
-            LoadImmIntInstr(r0, 1),
-            PopInstr(List(pc))
-          )
+          expectedBssSection ++:
+              List(
+                LoadImmIntInstr(r0, 1),
+                PopInstr(List(pc))
+              )
         )
     }
 
@@ -1573,7 +1642,7 @@ class CodeGenSpec extends AnyFlatSpec {
                 BeginEndNode(StatListNode(List(SkipNode()(0, 0)))(0, 0))(0, 0)
               )
             )(0, 0)
-        testStat(node, List())
+        testStat(node, expectedBssSection)
     }
 
     it should "translate do-while statements (false conditional)" in {
@@ -1593,7 +1662,12 @@ class CodeGenSpec extends AnyFlatSpec {
             )(0, 0)
           )
         )(0, 0)
-        testStat(node, List(BranchInstr("wd_1")) ++ loopBody ++ whileLoopInstr)
+        testStat(
+          node,
+          expectedBssSection ++: List(
+            BranchInstr("wd_1")
+          ) ++: loopBody ++: whileLoopInstr
+        )
     }
 
     it should "translate do-while statements (true conditional)" in {
@@ -1613,7 +1687,12 @@ class CodeGenSpec extends AnyFlatSpec {
             )(0, 0)
           )
         )(0, 0)
-        testStat(node, List(BranchInstr("wd_1")) ++ loopBody ++ whileLoopInstr)
+        testStat(
+          node,
+          expectedBssSection ++: List(
+            BranchInstr("wd_1")
+          ) ++: loopBody ++: whileLoopInstr
+        )
     }
     it should "translate print reference statements" in {
         reset()
@@ -1630,12 +1709,13 @@ class CodeGenSpec extends AnyFlatSpec {
             )(0, 0)
         testStat(
           node,
-          expectedDataSection(List(expectedPrintRefDirective))
-              ++ List(
+          expectedBssSection ++:
+              expectedDataSection(List(expectedPrintRefDirective))
+              ++: List(
                 LoadInstr(r0, sp, ImmOffset(0)),
                 BranchLinkInstr("p_print_reference")
               )
-              ++ expectedPrintRefText(0)
+              ++: expectedPrintRefText(0)
         )
     }
     it should "translate println statements" in {
@@ -1646,13 +1726,14 @@ class CodeGenSpec extends AnyFlatSpec {
             )(0, 0)
         testStat(
           node,
-          expectedDataSection(List(expectedPrintLnDirective))
-              ++ List(
+          expectedBssSection ++:
+              expectedDataSection(List(expectedPrintLnDirective))
+              ++: List(
                 MoveInstr(r0, ImmOffset('c')),
                 BranchLinkInstr("putchar"),
                 BranchLinkInstr("p_print_ln")
               )
-              ++ expectedPrintLnText(0)
+              ++: expectedPrintLnText(0)
         )
     }
 
@@ -1674,14 +1755,15 @@ class CodeGenSpec extends AnyFlatSpec {
             )(0, 0)
         testStat(
           node,
-          List(
-            MoveInstr(r0, ImmOffset(1)),
-            CompareInstr(r0, ImmOffset(0)),
-            BranchInstr("ite_0", Condition.EQ),
-            BranchInstr("ite_1"),
-            Label("ite_0"),
-            Label("ite_1")
-          )
+          expectedBssSection ++:
+              List(
+                MoveInstr(r0, ImmOffset(1)),
+                CompareInstr(r0, ImmOffset(0)),
+                BranchInstr("ite_0", Condition.EQ),
+                BranchInstr("ite_1"),
+                Label("ite_0"),
+                Label("ite_1")
+              )
         )
     }
 
@@ -1696,13 +1778,14 @@ class CodeGenSpec extends AnyFlatSpec {
         )(0, 0)
         testFunction(
           node,
-          List(
-            Label("f_x"),
-            PushInstr(List(lr)),
-            LoadImmIntInstr(r0, 1),
-            PopInstr(List(pc)),
-            Directive("ltorg")
-          )
+          expectedBssSection ++:
+              List(
+                Label("f_x"),
+                PushInstr(List(lr)),
+                LoadImmIntInstr(r0, 1),
+                PopInstr(List(pc)),
+                Directive("ltorg")
+              )
         )
         reset()
         node = FuncNode(
@@ -1718,15 +1801,16 @@ class CodeGenSpec extends AnyFlatSpec {
         )(0, 0)
         testFunction(
           node,
-          List(
-            Label("f_x"),
-            PushInstr(List(lr)),
-            LoadImmIntInstr(r0, 1),
-            PopInstr(List(pc)),
-            LoadImmIntInstr(r0, 5),
-            PopInstr(List(pc)),
-            Directive("ltorg")
-          )
+          expectedBssSection ++:
+              List(
+                Label("f_x"),
+                PushInstr(List(lr)),
+                LoadImmIntInstr(r0, 1),
+                PopInstr(List(pc)),
+                LoadImmIntInstr(r0, 5),
+                PopInstr(List(pc)),
+                Directive("ltorg")
+              )
         )
     }
     it should "translate functions that end in exit" in {
@@ -1740,13 +1824,14 @@ class CodeGenSpec extends AnyFlatSpec {
         )(0, 0)
         testFunction(
           node,
-          List(
-            Label("f_x"),
-            PushInstr(List(lr)),
-            LoadImmIntInstr(r0, 1),
-            BranchLinkInstr("exit"),
-            Directive("ltorg")
-          )
+          expectedBssSection ++:
+              List(
+                Label("f_x"),
+                PushInstr(List(lr)),
+                LoadImmIntInstr(r0, 1),
+                BranchLinkInstr("exit"),
+                Directive("ltorg")
+              )
         )
         reset()
         node = FuncNode(
@@ -1762,15 +1847,16 @@ class CodeGenSpec extends AnyFlatSpec {
         )(0, 0)
         testFunction(
           node,
-          List(
-            Label("f_x"),
-            PushInstr(List(lr)),
-            LoadImmIntInstr(r0, 1),
-            BranchLinkInstr("exit"),
-            LoadImmIntInstr(r0, 255),
-            BranchLinkInstr("exit"),
-            Directive("ltorg")
-          )
+          expectedBssSection ++:
+              List(
+                Label("f_x"),
+                PushInstr(List(lr)),
+                LoadImmIntInstr(r0, 1),
+                BranchLinkInstr("exit"),
+                LoadImmIntInstr(r0, 255),
+                BranchLinkInstr("exit"),
+                Directive("ltorg")
+              )
         )
     }
     behavior of "AssignLHS Code Generation"
@@ -1784,7 +1870,7 @@ class CodeGenSpec extends AnyFlatSpec {
         sf.unlock("x")
         testLHS(
           node,
-          List()
+          expectedBssSection
         )
     }
     it should "translate array elements" in {
@@ -1802,13 +1888,14 @@ class CodeGenSpec extends AnyFlatSpec {
 
         testLHS(
           node,
-          expectedDataSection(
-            List(
-              expectedArrayNegIndexDirective,
-              expectedArrayIndexTooLargeDirective,
-              expectedPrintStrDirective
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedArrayNegIndexDirective,
+                  expectedArrayIndexTooLargeDirective,
+                  expectedPrintStrDirective
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
@@ -1840,12 +1927,13 @@ class CodeGenSpec extends AnyFlatSpec {
 
         testLHS(
           node,
-          expectedDataSection(
-            List(
-              expectedNullReferenceDirective,
-              expectedPrintStrDirective
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedNullReferenceDirective,
+                  expectedPrintStrDirective
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
@@ -1879,12 +1967,13 @@ class CodeGenSpec extends AnyFlatSpec {
         sf.unlock("x")
         testLHS(
           node,
-          expectedDataSection(
-            List(
-              expectedNullReferenceDirective,
-              expectedPrintStrDirective
-            )
-          ) ++
+          expectedBssSection ++:
+              expectedDataSection(
+                List(
+                  expectedNullReferenceDirective,
+                  expectedPrintStrDirective
+                )
+              ) ++:
               expectedTextSection(
                 List(
                   List(
