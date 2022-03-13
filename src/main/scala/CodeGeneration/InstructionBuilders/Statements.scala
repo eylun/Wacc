@@ -32,7 +32,6 @@ object transStatement {
               */
             case tc @ TryCatchNode(s, cs) => {
                 val idx = collector.tickTryCatch()
-                val trySF = stackFrame.join(tc.tryST)
                 collector.insertUtil(UtilFlag.PExceptionError)
 
                 /** ASM code for the Try block */
@@ -54,18 +53,22 @@ object transStatement {
                     StoreInstr(r3, r2, ImmOffset(0))
                   )
                 )
+                stackFrame.addTempOffset(8)
+                val trySF = stackFrame.join(tc.tryST)
+                collector.addStatement(trySF.head)
                 transStatement(s, trySF)
                 collector.addStatement(
-                  List(
-                    LoadInstr(r2, sp, ImmOffset(4)),
-                    LoadLabelInstr(r3, "prev_sp"),
-                    StoreInstr(r2, r3, ImmOffset(0)),
-                    LoadInstr(r2, sp, ImmOffset(0)),
-                    LoadLabelInstr(r3, "catch_address"),
-                    StoreInstr(r2, r3, ImmOffset(0)),
-                    AddInstr(sp, sp, ImmOffset(8)),
-                    BranchInstr(s"catch_end_$idx")
-                  )
+                  trySF.tail ++:
+                      List(
+                        LoadInstr(r2, sp, ImmOffset(4)),
+                        LoadLabelInstr(r3, "prev_sp"),
+                        StoreInstr(r2, r3, ImmOffset(0)),
+                        LoadInstr(r2, sp, ImmOffset(0)),
+                        LoadLabelInstr(r3, "catch_address"),
+                        StoreInstr(r2, r3, ImmOffset(0)),
+                        AddInstr(sp, sp, ImmOffset(8)),
+                        BranchInstr(s"catch_end_$idx")
+                      )
                 )
 
                 /** ASM code for the catch handler */
@@ -86,6 +89,7 @@ object transStatement {
                     AddInstr(sp, sp, ImmOffset(8))
                   )
                 )
+                stackFrame.dropTempOffset(8)
 
                 /** ASM code for branching to appropriate catch statements */
                 cs.foreach(c => {

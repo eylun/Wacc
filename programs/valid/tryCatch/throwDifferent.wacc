@@ -1,0 +1,52 @@
+# Catch an Exception of every base type
+
+# Input:
+
+# Output:
+# 5
+# 4
+# 3
+# 12
+# 11
+# true
+# 102
+# 101
+# #runtime_error#
+
+# Exit: 0
+
+# Program:
+
+begin
+  int f1(int x) is
+    println x + 1;
+	if x < 5 then
+	  throw x
+	else
+	  if x < 90 then
+	    throw true
+	  else
+	    x = 100 / 0
+	  fi
+	fi;
+	return 5
+  end
+
+  int f2(int x) is
+	try
+	  println x + 2;
+	  int y = call f1(x)
+	catch (int x)
+	  println x
+	or catch (bool x)
+	  println x
+	or catch (exception x)
+	  println x
+	end;
+	return 5
+  end
+
+  int x = call f2(3);
+  int y = call f2(10);
+  int z = call f2(100)
+end
