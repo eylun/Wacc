@@ -7,9 +7,8 @@ object transLHS {
     /** Adds a list of instructions evaluating the LHS of an assignment to the
       * Wacc Buffer collector
       */
-    def apply(lhs: AssignLHSNode, stackFrame: StackFrame)(implicit
-        collector: WaccBuffer
-    ): Unit = {
+    def apply(lhs: AssignLHSNode, stackFrame: StackFrame)
+        (implicit collector: WaccBuffer, repr: Representation): Unit = {
         lhs match {
             /** IDENT NODE */
             case IdentNode(s) =>

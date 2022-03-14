@@ -1,36 +1,67 @@
-sealed trait Register
-
-/** toString functions for registers */
-case class StackPtrReg() extends Register {
-    override def toString(): String = "sp"
-}
-
-case class LinkReg() extends Register {
-    override def toString(): String = "lr"
-}
-
-case class PCReg() extends Register {
-    override def toString(): String = "pc"
-}
-
-case class Reg(n: Int) extends Register {
-    override def toString(): String = s"r$n"
-}
-
 object constants {
+    sealed trait Register
+
+    /** toString functions for registers */
+    private case class StackPtrReg()(implicit repr: Representation) extends Register {
+        override def toString(): String = {
+            repr match {
+                case ARMRepresentation => "sp"
+                case X86Representation => "rsp"
+            }
+        }
+    }
+
+    private case class LinkReg()(implicit repr: Representation) extends Register {
+        override def toString(): String = {
+            repr match {
+                case ARMRepresentation => "lr"
+                case X86Representation => "rbp"
+            }
+        }
+    }
+
+    private case class PCReg()(implicit repr: Representation) extends Register {
+        override def toString(): String = {
+            repr match {
+                case ARMRepresentation => "pc"
+                case X86Representation => "not reached"
+            }
+        }
+    }
+
+    private case class Reg(n: Int)(implicit repr: Representation) extends Register {
+        override def toString(): String = {
+            repr match {
+                case ARMRepresentation => s"r$n"
+                case X86Representation => {
+                    n match {
+                        case 0 => "rax"
+                        case 1 => "rdi"
+                        case 2 => "rsi"
+                        case 3 => "rdx"
+                        case 4 => "rcx"
+                        case 5 => "r8"
+                        case 6 => "r9"
+                        case 7 => "rbx"
+                    }
+                }
+            }
+        }
+    }
 
     /** General Purpose Registers */
-    val r0: Reg = Reg(0)
-    val r1: Reg = Reg(1)
-    val r2: Reg = Reg(2)
-    val r3: Reg = Reg(3)
-    val r4: Reg = Reg(4)
-    val r5: Reg = Reg(5)
-    val r6: Reg = Reg(6)
-    val r7: Reg = Reg(7)
+    def r0(implicit repr: Representation): Register = r0
+    def r1(implicit repr: Representation): Register = r1
+    def r2(implicit repr: Representation): Register = r2
+    def r3(implicit repr: Representation): Register = r3
+    def r4(implicit repr: Representation): Register = Reg(4)
+    def r5(implicit repr: Representation): Register = Reg(5)
+    def r6(implicit repr: Representation): Register = Reg(6)
+    def r7(implicit repr: Representation): Register = Reg(7)
+    
 
     /** Special Purpose Registers */
-    val sp: StackPtrReg = StackPtrReg()
-    val lr: LinkReg = LinkReg()
-    val pc: PCReg = PCReg()
+    def sp(implicit repr: Representation): Register = StackPtrReg()
+    def lr(implicit repr: Representation): Register = LinkReg()
+    def pc(implicit repr: Representation): Register = PCReg()
 }

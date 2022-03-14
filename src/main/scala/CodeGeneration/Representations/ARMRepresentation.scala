@@ -1,6 +1,7 @@
 import java.io.{File, BufferedWriter, FileWriter}
 
 object ARMRepresentation extends Representation {
+    implicit val repr: Representation = this
 
     def apply(
         progNode: ProgramNode,
@@ -17,7 +18,7 @@ object ARMRepresentation extends Representation {
     /** generateLine() matches an instruction to its relevant assembly code
       * representation
       */
-    def generateLine(instr: Instruction)(implicit collector: WaccBuffer): String =
+    def generateLine(instr: Instruction)(implicit collector: WaccBuffer, repr: Representation): String =
         s"${instr match {
             case Label(labelName) => s"$labelName:"
             case Directive(name)  => s".$name"
@@ -71,8 +72,7 @@ object ARMRepresentation extends Representation {
                 s"\tSTRB $src, [$dst, #$offset]"
 
             /** Branch Instructions */
-            case BranchInstr(label, condition)     => generateBranch(instr)
-            case BranchLinkInstr(label, condition) => s"\tBL$condition $label"
+            case BranchInstr(_, _) | BranchLinkInstr(_, _) => generateBranch(instr)
 
             /** Comparison Instructions */
             case CompareInstr(_, _, _) => generateCompare(instr)
@@ -137,6 +137,7 @@ object ARMRepresentation extends Representation {
     def generateBranch(i: Instruction): String = {
         i match {
             case BranchInstr(label, cond) => s"\tB$cond $label"
+            case BranchLinkInstr(label, cond) => s"\tBL$cond $label"
             case _ => ""
         }
     }

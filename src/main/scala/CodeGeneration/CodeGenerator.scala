@@ -1,9 +1,8 @@
 import constants._
 
 object CodeGenerator {
-    def apply(progNode: ProgramNode, st: SymbolTable)(implicit
-        collector: WaccBuffer
-    ): List[Instruction] = {
+    def apply(progNode: ProgramNode, st: SymbolTable)
+        (implicit collector: WaccBuffer, repr: Representation): List[Instruction] = {
 
         /** Creates the top level stack frame */
         val mainStackFrame = StackFrame(st)
@@ -29,7 +28,7 @@ object CodeGenerator {
         collector.addStatement(mainStackFrame.tail)
 
         collector.addStatement(
-          List(MoveInstr(Reg(0), ImmOffset(0)), PopInstr(List(pc)))
+          List(MoveInstr(r0, ImmOffset(0)), PopInstr(List(pc)))
         )
         collector.emit()
     }

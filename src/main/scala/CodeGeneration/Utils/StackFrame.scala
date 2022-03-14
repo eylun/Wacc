@@ -46,7 +46,7 @@ class StackFrame(
     val totalBytes = StackFrame.totalBytes(currST)
 
     /** Decrement stack pointer */
-    val head: List[Instruction] = varBytes match {
+    def head(implicit repr: Representation): List[Instruction] = varBytes match {
         case 0 => List.empty
         case _ =>
             StackFrame
@@ -55,7 +55,7 @@ class StackFrame(
     }
 
     /** Increment stack pointer */
-    val tail: List[Instruction] = varBytes match {
+    def tail(implicit repr: Representation): List[Instruction] = varBytes match {
         case 0 => List.empty
         case _ =>
             StackFrame
@@ -64,7 +64,7 @@ class StackFrame(
     }
 
     /** Increment stack pointer by all allocated variables in a function */
-    val returnTail: List[Instruction] = returnOffset match {
+    def returnTail(implicit repr: Representation): List[Instruction] = returnOffset match {
         case 0 => List.empty
         case _ =>
             StackFrame

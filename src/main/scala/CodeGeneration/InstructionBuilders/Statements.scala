@@ -7,9 +7,8 @@ import javax.management.RuntimeErrorException
   * buffer
   */
 object transStatement {
-    def apply(statList: StatNode, stackFrame: StackFrame)(implicit
-        collector: WaccBuffer
-    ): Unit = {
+    def apply(statList: StatNode, stackFrame: StackFrame)
+        (implicit collector: WaccBuffer, repr: Representation): Unit = {
         val StatListNode(l) = statList
         l.foreach {
             /** THROW STATEMENT: throw <expr> */
@@ -442,10 +441,8 @@ object transStatement {
     }
 
     /** Helper function for print and println. */
-    def printExpr(e: ExprNode, stackFrame: StackFrame)(implicit
-        collector: WaccBuffer
-    ): Unit = {
-
+    def printExpr(e: ExprNode, stackFrame: StackFrame)
+        (implicit collector: WaccBuffer, repr: Representation): Unit = {
         /** Evaluate the expression node */
         transExpression(e, stackFrame)
 
@@ -552,7 +549,7 @@ object transStatement {
     /** Given a type, it generates the appropriate instruction sequence and
       * corresponding branch instruction
       */
-    def determinePrintType(nodeType: Type)(implicit collector: WaccBuffer) = {
+    def determinePrintType(nodeType: Type)(implicit collector: WaccBuffer, repr: Representation) = {
         nodeType match {
             case IntType() => {
                 collector.insertUtil(UtilFlag.PPrintInt)

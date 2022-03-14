@@ -1,3 +1,5 @@
+import constants.Register
+
 sealed trait Instruction
 
 /** Enumerations: Condition Codes, Flags */

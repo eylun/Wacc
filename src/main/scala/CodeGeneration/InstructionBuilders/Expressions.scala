@@ -6,9 +6,8 @@ import constants._
   * collector
   */
 object transExpression {
-    def apply(exprNode: ExprNode, stackFrame: StackFrame)(implicit
-        collector: WaccBuffer
-    ): Unit =
+    def apply(exprNode: ExprNode, stackFrame: StackFrame)
+            (implicit collector: WaccBuffer, repr: Representation): Unit = {
         exprNode match {
             /** IDENTIFIER */
             case IdentNode(s) =>
@@ -372,4 +371,5 @@ object transExpression {
             }
             case _ => List[Instruction]().empty
         }
+    }
 }

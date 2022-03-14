@@ -1,5 +1,5 @@
 trait Representation {
-    def generateLine(i: Instruction)(implicit collector: WaccBuffer): String
+    def generateLine(i: Instruction)(implicit collector: WaccBuffer, repr: Representation): String
 
     def generateAdd(i: Instruction): String
 

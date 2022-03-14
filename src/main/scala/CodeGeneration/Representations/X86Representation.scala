@@ -1,12 +1,9 @@
 import java.io.{File, BufferedWriter, FileWriter}
 
 object X86Representation extends Representation {
+    implicit val repr: Representation = this
 
-    def apply(
-        progNode: ProgramNode,
-        st: SymbolTable,
-        filename: String
-    ): Unit = {
+    def apply(progNode: ProgramNode, st: SymbolTable, filename: String): Unit = {
         implicit val collector: WaccBuffer = new WaccBuffer
         collector.setupMain()
         val bw = new BufferedWriter(new FileWriter(new File(filename)))
@@ -14,7 +11,7 @@ object X86Representation extends Representation {
         bw.close()
     }
 
-    def generateLine(instr: Instruction)(implicit collector: WaccBuffer): String = 
+    def generateLine(instr: Instruction)(implicit collector: WaccBuffer, repr: Representation): String = 
         s"${instr match {
             case Label(labelName) => s"$labelName:"
             case Directive(name)  => s".$name"
@@ -31,8 +28,7 @@ object X86Representation extends Representation {
             case SubInstr(_, _, _, _) | ReverseSubInstr(_, _, _, _) => generateSub(instr)
             case SMullInstr(_, _, _, _, _) => "TODO"
 
-            case BranchInstr(_, _)       => generateBranch(instr)
-            case BranchLinkInstr(_, _) => "TODO"
+            case BranchInstr(_, _) | BranchLinkInstr(_, _) => generateBranch(instr)
 
             /** Load Instructions*/
             case LoadLabelInstr(_, _, _) => "TODO"
@@ -187,6 +183,8 @@ object X86Representation extends Representation {
             case BranchInstr(label, Condition.LT) => s"\tjl $label"
             case BranchInstr(label, Condition.LE) => s"\tjle $label"
             case BranchInstr(label, Condition.VS) => s"\tjo $label"
+
+            case BranchLinkInstr(label, Condition.AL) => s"\tcall $label"
 
             case _ => ""
         }
