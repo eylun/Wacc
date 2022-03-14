@@ -1,0 +1,23 @@
+# Catch an Exception that is thrown for a parent try catch
+
+# Input:
+
+# Output:
+# #runtime_error#
+
+# Exit: 0
+
+# Program:
+
+begin
+  try
+  	try
+	  int x = 5 / 0
+	catch (int e)
+	  e = e * 2;
+	  println e
+	end
+  catch (exception e)
+	println e
+  end
+end

@@ -174,41 +174,57 @@ case class SkipNode()(val pos: (Int, Int)) extends StatNode {
 
 object SkipNode extends ParserBuilderPos0[SkipNode]
 
-case class TryCatchNode(s1: StatNode, t: TypeNode, i: IdentNode, s2: StatNode)(
+case class CatchNode(val t: TypeNode, i: IdentNode, s: StatNode)(
+    val pos: (Int, Int)
+) {
+    val catchST = SymbolTable()
+    def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
+        catchST.setParent(st)
+        t.check(catchST, errors)
+        catchST.add(i.s, Variable(t.typeId.get.getType()))
+        s.check(catchST, errors)
+    }
+}
+
+object CatchNode {
+    def apply(
+        t: => Parsley[TypeNode],
+        i: => Parsley[IdentNode],
+        s: => Parsley[StatNode]
+    ): Parsley[CatchNode] =
+        pos <**> (t, i, s).lazyZipped(CatchNode(_, _, _) _)
+}
+
+case class TryCatchNode(s: StatNode, cs: List[CatchNode])(
     val pos: (Int, Int)
 ) extends StatNode {
     val tryST = SymbolTable()
-    val catchST = SymbolTable()
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
-        t.check(st, errors)
-        if (t.typeId.get.getType() != StringType()) {
-            errors += WaccError(
-              pos,
-              s"Exception $i has to be type String."
-            )
-            return
-        }
         tryST.setParent(st)
-        catchST.setParent(st)
-        catchST.add(i.s, Variable(t.typeId.get.getType()))
-
-        /** Ensure that expression has checked successfully. Expr must be a
-          * conditional expr (boolean)
-          */
-
-        s1.check(tryST, errors)
-        s2.check(catchST, errors)
+        s.check(tryST, errors)
+        cs.foreach(_.check(st, errors))
     }
 }
 
 object TryCatchNode {
     def apply(
-        s1: => Parsley[StatNode],
-        t: => Parsley[TypeNode],
-        i: => Parsley[IdentNode],
-        s2: => Parsley[StatNode]
+        s: => Parsley[StatNode],
+        cs: => Parsley[List[CatchNode]]
     ): Parsley[TryCatchNode] =
-        pos <**> (s1, t, i, s2).zipped(TryCatchNode(_, _, _, _) _)
+        pos <**> (s, cs).lazyZipped(TryCatchNode(_, _) _)
+}
+
+case class ThrowNode(e: ExprNode)(
+    val pos: (Int, Int)
+) extends StatNode {
+    def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
+        e.check(st, errors)
+    }
+}
+
+object ThrowNode {
+    def apply(e: => Parsley[ExprNode]): Parsley[ThrowNode] =
+        pos <**> e.map(ThrowNode(_) _)
 }
 
 case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode)(
@@ -670,6 +686,13 @@ sealed trait TypeNode extends ASTNode
 
 /** BASE TYPE NODES */
 sealed trait BaseTypeNode extends TypeNode with PairElemTypeNode
+
+case class ExceptionTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
+    typeId = Some(ExceptionType())
+    def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {}
+}
+
+object ExceptionTypeNode extends ParserBuilderPos0[ExceptionTypeNode]
 
 case class IntTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
     typeId = Some(IntType())

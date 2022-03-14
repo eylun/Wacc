@@ -1,0 +1,52 @@
+# Catch exceptions thrown from different locations
+
+# Input:
+
+# Output:
+# thrown from first try block
+# false
+# y
+# zzz
+# thrown from second try block
+
+# Exit: 0
+
+# Program:
+
+begin
+  int func() is
+	throw false;
+	return 5
+  end
+
+  try
+  	int x = call func()
+  catch (bool x)
+	if x then
+	  skip
+	else
+	  println "thrown from first try block"
+	fi
+  end;
+  begin
+	int x = 1;
+	begin
+	  char y = 'y';
+	  begin
+	    string z = "zzz";
+		try
+		  int x = call func()
+		catch (bool x)
+		  println x;
+		  println y;
+		  println z;
+		  if x then
+			skip
+		  else
+			println "thrown from second try block"
+		  fi
+		end
+	  end
+	end
+  end
+end

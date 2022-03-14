@@ -13,7 +13,7 @@ begin
   try
     int[] x = [1,2,3];
 	x[-5] = 5
-  catch(string e)
+  catch(exception e)
 	print e
   end
 end

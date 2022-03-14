@@ -12,6 +12,12 @@ class WaccBuffer {
     private var dataMsgCount = 0
     private var iteCount = 0
     private var wdCount = 0
+    private var tryCatchCount = 0
+
+    def tickTryCatch(): Int = {
+        tryCatchCount += 1
+        tryCatchCount - 1
+    }
 
     def tickGeneral(): Int = {
         generalCount += 1
@@ -70,7 +76,7 @@ class WaccBuffer {
             case PCheckDivideByZero  => printCheckDivideByZero(this)
             case PCheckArrayBounds   => printCheckArrayBounds(this)
             case PCheckNullPointer   => printCheckNullPointer(this)
-
+            case PExceptionError     => printExceptionError(this)
         }
     }
 
@@ -79,6 +85,15 @@ class WaccBuffer {
         mutable.ListBuffer[Instruction]().empty
 
     def addDataMsg(msg: List[Instruction]): Unit = dataMsgs ++= msg
+
+    private val bssMsgs: mutable.ListBuffer[Instruction] =
+        mutable.ListBuffer[Instruction](
+          Directive("bss"),
+          Label("catch_address"),
+          Directive("skip 4"),
+          Label("prev_sp"),
+          Directive("skip 4")
+        )
 
     /** List of instructions in the 'main' instruction sequence */
     private val mainStatements: mutable.ListBuffer[Instruction] =
@@ -90,6 +105,8 @@ class WaccBuffer {
     }
 
     def addStatement(stat: List[Instruction]): Unit = mainStatements ++= stat
+
+    def addStatement(stat: Instruction): Unit = mainStatements += stat
 
     /** List of utility instruction statements */
     private val utilityStatements: mutable.ListBuffer[Instruction] =
@@ -107,11 +124,11 @@ class WaccBuffer {
       */
     def emit(): List[Instruction] = toList(
       dataMsgs.length match {
-          case 0 => mainStatements ++ utilityStatements
+          case 0 => bssMsgs ++: mainStatements ++: utilityStatements
           case _ =>
-              (Directive(
+              bssMsgs ++: (Directive(
                 "data"
-              ) +=: dataMsgs) ++ mainStatements ++ utilityStatements
+              ) +=: dataMsgs) ++: mainStatements ++: utilityStatements
       }
     )
 }

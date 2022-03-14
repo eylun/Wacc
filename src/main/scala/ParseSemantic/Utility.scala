@@ -25,6 +25,9 @@ object Utility {
     }
 
     val keywords = Set(
+      "throw",
+      "catch",
+      "try",
       "begin",
       "end",
       "is",

@@ -1,0 +1,15 @@
+# Attempt to throw outside of a catch
+
+# Input:
+
+# Output:
+# #runtime_error#
+
+# Exit: 255
+
+# Program:
+
+begin
+  throw 5
+end
+

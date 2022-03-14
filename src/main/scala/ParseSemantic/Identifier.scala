@@ -48,6 +48,10 @@ case class StringType() extends Type {
     override def toString(): String = "STRING"
 }
 
+case class ExceptionType() extends Type {
+    override def toString(): String = "EXCEPTION"
+}
+
 /** Nested Pair - pairs that are inside pairs (E.g. Pair(Pair, Pair)) */
 case class NestedPairType() extends Type {
     override def toString(): String = "PAIR"

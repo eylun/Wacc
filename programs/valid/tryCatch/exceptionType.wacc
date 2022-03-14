@@ -1,4 +1,4 @@
-# Catch a division by zero error
+# Catch an exception
 
 # Input:
 
@@ -11,8 +11,8 @@
 
 begin
   try
-    int x = 5/0
-  catch(exception e)
-	println e
+  	int x = 5/0
+  catch (exception x)
+	println x
   end
 end
