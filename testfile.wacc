@@ -1,0 +1,16 @@
+# test removal of redundant load and store
+
+# Input:
+
+# Output:
+
+# Exit: 0
+
+# Program:
+
+begin
+  int x = 42;
+  int a = x;
+  int b = a;
+  int c = a + 1
+end

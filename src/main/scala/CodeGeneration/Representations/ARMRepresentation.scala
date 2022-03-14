@@ -1,16 +1,18 @@
 import java.io.{File, BufferedWriter, FileWriter}
+import OptimisationFlag._
 
 object ARMRepresentation extends Representation {
 
     def apply(
         progNode: ProgramNode,
         st: SymbolTable,
-        filename: String
+        filename: String,
+        optFlag: OptimisationFlag = OptimisationFlag.O0
     ): Unit = {
         implicit val collector: WaccBuffer = new WaccBuffer
         collector.setupMain()
         val bw = new BufferedWriter(new FileWriter(new File(filename)))
-        CodeGenerator(progNode, st).foreach(l => bw.write(generateLine(l)))
+        CodeGenerator(progNode, st, optFlag).foreach(l => bw.write(generateLine(l)))
         bw.close()
     }
 

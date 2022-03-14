@@ -1,7 +1,9 @@
 import constants._
+import OptimisationFlag._
+import PeepholeOptimisation._
 
 object CodeGenerator {
-    def apply(progNode: ProgramNode, st: SymbolTable)(implicit
+    def apply(progNode: ProgramNode, st: SymbolTable, optFlag: OptimisationFlag)(implicit
         collector: WaccBuffer
     ): List[Instruction] = {
 
@@ -31,6 +33,11 @@ object CodeGenerator {
         collector.addStatement(
           List(MoveInstr(Reg(0), ImmOffset(0)), PopInstr(List(pc)))
         )
-        collector.emit()
+
+        /** Execute optimisation functions */
+        optFlag match {
+          case OptimisationFlag.O0 => collector.emit()
+          case OptimisationFlag.Oph => executePeepholeOptimisation(collector.emit())
+        }
     }
 }
