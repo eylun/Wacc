@@ -50,10 +50,10 @@ object constants {
     }
 
     /** General Purpose Registers */
-    def r0(implicit repr: Representation): Register = r0
-    def r1(implicit repr: Representation): Register = r1
-    def r2(implicit repr: Representation): Register = r2
-    def r3(implicit repr: Representation): Register = r3
+    def r0(implicit repr: Representation): Register = Reg(0)
+    def r1(implicit repr: Representation): Register = Reg(1)
+    def r2(implicit repr: Representation): Register = Reg(2)
+    def r3(implicit repr: Representation): Register = Reg(3)
     def r4(implicit repr: Representation): Register = Reg(4)
     def r5(implicit repr: Representation): Register = Reg(5)
     def r6(implicit repr: Representation): Register = Reg(6)

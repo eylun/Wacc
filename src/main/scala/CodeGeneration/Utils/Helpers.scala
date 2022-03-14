@@ -156,7 +156,7 @@ object Helpers {
         List(
           Label("p_print_int"),
           PushInstr(List(lr)),
-          MoveInstr(r0, RegOp(r0)),
+          MoveInstr(r1, RegOp(r0)),
           LoadLabelInstr(r0, s"msg_$idx"),
           AddInstr(r0, r0, ImmOffset(4), false),
           BranchLinkInstr("printf"),
