@@ -1,0 +1,20 @@
+# Input:
+
+# Output:
+# only print this once
+
+# Exit: 0
+
+# Program:
+begin
+try
+	try
+		int x = 5/0;
+		print "should not reach here"
+	catch (exception e)
+		print "only print this once"
+    end
+catch (exception e)
+	print "only print this once"
+end
+end
