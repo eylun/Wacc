@@ -7,6 +7,8 @@ trait Representation {
 
     def generateBranch(i: Instruction): String
 
+    def generateLoad(i: Instruction): String
+
     def generateLogicalBinOp(i: Instruction)(implicit collector: WaccBuffer): String
 
     def generateMove(i: Instruction): String

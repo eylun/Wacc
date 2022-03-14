@@ -40,16 +40,8 @@ object ARMRepresentation extends Representation {
 
 
             /** Load Instructions */
-            case LoadLabelInstr(dst, label, cond) => s"\tLDR$cond $dst, =$label"
-            case LoadImmIntInstr(dst, imm, cond)  => s"\tLDR$cond $dst, =$imm"
-            case LoadInstr(dst, src, ImmOffset(0), cond) =>
-                s"\tLDR$cond $dst, [$src]"
-            case LoadInstr(dst, src, ImmOffset(offset), cond) =>
-                s"\tLDR$cond $dst, [$src, #$offset]"
-            case LoadRegSignedByte(dst, src, ImmOffset(0), cond) =>
-                s"\tLDRSB$cond $dst, [$src]"
-            case LoadRegSignedByte(dst, src, ImmOffset(offset), cond) =>
-                s"\tLDRSB$cond $dst, [$src, #$offset]"
+            case LoadLabelInstr(_, _, _) | LoadImmIntInstr(_, _, _) | LoadInstr(_, _, _, _) | 
+                 LoadRegSignedByte(_, _, _, _) => generateLoad(instr)
 
             /** Store Instructions */
             case StoreInstr(src, dst, ImmOffset(0), true) =>
@@ -130,6 +122,22 @@ object ARMRepresentation extends Representation {
     def generateMove(i: Instruction): String = {
         i match {
             case MoveInstr(dst, src, cond) => s"\tMOV$cond $dst, $src"
+            case _ => ""
+        }
+    }
+
+    def generateLoad(i: Instruction): String = {
+        i match {
+            case LoadLabelInstr(dst, label, cond) => s"\tLDR$cond $dst, =$label"
+            case LoadImmIntInstr(dst, imm, cond)  => s"\tLDR$cond $dst, =$imm"
+            case LoadInstr(dst, src, ImmOffset(0), cond) =>
+                s"\tLDR$cond $dst, [$src]"
+            case LoadInstr(dst, src, ImmOffset(offset), cond) =>
+                s"\tLDR$cond $dst, [$src, #$offset]"
+            case LoadRegSignedByte(dst, src, ImmOffset(0), cond) =>
+                s"\tLDRSB$cond $dst, [$src]"
+            case LoadRegSignedByte(dst, src, ImmOffset(offset), cond) =>
+                s"\tLDRSB$cond $dst, [$src, #$offset]"
             case _ => ""
         }
     }

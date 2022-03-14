@@ -6,7 +6,7 @@ object constants {
         override def toString(): String = {
             repr match {
                 case ARMRepresentation => "sp"
-                case X86Representation => "rsp"
+                case X86Representation => "esp"
             }
         }
     }
@@ -15,7 +15,7 @@ object constants {
         override def toString(): String = {
             repr match {
                 case ARMRepresentation => "lr"
-                case X86Representation => "rbp"
+                case X86Representation => "ebp"
             }
         }
     }
@@ -24,7 +24,7 @@ object constants {
         override def toString(): String = {
             repr match {
                 case ARMRepresentation => "pc"
-                case X86Representation => "not reached"
+                case X86Representation => "eip"
             }
         }
     }
@@ -35,14 +35,14 @@ object constants {
                 case ARMRepresentation => s"r$n"
                 case X86Representation => {
                     n match {
-                        case 0 => "rax"
-                        case 1 => "rdi"
-                        case 2 => "rsi"
-                        case 3 => "rdx"
-                        case 4 => "rcx"
-                        case 5 => "r8"
-                        case 6 => "r9"
-                        case 7 => "rbx"
+                        case 0 => "eax"
+                        case 1 => "edi"
+                        case 2 => "esi"
+                        case 3 => "edx"
+                        case 4 => "ecx"
+                        case 5 => "e8"
+                        case 6 => "e9"
+                        case 7 => "ebx"
                     }
                 }
             }

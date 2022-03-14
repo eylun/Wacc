@@ -175,7 +175,6 @@ object Helpers {
         collector.addUtilStatement(
           printIntLiterFunc(idx)
         )
-
     }
 
     /** Print Bool Literal */

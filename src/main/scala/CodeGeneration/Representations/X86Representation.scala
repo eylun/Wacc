@@ -173,6 +173,18 @@ object X86Representation extends Representation {
         }
     }
 
+    def generateLoad(i: Instruction): String = {
+        i match {
+            case LoadLabelInstr(dst, label, Condition.AL) => s"\tmovl $dst, $label"
+            case LoadImmIntInstr(dst, imm, cond) => "TODO"
+            case LoadInstr(dst, src, ImmOffset(0), cond) => "TODO"
+            case LoadInstr(dst, src, ImmOffset(offset), cond) => "TODO"
+            case LoadRegSignedByte(dst, src, ImmOffset(0), cond) => "TODO"
+            case LoadRegSignedByte(dst, src, ImmOffset(offset), cond) => "TODO"
+            case _ => "TODO"
+        }
+    }
+
     def generateBranch(i: Instruction): String = {
         i match {
             case BranchInstr(label, Condition.AL) => s"\tjmp $label"
