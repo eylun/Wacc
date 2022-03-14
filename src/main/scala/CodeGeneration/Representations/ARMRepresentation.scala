@@ -21,8 +21,9 @@ object ARMRepresentation extends Representation {
         s"${instr match {
             case Label(labelName) => s"$labelName:"
             case Directive(name)  => s".$name"
-            case PushInstr(reg)   => s"\tPUSH {${reg.mkString(", ")}}"
+            case PushInstr(reg)   => generatePush(instr)
             case PopInstr(_)      => generatePop(instr)
+            case MoveInstr(dst, src, cond)        => generateMove(instr)
 
             /** Logical Instructions */
             case AndInstr(_, _, _, _, _) | OrInstr(_, _, _, _, _) | XorInstr(_, _, _, _, _) 
@@ -36,7 +37,6 @@ object ARMRepresentation extends Representation {
             case SMullInstr(rdLo, rdHi, fst, snd, false) =>
                 s"\tSMULL $rdLo, $rdHi, $fst, $snd"
 
-            case MoveInstr(dst, src, cond)        => generateMove(instr)
 
             /** Load Instructions */
             case LoadLabelInstr(dst, label, cond) => s"\tLDR$cond $dst, =$label"
@@ -75,8 +75,7 @@ object ARMRepresentation extends Representation {
             case BranchLinkInstr(label, condition) => s"\tBL$condition $label"
 
             /** Comparison Instructions */
-            case CompareInstr(fstOp, sndOp, condition) =>
-                s"\tCMP$condition $fstOp, $sndOp"
+            case CompareInstr(_, _, _) => generateCompare(instr)
 
             /** For unmatched cases, "temp" will be generated. Used for
               * debugging.

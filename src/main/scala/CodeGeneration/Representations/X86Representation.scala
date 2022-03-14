@@ -18,18 +18,45 @@ object X86Representation extends Representation {
         s"${instr match {
             case Label(labelName) => s"$labelName:"
             case Directive(name)  => s".$name"
-
             case PushInstr(_)     => generatePush(instr)
             case PopInstr(_)      => generatePop(instr)
+            case MoveInstr(_, _, _) => generateMove(instr)
 
+            /* Logical Instructions */
             case AndInstr(_, _, _, _, _) | OrInstr(_, _, _, _, _) | XorInstr(_, _, _, _, _) 
                 => generateLogicalBinOp(instr)
 
+            /* Arithmetic Instructions*/
             case AddInstr(_, _, _, _)    => generateAdd(instr)
             case SubInstr(_, _, _, _) | ReverseSubInstr(_, _, _, _) => generateSub(instr)
+            case SMullInstr(_, _, _, _, _) => "TODO"
 
             case BranchInstr(_, _)       => generateBranch(instr)
-            
+            case BranchLinkInstr(_, _) => "TODO"
+
+            /** Load Instructions*/
+            case LoadLabelInstr(_, _, _) => "TODO"
+            case LoadImmIntInstr(_, _, _) => "TODO"
+            case LoadInstr(dst, src, ImmOffset(0), cond) => "TODO"
+            case LoadInstr(dst, src, ImmOffset(offset), cond) => "TODO"
+            case LoadRegSignedByte(dst, src, ImmOffset(0), cond) => "TODO"
+            case LoadRegSignedByte(dst, src, ImmOffset(offset), cond) => "TODO"
+
+            /** Store Instructions */
+            case StoreInstr(src, dst, ImmOffset(0), true) => "TODO"
+            case StoreInstr(src, dst, ImmOffset(offset), true) => "TODO"
+            case StoreInstr(src, dst, ImmOffset(0), false) => "TODO"
+            case StoreInstr(src, dst, ImmOffset(offset), false) => "TODO"
+
+            /** Store Byte Instructions */
+            case StoreByteInstr(src, dst, ImmOffset(0), true) => "TODO"
+            case StoreByteInstr(src, dst, ImmOffset(offset), true) => "TODO"
+            case StoreByteInstr(src, dst, ImmOffset(0), false) => "TODO"
+            case StoreByteInstr(src, dst, ImmOffset(offset), false) => "TODO"
+
+            /** Comparison Instructions */
+            case CompareInstr(_, _, _) => generateCompare(instr)
+
             case _ => ""
         }}\n"
     
@@ -166,12 +193,55 @@ object X86Representation extends Representation {
     }
 
     def generateCompare(i: Instruction)(implicit collector: WaccBuffer): String = {
+        val sb: StringBuilder = new StringBuilder
+        
         i match {
             case CompareInstr(fst, snd, Condition.AL) => s"\tcmpl $fst, $snd"
             case CompareInstr(fst, snd, Condition.EQ) => {
                 val label: String = s"cmpeq_${collector.tickGeneral()}:"
-                val sb: StringBuilder = new StringBuilder
                 sb.append(s"\tjne $label\n")
+                sb.append(s"\tcmpl $fst, $snd")
+                sb.append(s"$label:")
+                sb.toString
+            }
+            case CompareInstr(fst, snd, Condition.NE) => {
+                val label: String = s"cmpne_${collector.tickGeneral()}:"
+                sb.append(s"\tje $label\n")
+                sb.append(s"\tcmpl $fst, $snd")
+                sb.append(s"$label:")
+                sb.toString
+            }
+            case CompareInstr(fst, snd, Condition.GT) => {
+                val label: String = s"cmpgt_${collector.tickGeneral()}:"
+                sb.append(s"\tjle $label\n")
+                sb.append(s"\tcmpl $fst, $snd")
+                sb.append(s"$label:")
+                sb.toString
+            }
+            case CompareInstr(fst, snd, Condition.GE) => {
+                val label: String = s"cmpge_${collector.tickGeneral()}:"
+                sb.append(s"\tjl $label\n")
+                sb.append(s"\tcmpl $fst, $snd")
+                sb.append(s"$label:")
+                sb.toString
+            }
+            case CompareInstr(fst, snd, Condition.LT) => {
+                val label: String = s"cmplt_${collector.tickGeneral()}:"
+                sb.append(s"\tjge $label\n")
+                sb.append(s"\tcmpl $fst, $snd")
+                sb.append(s"$label:")
+                sb.toString
+            }
+            case CompareInstr(fst, snd, Condition.LE) => {
+                val label: String = s"cmple_${collector.tickGeneral()}:"
+                sb.append(s"\tjg $label\n")
+                sb.append(s"\tcmpl $fst, $snd")
+                sb.append(s"$label:")
+                sb.toString
+            }
+            case CompareInstr(fst, snd, Condition.VS) => {
+                val label: String = s"cmpvs_${collector.tickGeneral()}:"
+                sb.append(s"\tjno $label\n")
                 sb.append(s"\tcmpl $fst, $snd")
                 sb.append(s"$label:")
                 sb.toString
