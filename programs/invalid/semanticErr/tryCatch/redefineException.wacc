@@ -1,0 +1,16 @@
+# a new value of e cannot be reassigned in the same scope
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  try
+	skip
+  catch(string e)
+	int e = 5
+  end
+end

@@ -1,0 +1,19 @@
+# Catch a array index too large error
+
+# Input:
+
+# Output:
+# #runtime_error#
+
+# Exit: 0
+
+# Program:
+
+begin
+  try
+    int[] x = [1,2,3];
+	x[10] = 5
+  catch(exception e)
+	print e
+  end
+end

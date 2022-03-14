@@ -1,0 +1,22 @@
+# Catch a integer overflow error
+
+# Input:
+
+# Output:
+# #runtime_error#
+
+# Exit: 0
+
+# Program:
+
+begin
+  try
+    int x = 2147483 ;
+    x = x * 1000 ;
+    x = x * 1000 ;
+    x = x * 1000
+  catch(exception e)
+	print e
+  end
+end
+

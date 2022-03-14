@@ -1,0 +1,21 @@
+# throw an uncaught type
+
+# Input:
+
+# Output:
+# #runtime_error#
+
+# Exit: 255
+
+# Program:
+
+begin
+  try
+    throw 5
+  catch (string x)
+    println x
+  or catch (bool x)
+    println x
+  end
+end
+

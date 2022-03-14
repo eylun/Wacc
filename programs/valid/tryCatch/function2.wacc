@@ -1,0 +1,25 @@
+# Input:
+
+# Output:
+# caught error thrown in function
+
+# Exit: 0
+
+# Program:
+begin
+int f2() is
+    int x = 5/0;
+    return 0
+end
+
+int f() is
+    int y = call f2();
+    return 0
+end
+
+try
+	int x = call f()
+catch(exception e)
+	println "caught error thrown in function"
+end
+end

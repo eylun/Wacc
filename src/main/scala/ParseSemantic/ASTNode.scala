@@ -143,19 +143,6 @@ case class ParamNode(t: TypeNode, i: IdentNode)(val pos: (Int, Int))
     extends ASTNode {
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         st.lookup(i.s) match {
-            case Some(FunctionId(_, _, _)) => {
-                st.lookupAll(i.s + "$") match {
-                    case None => {
-                        st.add(i.s + "$", Param(t.typeId.get.getType()))
-                    }
-                    case Some(_) =>
-                        /** Checks that parameter has not been defined */
-                        errors += WaccError(
-                          pos,
-                          s"parameter ${i.s} is already defined in this scope"
-                        )
-                }
-            }
             case Some(_) =>
                 errors += WaccError(
                   pos,
@@ -187,6 +174,59 @@ case class SkipNode()(val pos: (Int, Int)) extends StatNode {
 
 object SkipNode extends ParserBuilderPos0[SkipNode]
 
+case class CatchNode(val t: TypeNode, i: IdentNode, s: StatNode)(
+    val pos: (Int, Int)
+) {
+    val catchST = SymbolTable()
+    def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
+        catchST.setParent(st)
+        t.check(catchST, errors)
+        catchST.add(i.s, Variable(t.typeId.get.getType()))
+        s.check(catchST, errors)
+    }
+}
+
+object CatchNode {
+    def apply(
+        t: => Parsley[TypeNode],
+        i: => Parsley[IdentNode],
+        s: => Parsley[StatNode]
+    ): Parsley[CatchNode] =
+        pos <**> (t, i, s).lazyZipped(CatchNode(_, _, _) _)
+}
+
+case class TryCatchNode(s: StatNode, cs: List[CatchNode])(
+    val pos: (Int, Int)
+) extends StatNode {
+    val tryST = SymbolTable()
+    def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
+        tryST.setParent(st)
+        s.check(tryST, errors)
+        cs.foreach(_.check(st, errors))
+    }
+}
+
+object TryCatchNode {
+    def apply(
+        s: => Parsley[StatNode],
+        cs: => Parsley[List[CatchNode]]
+    ): Parsley[TryCatchNode] =
+        pos <**> (s, cs).lazyZipped(TryCatchNode(_, _) _)
+}
+
+case class ThrowNode(e: ExprNode)(
+    val pos: (Int, Int)
+) extends StatNode {
+    def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
+        e.check(st, errors)
+    }
+}
+
+object ThrowNode {
+    def apply(e: => Parsley[ExprNode]): Parsley[ThrowNode] =
+        pos <**> e.map(ThrowNode(_) _)
+}
+
 case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode)(
     val pos: (Int, Int)
 ) extends StatNode {
@@ -213,22 +253,6 @@ case class NewAssignNode(t: TypeNode, i: IdentNode, r: AssignRHSNode)(
         st.lookup(i.s) match {
             case None => {
                 st.add(i.s, Variable(t.typeId.get.getType()))
-            }
-            case Some(FunctionId(_, _, _)) => {
-                /* When a function node already exists, manually rename the
-                 * identifer in the AST node and insert into the symbol table
-                 */
-                st.lookup(i.s + "$") match {
-                    case None => {
-                        i.s += "$"
-                        st.add(i.s, Variable(t.typeId.get.getType()))
-                    }
-                    case Some(_) =>
-                        errors += WaccError(
-                          pos,
-                          s"variable ${i.s} is assigned within the scope"
-                        )
-                }
             }
             case _ =>
                 errors += WaccError(
@@ -662,6 +686,13 @@ sealed trait TypeNode extends ASTNode
 
 /** BASE TYPE NODES */
 sealed trait BaseTypeNode extends TypeNode with PairElemTypeNode
+
+case class ExceptionTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
+    typeId = Some(ExceptionType())
+    def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {}
+}
+
+object ExceptionTypeNode extends ParserBuilderPos0[ExceptionTypeNode]
 
 case class IntTypeNode()(val pos: (Int, Int)) extends BaseTypeNode {
     typeId = Some(IntType())

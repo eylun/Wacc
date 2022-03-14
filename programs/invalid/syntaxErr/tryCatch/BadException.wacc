@@ -1,0 +1,17 @@
+# try is merged with the statement after
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  try
+  	println x
+  catch (excepion x)
+	skip
+  end
+end

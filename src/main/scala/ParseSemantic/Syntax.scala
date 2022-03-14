@@ -65,6 +65,15 @@ object lexer {
             s"keyword $v may not be used as an identifier"
     }).label("identifier")
 
+    val funcIdent = IdentNode(
+      lexer.identifier
+          .filterOut {
+              case v if lang.keywords(v) =>
+                  s"keyword $v may not be used as an identifier"
+          }
+          .map("f_" + _)
+    ).label("function identifier")
+
     val number =
         lexer
             .lexeme(
@@ -161,6 +170,8 @@ object lexer {
     lazy val charType = CharTypeNode <# lexer.keyword("char").label("Char Type")
     lazy val stringType =
         StringTypeNode <# lexer.keyword("string").label("String Type")
+    lazy val exceptionType =
+        ExceptionTypeNode <# lexer.keyword("exception").label("Exception Type")
     lazy val baseType: Parsley[BaseTypeNode] =
         (intType <|> boolType <|> charType <|> stringType)
             .label("Base Types: int, bool, char, string")
@@ -181,7 +192,17 @@ object lexer {
   * Contains parsing for values that are that require other parsers
   */
 object syntax {
-    import lexer.{baseType, pairBaseType, fully, exprAtoms, number, ident, _kw}
+    import lexer.{
+        baseType,
+        exceptionType,
+        pairBaseType,
+        fully,
+        exprAtoms,
+        number,
+        ident,
+        funcIdent,
+        _kw
+    }
     import lexer.implicits.implicitLexeme
     import parsley.debug.{DebugCombinators, FullBreak}
     import parsley.combinator.{
@@ -195,6 +216,7 @@ object syntax {
     }
     import parsley.expr.{precedence, Ops, InfixL, Prefix, Postfix, chain}
     import parsley.errors.combinator.{ErrorMethods, fail}
+    import scala.collection.mutable
 
     /** Entry point into parser */
     val parse = fully(program)
@@ -218,7 +240,7 @@ object syntax {
     lazy val func: Parsley[FuncNode] =
         FuncNode(
           anyType,
-          ident,
+          funcIdent,
           "(" ~> (sepBy(param, ",").label("function parameters") <~ ")"
               <|> _semiFunc),
           "is" ~> stat
@@ -354,7 +376,7 @@ object syntax {
     /** call := ‘call’ ⟨ident⟩ ‘(’ ⟨arg-list⟩? ‘)’ */
     lazy val call =
         CallNode(
-          "call".label("function call") *> ident.label("function name"),
+          "call".label("function call") *> funcIdent.label("function name"),
           "(".label("\"(\" <function arguments> \")\"") *> exprArgList.label(
             "function arguments"
           ) <* ")"
@@ -392,16 +414,42 @@ object syntax {
             .label("statement(s)")
 
     lazy val statAtoms: Parsley[StatNode] =
-        (skipStat <|> newAssignStat <|> lrAssignStat <|> readStat <|>
+        (skipStat <|> throwStat <|> tryCatchStat <|> newAssignStat <|>
+            lrAssignStat <|> readStat <|>
             freeStat <|> returnStat <|> exitStat <|> printStat <|>
             printlnStat <|> ifThenElseStat <|> whileDoStat <|> beginEndStat)
             .label("statement atoms")
             .explain(
-              """- Statement atoms include: 'skip', Assignment, Read, Free, 
+              """- Statement atoms include: Skip, Throw, Try-Catch, Assignment, Read, Free, 
 			  |Return, Exit, Print, Conditional or Begin-end statements
 			  |""".stripMargin.replaceAll("\n", " ")
             )
-
+    lazy val throwStat = ThrowNode("throw" ~> expr)
+    lazy val catchAtom =
+        CatchNode(
+          "catch" ~> "(" ~> (baseType <|> exceptionType),
+          ident <~ ")",
+          stat
+        )
+            .label("catch-block")
+    lazy val catchList = sepBy1(
+      catchAtom,
+      "or".hide
+    ).collectMsg(
+      "Catch types cannot be occur more than once"
+    ) { case x if catchesNoDupe(x) => x }
+    lazy val tryCatchStat = TryCatchNode(
+      "try" ~> stat,
+      catchList <~ "end"
+    ).label("try-catch-block")
+    def catchesNoDupe(base: List[CatchNode]): Boolean = {
+        val typeSet = mutable.Set[TypeNode]()
+        base.foreach { c =>
+            if (typeSet.contains(c.t)) return false
+            typeSet += c.t
+        }
+        true
+    }
     lazy val skipStat = SkipNode <# "skip".label("skip statement")
     lazy val newAssignStat =
         NewAssignNode(

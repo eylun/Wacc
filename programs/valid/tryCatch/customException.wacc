@@ -1,0 +1,18 @@
+# Catch a thrown value determined by the code's author
+
+# Input:
+
+# Output:
+# 5
+
+# Exit: 0
+
+# Program:
+
+begin
+  try
+  	throw 5
+  catch (int x)
+	println x
+  end
+end

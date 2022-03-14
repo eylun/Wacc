@@ -1,0 +1,15 @@
+# try-catch statement has no catch
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  try
+	skip
+  end
+end
