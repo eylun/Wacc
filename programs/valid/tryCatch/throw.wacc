@@ -1,0 +1,21 @@
+# Input:
+
+# Output:
+# caught manually thrown
+# #runtime_error#
+
+# Exit: 255
+
+# Program:
+begin
+try
+	int x = 5 / 0
+catch(exception e)
+	println "caught manually thrown"
+end;
+try
+	int y = 5/0
+catch(int x)
+	println "caught manually thrown"
+end
+end

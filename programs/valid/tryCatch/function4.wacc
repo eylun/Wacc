@@ -1,0 +1,29 @@
+# Input:
+
+# Output:
+# caught error thrown in function
+
+# Exit: 0
+
+# Program:
+begin
+int f(int z) is
+    try
+        if (z == 1) then
+            z = 5 / 0
+        else
+            skip
+        fi
+    catch(int e)
+        print "error"
+    end;
+    int a = call f(1);
+    return 0
+end
+
+try
+	int x = call f(0)
+catch(exception e)
+	print "caught error thrown in function"
+end
+end
