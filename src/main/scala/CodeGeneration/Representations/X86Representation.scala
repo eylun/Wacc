@@ -72,6 +72,7 @@ object X86Representation extends Representation {
         val sb = new StringBuilder
 
         i match {
+            /** AND */
             case AndInstr(dst, fst, snd, _, Condition.AL) => {
                 sb.append(s"\tmov $dst, $fst\n")
                 sb.append(s"\tand $fst, $snd")
@@ -79,13 +80,54 @@ object X86Representation extends Representation {
             }
             case AndInstr(dst, fst, snd, _, Condition.EQ) => {
                 val label: String = s".andeq_${collector.tickGeneral()}:"
-                sb.append(s"\tcmp $fst, $snd\n")
                 sb.append(s"\tjne $label\n")
                 sb.append(s"\tmov $dst, $fst\n")
                 sb.append(s"\tand $dst, $snd\n")
                 sb.append(s"$label:\n")
                 sb.toString
             }
+            case AndInstr(dst, fst, snd, _, Condition.GT) => {
+                val label: String = s".andgt_${collector.tickGeneral()}:"
+                sb.append(s"\tjle $label\n")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\tand $dst, $snd\n")
+                sb.append(s"$label:\n")
+                sb.toString
+            }
+            case AndInstr(dst, fst, snd, _, Condition.GE) => {
+                val label: String = s".andge_${collector.tickGeneral()}:"
+                sb.append(s"\tjl $label\n")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\tand $dst, $snd\n")
+                sb.append(s"$label:\n")
+                sb.toString
+            }
+            case AndInstr(dst, fst, snd, _, Condition.LT) => {
+                val label: String = s".andlt_${collector.tickGeneral()}:"
+                sb.append(s"\tjge $label\n")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\tand $dst, $snd\n")
+                sb.append(s"$label:\n")
+                sb.toString
+            }
+            case AndInstr(dst, fst, snd, _, Condition.LE) => {
+                val label: String = s".andle_${collector.tickGeneral()}:"
+                sb.append(s"\tjg $label\n")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\tand $dst, $snd\n")
+                sb.append(s"$label:\n")
+                sb.toString
+            }
+            case AndInstr(dst, fst, snd, _, Condition.VS) => {
+                val label: String = s".andvs_${collector.tickGeneral()}:"
+                sb.append(s"\tjno $label\n")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\tand $dst, $snd\n")
+                sb.append(s"$label:\n")
+                sb.toString
+            }
+
+            /** XOR */
             case XorInstr(dst, fst, snd, _, Condition.AL) => {
                 sb.append(s"\tmov $dst, $fst\n")
                 sb.append(s"\txor $fst, $snd")
@@ -93,13 +135,14 @@ object X86Representation extends Representation {
             }
             case XorInstr(dst, fst, snd, _, Condition.EQ) => {
                 val label: String = s".xoreq_${collector.tickGeneral()}:"
-                sb.append(s"\tcmp $fst, $snd\n")
                 sb.append(s"\tjne $label\n")
                 sb.append(s"\tmov $dst, $fst\n")
                 sb.append(s"\txor $dst, $snd\n")
                 sb.append(s"$label:\n")
                 sb.toString
             }
+
+            /** OR */
             case OrInstr(dst, fst, snd, _, Condition.AL) => {
                 sb.append(s"\tmov $dst, $fst\n")
                 sb.append(s"\tor $fst, $snd")
@@ -107,7 +150,6 @@ object X86Representation extends Representation {
             }
             case OrInstr(dst, fst, snd, _, Condition.EQ) => {
                 val label: String = s".oreq_${collector.tickGeneral()}:"
-                sb.append(s"\tcmp $fst, $snd\n")
                 sb.append(s"\tjne $label\n")
                 sb.append(s"\tmov $dst, $fst\n")
                 sb.append(s"\tor $dst, $snd\n")
