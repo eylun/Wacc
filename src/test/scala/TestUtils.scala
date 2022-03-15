@@ -154,7 +154,6 @@ object testUtils {
     }
 
     def executeAndCompare(f: File): Unit = {
-
         import sys.process._
         import scala.language.postfixOps
         import parsley.{Success, Failure}

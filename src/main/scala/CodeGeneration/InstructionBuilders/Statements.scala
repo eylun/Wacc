@@ -383,60 +383,25 @@ object transStatement {
                 transLHS(l, stackFrame)
 
                 l match {
-                    case IdentNode(s) => {
-                        collector.addStatement(
-                          List(
-                            AddInstr(
-                              r0,
-                              sp,
-                              ImmOffset(stackFrame.getOffset(s)),
-                              false
-                            )
-                          )
-                        )
-                    }
-                    case _ =>
-                        collector.addStatement(
-                          List(
-                            AddInstr(
-                              r0,
-                              r1,
-                              ImmOffset(0),
-                              false
-                            )
-                          )
-                        )
+                    case IdentNode(s) => 
+                        collector.addStatement(List(AddInstr(r0, sp, ImmOffset(stackFrame.getOffset(s)), false)))
+                    case _ => collector.addStatement(List(AddInstr(r0, r1, ImmOffset(0), false)))
                 }
 
                 /** Throws an error for input not of char or int type */
                 l.typeId.get.getType() match {
                     case CharType() => {
                         collector.insertUtil(UtilFlag.PReadChar)
-                        collector.addStatement(
-                          List(
-                            BranchLinkInstr("p_read_char")
-                          )
-                        )
+                        collector.addStatement(List(BranchLinkInstr("p_read_char")))
                     }
-
                     case IntType() => {
                         collector.insertUtil(UtilFlag.PReadInt)
-                        collector.addStatement(
-                          List(
-                            BranchLinkInstr("p_read_int")
-                          )
-                        )
+                        collector.addStatement(List(BranchLinkInstr("p_read_int")))
                     }
-
-                    case _ =>
-                        throw new RuntimeException(
-                          "Invalid Target Type for Read Statement"
-                        )
+                    case _ => throw new RuntimeException("Invalid Target Type for Read Statement")
                 }
-
             }
-            case StatListNode(_) =>
-                throw new RuntimeException("Invalid Statement List Node")
+            case StatListNode(_) => throw new RuntimeException("Invalid Statement List Node")
         }
     }
 
@@ -492,7 +457,6 @@ object transStatement {
             }
 
             case PairLiterNode() => {
-
                 /** Insert instruction sequence for printing references */
                 collector.insertUtil(PPrintRef)
 
@@ -503,7 +467,6 @@ object transStatement {
             }
 
             case IdentNode(s) => {
-
                 /** Get Ident Node Type */
                 val nodeType: Type =
                     (stackFrame.currST.lookupAll(s)).get.getType()
@@ -513,8 +476,8 @@ object transStatement {
                   */
                 determinePrintType(nodeType)
             }
+            
             case ArrayElemNode(IdentNode(s), es) => {
-
                 /** Get array type and dimension. */
                 val ArrayType(nodeType, _, dimension) =
                     (stackFrame.currST.lookupAll(s)).get.getType()

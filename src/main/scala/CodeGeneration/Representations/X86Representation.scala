@@ -12,10 +12,25 @@ object X86Representation extends Representation {
         bw.close()
     }
 
+    def generateOperand(op: SecondOperand): String = {
+        op match {
+            case ImmOffset(immOffset) => s"$immOffset"
+            case RegOp(regOp)         => s"$regOp"
+            case LSLRegOp(r, s)       => s"TODO"
+            case LSRRegOp(r, s)       => s"TODO"
+            case ASRRegOp(r, s)       => s"TODO"
+            case RORRegOp(r, s)       => s"TODO"
+        }
+    }
+
+    def generateShift(s: Shift): String = {
+        "TODO"
+    }
+
     def generateLine(instr: Instruction)(implicit collector: WaccBuffer, repr: Representation): String = {
         s"${instr match {
             case Label(labelName) => s"$labelName:"
-            case Directive(name)  => s".$name"
+            case Directive(name)  => s"\t.$name"
             case PushInstr(_)     => generatePush(instr)
             case PopInstr(_)      => generatePop(instr)
             case MoveInstr(_, _, _) => generateMove(instr)
@@ -272,7 +287,7 @@ object X86Representation extends Representation {
     def regWithLength(r: Register, bitLen: Int): String = {
         bitLen match {
             case 16 => s"${r.toString.substring(1)}"
-            case 32 => r.toString
+            case 32 => s"$r"
             case 64 => s"r${r.toString.substring(1)}"
             case _ => "undefined register length in x86"
         }

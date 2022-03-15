@@ -27,15 +27,21 @@ object Helpers {
         }
     }
 
-    /** Generates data message for strings */
-    def getStringDirective(s: String, idx: Int): List[Instruction] = {
+    def formatStringDirective(s: String)(implicit repr: Representation): Instruction = {
+        repr match {
+            case ARMRepresentation => Directive(s"ascii \"$s\"")
+            case X86Representation => Directive(s"string \"$s\"")
+        }
+    }
 
+    /** Generates data message for strings */
+    def getStringDirective(s: String, idx: Int)(implicit repr: Representation): List[Instruction] = {
         /** Convert escape characters into printable escape characters */
         val string = escapeConvert(s)
         List(
           Label(s"msg_$idx"),
           Directive(s"word ${s.length()}"),
-          Directive(s"ascii \"$string\"")
+          formatStringDirective(string)
         )
     }
 
@@ -143,11 +149,11 @@ object Helpers {
     /** PRINT STATEMENT HELPERS */
     /** Print Int Literal */
     /** Generates data message */
-    def getPrintIntDirective(idx: Int): List[Instruction] = {
+    def getPrintIntDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
           Directive(s"word 3"),
-          Directive(s"ascii \"%d\\0\"")
+          formatStringDirective("%d\\0")
         )
     }
 
@@ -179,20 +185,20 @@ object Helpers {
 
     /** Print Bool Literal */
     /** Generates data message for a 'true' boolean value */
-    def getPrintTrueDirective(idx: Int): List[Instruction] = {
+    def getPrintTrueDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
           Directive(s"word 5"),
-          Directive(s"ascii \"true\\0\"")
+          formatStringDirective("true\\0")
         )
     }
 
     /** Generates data message for a 'false' boolean value */
-    def getPrintFalseDirective(idx: Int): List[Instruction] = {
+    def getPrintFalseDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
           Directive(s"word 6"),
-          Directive(s"ascii \"false\\0\"")
+          formatStringDirective("false\\0")
         )
     }
 
@@ -232,11 +238,11 @@ object Helpers {
 
     /** Print String Literal */
     /** Generates data message for printing strings */
-    def getPrintStrDirective(idx: Int): List[Instruction] = {
+    def getPrintStrDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
           Directive(s"word 5"),
-          Directive(s"ascii \"%.*s\\0\"")
+          formatStringDirective("%.*s\\0")
         )
     }
 
@@ -270,11 +276,11 @@ object Helpers {
 
     /** Print (Memory) References */
     /** Generates data message for printing memory references */
-    def getPrintRefDirective(idx: Int): List[Instruction] = {
+    def getPrintRefDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
           Directive(s"word 3"),
-          Directive(s"ascii \"%p\\0\"")
+          formatStringDirective("%p\\0")
         )
     }
 
@@ -307,11 +313,11 @@ object Helpers {
 
     /** Print New Line */
     /** Generates data message for printing a new line */
-    def getPrintNewLineDirective(idx: Int): List[Instruction] = {
+    def getPrintNewLineDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
           Directive(s"word 1"),
-          Directive(s"ascii \"\\0\"")
+          formatStringDirective("\\0")
         )
     }
 
@@ -341,13 +347,11 @@ object Helpers {
     }
 
     /** Print Throw Overflow Error */
-    def getPrintOverflowErrorDirective(idx: Int): List[Instruction] = {
+    def getPrintOverflowErrorDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
           Directive(s"word 83"),
-          Directive(
-            s"ascii \"OverflowError: the result is too small/large to store in a 4-byte signed-integer.\\n\\0\""
-          )
+          formatStringDirective("OverflowError: the result is too small/large to store in a 4-byte signed-integer.\\n\\0")
         )
     }
     def printOverflowErrorFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
@@ -396,13 +400,11 @@ object Helpers {
     }
 
     /** Print Check Divide By Zero */
-    def printCheckDivideByZeroDirective(idx: Int): List[Instruction] = {
+    def printCheckDivideByZeroDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
           Directive(s"word 45"),
-          Directive(
-            s"ascii \"DivideByZeroError: divide or modulo by zero\\n\\0\""
-          )
+          formatStringDirective("DivideByZeroError: divide or modulo by zero\\n\\0")
         )
     }
     def printCheckDivideByZeroFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
@@ -430,23 +432,16 @@ object Helpers {
     }
 
     /** Print Check Array Bounds */
-    def printCheckArrayBoundsDirective(
-        largeIdx: Int,
-        negIdx: Int
-    ): List[Instruction] = {
+    def printCheckArrayBoundsDirective(largeIdx: Int, negIdx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           /** Negative Index Data Message */
           Label(s"msg_$negIdx"),
           Directive(s"word 44"),
-          Directive(
-            s"ascii \"ArrayIndexOutOfBoundsError: negative index\\n\\0\""
-          ),
+          formatStringDirective("ArrayIndexOutOfBoundsError: negative index\\n\\0"),
           /** Index Too Large Data Message */
           Label(s"msg_$largeIdx"),
           Directive(s"word 45"),
-          Directive(
-            s"ascii \"ArrayIndexOutOfBoundsError: index too large\\n\\0\""
-          )
+          formatStringDirective("ArrayIndexOutOfBoundsError: index too large\\n\\0")
         )
     }
     def printCheckArrayBoundsFunc(largeIdx: Int, negIdx: Int)(implicit repr: Representation): List[Instruction] = {
@@ -478,13 +473,14 @@ object Helpers {
     }
 
     /** Print Read Int */
-    def printReadIntDirective(idx: Int): List[Instruction] = {
+    def printReadIntDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
           Directive(s"word 3"),
-          Directive(s"ascii \"%d\\0\"")
+          formatStringDirective("%d\\0")
         )
     }
+
     def printReadIntFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label("p_read_int"),
@@ -496,6 +492,7 @@ object Helpers {
           PopInstr(List(pc))
         )
     }
+
     def printReadInt(implicit collector: WaccBuffer, repr: Representation) = {
         /** Add DataMsg for ReadInt Directive */
         val idx: Int = collector.tickDataMsg()
@@ -506,13 +503,14 @@ object Helpers {
     }
 
     /** Print Read Char */
-    def printReadCharDirective(idx: Int): List[Instruction] = {
+    def printReadCharDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
           Directive(s"word 4"),
-          Directive(s"ascii \" %c\\0\"")
+          formatStringDirective(" %c\\0")
         )
     }
+
     def printReadCharFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label("p_read_char"),
@@ -524,8 +522,8 @@ object Helpers {
           PopInstr(List(pc))
         )
     }
-    def printReadChar(implicit collector: WaccBuffer, repr: Representation) = {
 
+    def printReadChar(implicit collector: WaccBuffer, repr: Representation) = {
         /** Add DataMsg for ReadChar Directive */
         val idx: Int = collector.tickDataMsg()
         collector.addDataMsg(printReadCharDirective(idx))
@@ -535,15 +533,14 @@ object Helpers {
     }
 
     /** Print Free Pair */
-    def printFreePairDirective(idx: Int): List[Instruction] = {
+    def printFreePairDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
           Directive(s"word 50"),
-          Directive(
-            s"ascii \"NullReferenceError: dereference a null reference\\n\\0\""
-          )
+          formatStringDirective("NullReferenceError: dereference a null reference\\n\\0")
         )
     }
+
     def printFreePairFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label("p_free_pair"),
@@ -562,6 +559,7 @@ object Helpers {
           PopInstr(List(pc))
         )
     }
+
     def printFreePair(implicit collector: WaccBuffer, repr: Representation) = {
         /** Add DataMsg for FreePair Directive */
         val idx: Int = collector.tickDataMsg()
@@ -575,15 +573,14 @@ object Helpers {
     }
 
     /** Print Check Null Pointer */
-    def printCheckNullPointerDirective(idx: Int): List[Instruction] = {
+    def printCheckNullPointerDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
           Directive(s"word 50"),
-          Directive(
-            s"ascii \"NullReferenceError: dereference a null reference\\n\\0\""
-          )
+          formatStringDirective("NullReferenceError: dereference a null reference\\n\\0")
         )
     }
+
     def printCheckNullPointerFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label("p_check_null_pointer"),
@@ -594,8 +591,8 @@ object Helpers {
           PopInstr(List(pc))
         )
     }
-    def printCheckNullPointer(implicit collector: WaccBuffer, repr: Representation) = {
 
+    def printCheckNullPointer(implicit collector: WaccBuffer, repr: Representation) = {
         /** Add DataMsg for CheckNullPointer Directive */
         val idx: Int = collector.tickDataMsg()
         collector.addDataMsg(printCheckNullPointerDirective(idx))
@@ -608,15 +605,14 @@ object Helpers {
     }
 
     /** Print Exception Error */
-    def printExceptionErrorDirective(idx: Int): List[Instruction] = {
+    def printExceptionErrorDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label(s"msg_$idx"),
           Directive(s"word 58"),
-          Directive(
-            s"ascii \"ExceptionError: no appropriate catch for throw statement\\n\\0\""
-          )
+          formatStringDirective("ExceptionError: no appropriate catch for throw statement\\n\\0")
         )
     }
+    
     def printExceptionErrorFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label("p_exception_error"),
@@ -624,6 +620,7 @@ object Helpers {
           BranchLinkInstr("p_throw_runtime_error")
         )
     }
+
     def printExceptionError(implicit collector: WaccBuffer, repr: Representation) = {
         /** Add DataMsg for CheckNullPointer Directive */
         val idx: Int = collector.tickDataMsg()

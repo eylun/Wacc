@@ -11,6 +11,24 @@ object ARMRepresentation extends Representation {
         bw.close()
     }
 
+    def generateOperand(op: SecondOperand): String = {
+        op match {
+            case ImmOffset(immOffset) => s"#$immOffset"
+            case RegOp(regOp)         => s"$regOp"
+            case LSLRegOp(r, s)       => s"$r, LSL ${generateShift(s)}"
+            case LSRRegOp(r, s)       => s"$r, LSR ${generateShift(s)}"
+            case ASRRegOp(r, s)       => s"$r, ASR ${generateShift(s)}"
+            case RORRegOp(r, s)       => s"$r, ROR ${generateShift(s)}"
+        }
+    }
+
+    def generateShift(s: Shift): String = {
+        s match {
+            case ShiftReg(reg) => s"$reg"
+            case ShiftImm(imm) => s"#$imm"
+        }
+    }
+
     /** generateLine() matches an instruction to its relevant assembly code
       * representation
       */
@@ -66,30 +84,30 @@ object ARMRepresentation extends Representation {
 
     def generateLogicalBinOp(i: Instruction)(implicit collector: WaccBuffer): String = {
         i match {
-            case AndInstr(dst, fst, snd, false, cond) => s"\tAND$cond $dst, $fst, $snd"
-            case AndInstr(dst, fst, snd, true, cond) => s"\tANDS$cond $dst, $fst, $snd"
-            case XorInstr(dst, fst, snd, false, cond) => s"\tEOR$cond $dst, $fst, $snd"
-            case XorInstr(dst, fst, snd, true, cond) => s"\tEOR${cond}S $dst, $fst, $snd"
-            case OrInstr(dst, fst, snd, false, cond) => s"\tORR$cond $dst, $fst, $snd"
-            case OrInstr(dst, fst, snd, true, cond) => s"\tORR${cond}S $dst, $fst, $snd"
+            case AndInstr(dst, fst, snd, false, cond) => s"\tAND$cond $dst, $fst, ${generateOperand(snd)}"
+            case AndInstr(dst, fst, snd, true, cond) => s"\tANDS$cond $dst, $fst, ${generateOperand(snd)}"
+            case XorInstr(dst, fst, snd, false, cond) => s"\tEOR$cond $dst, $fst, ${generateOperand(snd)}"
+            case XorInstr(dst, fst, snd, true, cond) => s"\tEOR${cond}S $dst, $fst, ${generateOperand(snd)}"
+            case OrInstr(dst, fst, snd, false, cond) => s"\tORR$cond $dst, $fst, ${generateOperand(snd)}"
+            case OrInstr(dst, fst, snd, true, cond) => s"\tORR${cond}S $dst, $fst, ${generateOperand(snd)}"
             case _ => ""
         }
     }
 
     def generateAdd(i: Instruction): String = {
         i match {
-            case AddInstr(dst, fst, snd, true)  => s"\tADDS $dst, $fst, $snd"
-            case AddInstr(dst, fst, snd, false) => s"\tADD $dst, $fst, $snd"
+            case AddInstr(dst, fst, snd, true)  => s"\tADDS $dst, $fst, ${generateOperand(snd)}"
+            case AddInstr(dst, fst, snd, false) => s"\tADD $dst, $fst, ${generateOperand(snd)}"
             case _ => ""
         }
     }
 
     def generateSub(i: Instruction): String = {
         i match {
-            case SubInstr(dst, fst, snd, true) => s"\tSUBS $dst, $fst, $snd"
-            case SubInstr(dst, fst, snd, false) => s"\tSUB $dst, $fst, $snd"
-            case ReverseSubInstr(dst, fst, snd, true) => s"\tRSBS $dst, $fst, $snd"
-            case ReverseSubInstr(dst, fst, snd, false) => s"\tRSB $dst, $fst, $snd"
+            case SubInstr(dst, fst, snd, true) => s"\tSUBS $dst, $fst, ${generateOperand(snd)}"
+            case SubInstr(dst, fst, snd, false) => s"\tSUB $dst, $fst, ${generateOperand(snd)}"
+            case ReverseSubInstr(dst, fst, snd, true) => s"\tRSBS $dst, $fst, ${generateOperand(snd)}"
+            case ReverseSubInstr(dst, fst, snd, false) => s"\tRSB $dst, $fst, ${generateOperand(snd)}"
             case _ => ""
         }
     }
@@ -106,7 +124,7 @@ object ARMRepresentation extends Representation {
 
     def generateMove(i: Instruction): String = {
         i match {
-            case MoveInstr(dst, src, cond) => s"\tMOV$cond $dst, $src"
+            case MoveInstr(dst, src, cond) => s"\tMOV$cond $dst, ${generateOperand(src)}"
             case _ => ""
         }
     }
@@ -161,7 +179,7 @@ object ARMRepresentation extends Representation {
 
     def generateCompare(i: Instruction)(implicit collector: WaccBuffer): String = {
         i match {
-            case CompareInstr(fst, snd, cond) => s"\tCMP$cond $fst, $snd"
+            case CompareInstr(fst, snd, cond) => s"\tCMP$cond $fst, ${generateOperand(snd)}"
             case _ => ""
         }
     }

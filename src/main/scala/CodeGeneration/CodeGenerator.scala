@@ -16,7 +16,11 @@ object CodeGenerator {
         /** Add label for "main" instruction sequence and push link register
           * onto stack
           */
-        collector.addStatement(List(Label("main"), PushInstr(List(lr))))
+
+        repr match {
+            case ARMRepresentation => collector.addStatement(List(Label("main"), PushInstr(List(lr))))
+            case X86Representation => collector.addStatement(List(Label("_start"), PushInstr(List(lr))))
+        }
 
         /** Add instructions to decrement stack pointer */
         collector.addStatement(mainStackFrame.head)

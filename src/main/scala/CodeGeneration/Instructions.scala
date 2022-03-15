@@ -174,18 +174,7 @@ case class PushInstr(regList: List[Register]) extends Instruction
 case class PopInstr(regList: List[Register]) extends Instruction
 
 /** Second Operand */
-sealed trait SecondOperand {
-    override def toString: String = {
-        this match {
-            case ImmOffset(immOffset) => s"#$immOffset"
-            case RegOp(regOp)         => regOp.toString()
-            case LSLRegOp(r, s)       => s"${r.toString()}, LSL ${s.toString()}"
-            case LSRRegOp(r, s)       => s"${r.toString()}, LSR ${s.toString()}"
-            case ASRRegOp(r, s)       => s"${r.toString()}, ASR ${s.toString()}"
-            case RORRegOp(r, s)       => s"${r.toString()}, ROR ${s.toString()}"
-        }
-    }
-}
+sealed trait SecondOperand
 
 /** Immediate offset */
 case class ImmOffset(immOffset: Int) extends SecondOperand
@@ -205,14 +194,7 @@ case class ASRRegOp(regOp: Register, shift: Shift) extends SecondOperand
 /** Rotate Right (Register) */
 case class RORRegOp(regOp: Register, shift: Shift) extends SecondOperand
 
-sealed trait Shift {
-    override def toString: String = {
-        this match {
-            case ShiftReg(reg) => reg.toString()
-            case ShiftImm(imm) => s"#$imm"
-        }
-    }
-}
+sealed trait Shift
 
 /** Shift by register value */
 case class ShiftReg(reg: Register) extends Shift
