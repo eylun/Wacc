@@ -31,12 +31,8 @@ object X86Representation extends Representation {
             case BranchInstr(_, _) | BranchLinkInstr(_, _) => generateBranch(instr)
 
             /** Load Instructions*/
-            case LoadLabelInstr(_, _, _) => "TODO"
-            case LoadImmIntInstr(_, _, _) => "TODO"
-            case LoadInstr(dst, src, ImmOffset(0), cond) => "TODO"
-            case LoadInstr(dst, src, ImmOffset(offset), cond) => "TODO"
-            case LoadRegSignedByte(dst, src, ImmOffset(0), cond) => "TODO"
-            case LoadRegSignedByte(dst, src, ImmOffset(offset), cond) => "TODO"
+            case LoadLabelInstr(_, _, _) | LoadImmIntInstr(_, _, _) | LoadInstr(_, _, _, _) | 
+                 LoadRegSignedByte(_, _, _, _) => generateLoad(instr)
 
             /** Store Instructions */
             case StoreInstr(src, dst, ImmOffset(0), true) => "TODO"
@@ -61,8 +57,8 @@ object X86Representation extends Representation {
         val sb: StringBuilder = new StringBuilder
         i match {
             case PushInstr(regs) => {
-                sb.append(s"\tpushl ${regs.head}")
-                regs.drop(1).foreach(r => sb.append(s"\n\tpushl ${r}"))
+                sb.append(s"\tpush ${regs.head}")
+                regs.drop(1).foreach(r => sb.append(s"\n\tpush ${r}"))
                 sb.toString
             }
             case _ => ""    
@@ -73,8 +69,8 @@ object X86Representation extends Representation {
         val sb: StringBuilder = new StringBuilder
         i match {
             case PopInstr(regs) => {
-                sb.append(s"\tpopl ${regs.head}")
-                regs.drop(1).foreach(r => sb.append(s"\n\tpopl ${r}"))
+                sb.append(s"\tpop ${regs.head}")
+                regs.drop(1).foreach(r => sb.append(s"\n\tpop ${r}"))
                 sb.toString
             }
             case _ => ""
@@ -86,44 +82,44 @@ object X86Representation extends Representation {
 
         i match {
             case AndInstr(dst, fst, snd, _, Condition.AL) => {
-                sb.append(s"\tmovl $dst, $fst\n")
-                sb.append(s"\tandl $fst, $snd")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\tand $fst, $snd")
                 sb.toString
             }
             case AndInstr(dst, fst, snd, _, Condition.EQ) => {
-                val label: String = s"andeq_${collector.tickGeneral()}:"
-                sb.append(s"\tcmpl $fst, $snd\n")
+                val label: String = s".andeq_${collector.tickGeneral()}:"
+                sb.append(s"\tcmp $fst, $snd\n")
                 sb.append(s"\tjne $label\n")
-                sb.append(s"\tmovl $dst, $fst\n")
-                sb.append(s"\tandl $dst, $snd\n")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\tand $dst, $snd\n")
                 sb.append(s"$label:\n")
                 sb.toString
             }
             case XorInstr(dst, fst, snd, _, Condition.AL) => {
-                sb.append(s"\tmovl $dst, $fst\n")
-                sb.append(s"\txorl $fst, $snd")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\txor $fst, $snd")
                 sb.toString
             }
             case XorInstr(dst, fst, snd, _, Condition.EQ) => {
-                val label: String = s"xoreq_${collector.tickGeneral()}:"
-                sb.append(s"\tcmpl $fst, $snd\n")
+                val label: String = s".xoreq_${collector.tickGeneral()}:"
+                sb.append(s"\tcmp $fst, $snd\n")
                 sb.append(s"\tjne $label\n")
-                sb.append(s"\tmovl $dst, $fst\n")
-                sb.append(s"\txorl $dst, $snd\n")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\txor $dst, $snd\n")
                 sb.append(s"$label:\n")
                 sb.toString
             }
             case OrInstr(dst, fst, snd, _, Condition.AL) => {
-                sb.append(s"\tmovl $dst, $fst\n")
-                sb.append(s"\torl $fst, $snd")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\tor $fst, $snd")
                 sb.toString
             }
             case OrInstr(dst, fst, snd, _, Condition.EQ) => {
-                val label: String = s"oreq_${collector.tickGeneral()}:"
-                sb.append(s"\tcmpl $fst, $snd\n")
+                val label: String = s".oreq_${collector.tickGeneral()}:"
+                sb.append(s"\tcmp $fst, $snd\n")
                 sb.append(s"\tjne $label\n")
-                sb.append(s"\tmovl $dst, $fst\n")
-                sb.append(s"\torl $dst, $snd\n")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\tor $dst, $snd\n")
                 sb.append(s"$label:\n")
                 sb.toString
             }
@@ -135,8 +131,8 @@ object X86Representation extends Representation {
         val sb: StringBuilder = new StringBuilder
         i match {
             case AddInstr(dst, fst, snd, _) => {
-                sb.append(s"\tmovl $dst, $fst\n")
-                sb.append(s"\taddl $dst, $snd")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\tadd $dst, $snd")
                 sb.toString
             }
             case _ => ""
@@ -147,13 +143,13 @@ object X86Representation extends Representation {
         val sb: StringBuilder = new StringBuilder
         i match {
             case SubInstr(dst, fst, snd, _) => {
-                sb.append(s"\tmovl $dst, $fst\n")
-                sb.append(s"\tsubl $dst, $snd")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\tsub $dst, $snd")
                 sb.toString
             }
             case ReverseSubInstr(dst, fst, snd, _) => {
-                sb.append(s"\tmovl $dst, $snd\n")
-                sb.append(s"\tsubl $dst, $fst")
+                sb.append(s"\tmov $dst, $snd\n")
+                sb.append(s"\tsub $dst, $fst")
                 sb.toString
             }
             case _ => ""
@@ -162,7 +158,7 @@ object X86Representation extends Representation {
 
     def generateMove(i: Instruction): String = {
         i match {
-            case MoveInstr(dst, src, Condition.AL) => s"\tmovl $dst, $src"
+            case MoveInstr(dst, src, Condition.AL) => s"\tmov $dst, $src"
             case MoveInstr(dst, src, Condition.EQ) => s"\tcmove $dst, $src"
             case MoveInstr(dst, src, Condition.NE) => s"\tcmovne $dst, $src"
             case MoveInstr(dst, src, Condition.GT) => s"\tcmovg $dst, $src"
@@ -175,28 +171,28 @@ object X86Representation extends Representation {
 
     def generateLoad(i: Instruction): String = {
         i match {
-            case LoadLabelInstr(dst, label, Condition.AL) => s"\tmovl $dst, $label"
-            case LoadImmIntInstr(dst, imm, cond) => "TODO"
-            case LoadInstr(dst, src, ImmOffset(0), cond) => "TODO"
-            case LoadInstr(dst, src, ImmOffset(offset), cond) => "TODO"
-            case LoadRegSignedByte(dst, src, ImmOffset(0), cond) => "TODO"
-            case LoadRegSignedByte(dst, src, ImmOffset(offset), cond) => "TODO"
+            case LoadLabelInstr(dst, label, Condition.AL) => s"\tmov $dst, .$label"
+            case LoadImmIntInstr(dst, imm, Condition.AL) => s"\tmov $dst, $imm"
+            case LoadInstr(dst, src, ImmOffset(0), Condition.AL)  => s"\tlea $dst, [$src]"
+            case LoadInstr(dst, src, ImmOffset(offset), Condition.AL) => s"\tlea $dst, $offset[$src]"
+            case LoadRegSignedByte(dst, src, ImmOffset(0), Condition.AL) => s"\tlea $dst, [$src]"
+            case LoadRegSignedByte(dst, src, ImmOffset(offset), Condition.AL) => s"\tlea $dst, $offset[$src]"
             case _ => "TODO"
         }
     }
 
     def generateBranch(i: Instruction): String = {
         i match {
-            case BranchInstr(label, Condition.AL) => s"\tjmp $label"
-            case BranchInstr(label, Condition.EQ) => s"\tje $label"
-            case BranchInstr(label, Condition.NE) => s"\tjne $label"
-            case BranchInstr(label, Condition.GT) => s"\tjg $label"
-            case BranchInstr(label, Condition.GE) => s"\tjge $label"
-            case BranchInstr(label, Condition.LT) => s"\tjl $label"
-            case BranchInstr(label, Condition.LE) => s"\tjle $label"
-            case BranchInstr(label, Condition.VS) => s"\tjo $label"
+            case BranchInstr(label, Condition.AL) => s"\tjmp .$label"
+            case BranchInstr(label, Condition.EQ) => s"\tje .$label"
+            case BranchInstr(label, Condition.NE) => s"\tjne .$label"
+            case BranchInstr(label, Condition.GT) => s"\tjg .$label"
+            case BranchInstr(label, Condition.GE) => s"\tjge .$label"
+            case BranchInstr(label, Condition.LT) => s"\tjl .$label"
+            case BranchInstr(label, Condition.LE) => s"\tjle .$label"
+            case BranchInstr(label, Condition.VS) => s"\tjo .$label"
 
-            case BranchLinkInstr(label, Condition.AL) => s"\tcall $label"
+            case BranchLinkInstr(label, Condition.AL) => s"\tcall .$label"
 
             case _ => ""
         }
@@ -206,53 +202,53 @@ object X86Representation extends Representation {
         val sb: StringBuilder = new StringBuilder
         
         i match {
-            case CompareInstr(fst, snd, Condition.AL) => s"\tcmpl $fst, $snd"
+            case CompareInstr(fst, snd, Condition.AL) => s"\tcmp $fst, $snd"
             case CompareInstr(fst, snd, Condition.EQ) => {
-                val label: String = s"cmpeq_${collector.tickGeneral()}:"
+                val label: String = s".cmpeq_${collector.tickGeneral()}:"
                 sb.append(s"\tjne $label\n")
-                sb.append(s"\tcmpl $fst, $snd")
+                sb.append(s"\tcmp $fst, $snd")
                 sb.append(s"$label:")
                 sb.toString
             }
             case CompareInstr(fst, snd, Condition.NE) => {
-                val label: String = s"cmpne_${collector.tickGeneral()}:"
+                val label: String = s".cmpne_${collector.tickGeneral()}:"
                 sb.append(s"\tje $label\n")
-                sb.append(s"\tcmpl $fst, $snd")
+                sb.append(s"\tcmp $fst, $snd")
                 sb.append(s"$label:")
                 sb.toString
             }
             case CompareInstr(fst, snd, Condition.GT) => {
-                val label: String = s"cmpgt_${collector.tickGeneral()}:"
+                val label: String = s".cmpgt_${collector.tickGeneral()}:"
                 sb.append(s"\tjle $label\n")
-                sb.append(s"\tcmpl $fst, $snd")
+                sb.append(s"\tcmp $fst, $snd")
                 sb.append(s"$label:")
                 sb.toString
             }
             case CompareInstr(fst, snd, Condition.GE) => {
-                val label: String = s"cmpge_${collector.tickGeneral()}:"
+                val label: String = s".cmpge_${collector.tickGeneral()}:"
                 sb.append(s"\tjl $label\n")
-                sb.append(s"\tcmpl $fst, $snd")
+                sb.append(s"\tcmp $fst, $snd")
                 sb.append(s"$label:")
                 sb.toString
             }
             case CompareInstr(fst, snd, Condition.LT) => {
-                val label: String = s"cmplt_${collector.tickGeneral()}:"
+                val label: String = s".cmplt_${collector.tickGeneral()}:"
                 sb.append(s"\tjge $label\n")
-                sb.append(s"\tcmpl $fst, $snd")
+                sb.append(s"\tcmp $fst, $snd")
                 sb.append(s"$label:")
                 sb.toString
             }
             case CompareInstr(fst, snd, Condition.LE) => {
-                val label: String = s"cmple_${collector.tickGeneral()}:"
+                val label: String = s".cmple_${collector.tickGeneral()}:"
                 sb.append(s"\tjg $label\n")
-                sb.append(s"\tcmpl $fst, $snd")
+                sb.append(s"\tcmp $fst, $snd")
                 sb.append(s"$label:")
                 sb.toString
             }
             case CompareInstr(fst, snd, Condition.VS) => {
-                val label: String = s"cmpvs_${collector.tickGeneral()}:"
+                val label: String = s".cmpvs_${collector.tickGeneral()}:"
                 sb.append(s"\tjno $label\n")
-                sb.append(s"\tcmpl $fst, $snd")
+                sb.append(s"\tcmp $fst, $snd")
                 sb.append(s"$label:")
                 sb.toString
             }
