@@ -387,11 +387,16 @@ object syntax {
       ("[" *> sepBy(expr, ",") <* "]").label("array literal")
     )
 
+    lazy val mapHOF = MapNode("map" ~> funcIdent, expr)
+    lazy val filterHOF = FilterNode("filter" ~> funcIdent, expr)
+    lazy val foldHOF = FoldNode("fold" ~> funcIdent, expr, expr)
+    lazy val scanHOF = ScanNode("scan" ~> funcIdent, expr, expr)
+
     /** assign-rhs := expr <|> array-liter <|> 'newpair' '(' expr ',' expr ')'
       * <|> pairElem <|> 'call' ident '(' arg-list? ')'
       */
     lazy val assignRHS =
-        (expr <|> arrayLiter <|> newPair <|> pairElem.hide <|> call)
+        (expr <|> arrayLiter <|> newPair <|> pairElem.hide <|> call <|> mapHOF <|> filterHOF <|> foldHOF <|> scanHOF)
             .label("RHS Assignment")
             .explain(
               """Valid RHS Assignments include: Expression, Array Literal, 
