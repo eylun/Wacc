@@ -21,7 +21,6 @@ begin
 	return x * y
   end
 
-  println w;
   int[] x = [1, 2, 3, 4, 5];
   int[] y = scan mult 1 x;
   println y[0];

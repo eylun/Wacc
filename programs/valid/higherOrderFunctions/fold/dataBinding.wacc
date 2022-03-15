@@ -20,6 +20,6 @@ begin
   end
 
   int[] data = [5, 12, -4, 7, 7, 10, 12, 13, 1, 7];
-  int y = fold plus 0 x;
+  int y = fold bind 0 data;
   println y
 end

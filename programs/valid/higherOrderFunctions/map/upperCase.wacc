@@ -12,8 +12,8 @@
 
 begin
   char toUpper(char x) is
-    int offset = chr 'a' - chr 'A';
-	return ord (chr x - offset)
+    int offset = ord 'a' - ord 'A';
+	return chr (ord x - offset)
   end
 
   char[] x = ['h','e','l','l','o'];
