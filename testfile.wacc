@@ -9,8 +9,11 @@
 # Program:
 
 begin
-  int x = 42;
+  int x = 5;
+  int y = 6;
   int a = x;
-  int b = a;
-  int c = a + 1
+  a = 3;
+  a = y
+  # can just be
+  # int a = y
 end

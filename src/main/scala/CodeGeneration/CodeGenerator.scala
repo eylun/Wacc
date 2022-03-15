@@ -34,7 +34,7 @@ object CodeGenerator {
           List(MoveInstr(Reg(0), ImmOffset(0)), PopInstr(List(pc)))
         )
 
-        /** Execute optimisation functions */
+        /** Execute optimisation function(s) if flag is set */
         optFlag match {
           case OptimisationFlag.O0 => collector.emit()
           case OptimisationFlag.Oph => executePeepholeOptimisation(collector.emit())
