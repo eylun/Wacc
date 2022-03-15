@@ -1,4 +1,5 @@
 import java.io.{File, BufferedWriter, FileWriter}
+import constants.Register
 
 object X86Representation extends Representation {
     implicit val repr: Representation = this
@@ -11,7 +12,7 @@ object X86Representation extends Representation {
         bw.close()
     }
 
-    def generateLine(instr: Instruction)(implicit collector: WaccBuffer, repr: Representation): String = 
+    def generateLine(instr: Instruction)(implicit collector: WaccBuffer, repr: Representation): String = {
         s"${instr match {
             case Label(labelName) => s"$labelName:"
             case Directive(name)  => s".$name"
@@ -26,7 +27,7 @@ object X86Representation extends Representation {
             /* Arithmetic Instructions*/
             case AddInstr(_, _, _, _)    => generateAdd(instr)
             case SubInstr(_, _, _, _) | ReverseSubInstr(_, _, _, _) => generateSub(instr)
-            case SMullInstr(_, _, _, _, _) => "TODO"
+            case SMullInstr(_, _, _, _, _) => generateMultiply(instr)
 
             case BranchInstr(_, _) | BranchLinkInstr(_, _) => generateBranch(instr)
 
@@ -42,7 +43,7 @@ object X86Representation extends Representation {
 
             case _ => ""
         }}\n"
-    
+    }
 
     def generatePush(i: Instruction): String = {
         val sb: StringBuilder = new StringBuilder
@@ -70,38 +71,18 @@ object X86Representation extends Representation {
 
     def generateLogicalBinOp(i: Instruction)(implicit collector: WaccBuffer): String = {
         val sb = new StringBuilder
-
         i match {
             /** AND */
-            case AndInstr(dst, fst, snd, _, Condition.AL) => {
-                sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\tand $fst, $snd")
-                sb.toString
-            }
+            case AndInstr(dst, fst, snd, _, Condition.AL) => opBody(i)
             case AndInstr(_, _, _, _, _) => conditionalOp(i)
 
             /** XOR */
-            case XorInstr(dst, fst, snd, _, Condition.AL) => {
-                sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\txor $fst, $snd")
-                sb.toString
-            }
+            case XorInstr(dst, fst, snd, _, Condition.AL) => opBody(i)
             case XorInstr(_, _, _, _, _) => conditionalOp(i)
 
             /** OR */
-            case OrInstr(dst, fst, snd, _, Condition.AL) => {
-                sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\tor $fst, $snd")
-                sb.toString
-            }
-            case OrInstr(dst, fst, snd, _, Condition.EQ) => {
-                val label: String = s".oreq_${collector.tickGeneral()}:"
-                sb.append(s"\tjne $label\n")
-                sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\tor $dst, $snd\n")
-                sb.append(s"$label:\n")
-                sb.toString
-            }
+            case OrInstr(dst, fst, snd, _, Condition.AL) => opBody(i)
+            case OrInstr(dst, fst, snd, _, _) => conditionalOp(i)
             case _ => ""
         }
     }
@@ -132,6 +113,19 @@ object X86Representation extends Representation {
                 sb.toString
             }
             case _ => ""
+        }
+    }
+
+    def generateMultiply(i: Instruction): String = {
+        val sb: StringBuilder = new StringBuilder
+        i match {
+            case SMullInstr(rdLo, rdHi, fst, snd, false) => {
+                sb.append(s"\timul $rdLo, $fst, $snd\n")
+                sb.append(s"\timul ${regWithLength(rdHi, 64)}, $fst, $snd\n")
+                sb.append(s"\tshr ${regWithLength(rdHi, 64)}, 32")
+                sb.toString
+            }
+            case _ => "TODO"
         }
     }
 
@@ -179,58 +173,9 @@ object X86Representation extends Representation {
 
     def generateCompare(i: Instruction)(implicit collector: WaccBuffer): String = {
         val sb: StringBuilder = new StringBuilder
-        
         i match {
-            case CompareInstr(fst, snd, Condition.AL) => s"\tcmp $fst, $snd"
-            case CompareInstr(fst, snd, Condition.EQ) => {
-                val label: String = s".cmpeq_${collector.tickGeneral()}:"
-                sb.append(s"\tjne $label\n")
-                sb.append(s"\tcmp $fst, $snd")
-                sb.append(s"$label:")
-                sb.toString
-            }
-            case CompareInstr(fst, snd, Condition.NE) => {
-                val label: String = s".cmpne_${collector.tickGeneral()}:"
-                sb.append(s"\tje $label\n")
-                sb.append(s"\tcmp $fst, $snd")
-                sb.append(s"$label:")
-                sb.toString
-            }
-            case CompareInstr(fst, snd, Condition.GT) => {
-                val label: String = s".cmpgt_${collector.tickGeneral()}:"
-                sb.append(s"\tjle $label\n")
-                sb.append(s"\tcmp $fst, $snd")
-                sb.append(s"$label:")
-                sb.toString
-            }
-            case CompareInstr(fst, snd, Condition.GE) => {
-                val label: String = s".cmpge_${collector.tickGeneral()}:"
-                sb.append(s"\tjl $label\n")
-                sb.append(s"\tcmp $fst, $snd")
-                sb.append(s"$label:")
-                sb.toString
-            }
-            case CompareInstr(fst, snd, Condition.LT) => {
-                val label: String = s".cmplt_${collector.tickGeneral()}:"
-                sb.append(s"\tjge $label\n")
-                sb.append(s"\tcmp $fst, $snd")
-                sb.append(s"$label:")
-                sb.toString
-            }
-            case CompareInstr(fst, snd, Condition.LE) => {
-                val label: String = s".cmple_${collector.tickGeneral()}:"
-                sb.append(s"\tjg $label\n")
-                sb.append(s"\tcmp $fst, $snd")
-                sb.append(s"$label:")
-                sb.toString
-            }
-            case CompareInstr(fst, snd, Condition.VS) => {
-                val label: String = s".cmpvs_${collector.tickGeneral()}:"
-                sb.append(s"\tjno $label\n")
-                sb.append(s"\tcmp $fst, $snd")
-                sb.append(s"$label:")
-                sb.toString
-            }
+            case CompareInstr(fst, snd, Condition.AL) => opBody(i)
+            case CompareInstr(_, _, _) => conditionalOp(i)
             case _ => ""
         }
     }
@@ -269,21 +214,28 @@ object X86Representation extends Representation {
 
         val cond: Condition.Condition = {
             i match {
-                case AndInstr(_, _, _, _, cond) => cond
-                case XorInstr(_, _, _, _, cond) => cond
+                case AndInstr(_, _, _, _, c) => c
+                case OrInstr(_, _, _, _, c) => c
+                case XorInstr(_, _, _, _, c) => c
+                case CompareInstr(_, _, c) => c
                 case _ => Condition.AL
             }
         }
 
+        val labelNo = collector.tickGeneral()
+
         val label: String = {
             i match {
-                case AndInstr(_, _, _, _, _) => s".and${cond}_${collector.tickGeneral()}:\n"
-                case XorInstr(_, _, _, _, _) => s".xor${cond}_${collector.tickGeneral()}:\n"
+                case AndInstr(_, _, _, _, _) => s".and${cond}_${labelNo}:"
+                case OrInstr(_, _, _, _, _) => s".or${cond}_${labelNo}"
+                case XorInstr(_, _, _, _, _) => s".xor${cond}_${labelNo}:"
+                case CompareInstr(_, _, _) => s".cmp${cond}_${labelNo}:"
                 case _ => "TODO"
             }
         }
         sb.append(s"\tj${generateOppositeCond(cond)} $label\n")
         sb.append(opBody(i))
+        sb.append("\n")
         sb.append(s"\t$label:")
         sb.toString
     }
@@ -293,17 +245,36 @@ object X86Representation extends Representation {
     def opBody(i: Instruction)(implicit collector: WaccBuffer): String = {
         val sb: StringBuilder = new StringBuilder
         i match {
-            case AndInstr(dst, fst, snd, _, cond) => {
+            case AndInstr(dst, fst, snd, _, _) => {
                 sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\tand $dst, $snd\n")
+                sb.append(s"\tand $dst, $snd")
                 sb.toString
             }
-            case XorInstr(dst, fst, snd, _, cond) => {
+            case OrInstr(dst, fst, snd, _, _) => {
                 sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\txor $dst, $snd\n")
+                sb.append(s"\tor $fst, $snd")
+                sb.toString
+            }
+            case XorInstr(dst, fst, snd, _, _) => {
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\txor $dst, $snd")
+                sb.toString
+            }
+            case CompareInstr(fst, snd, _) => {
+                sb.append(s"\tcmp $fst, $snd")
                 sb.toString
             }
             case _ => "TODO"
+        }
+    }
+
+    /** Returns x86 register representation in n-bit mode (default toString is the 32-bit mode) */
+    def regWithLength(r: Register, bitLen: Int): String = {
+        bitLen match {
+            case 16 => s"${r.toString.substring(1)}"
+            case 32 => r.toString
+            case 64 => s"r${r.toString.substring(1)}"
+            case _ => "undefined register length in x86"
         }
     }
 }

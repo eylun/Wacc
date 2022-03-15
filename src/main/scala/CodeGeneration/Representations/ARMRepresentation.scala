@@ -3,11 +3,7 @@ import java.io.{File, BufferedWriter, FileWriter}
 object ARMRepresentation extends Representation {
     implicit val repr: Representation = this
 
-    def apply(
-        progNode: ProgramNode,
-        st: SymbolTable,
-        filename: String
-    ): Unit = {
+    def apply(progNode: ProgramNode, st: SymbolTable, filename: String): Unit = {
         implicit val collector: WaccBuffer = new WaccBuffer
         collector.setupMain()
         val bw = new BufferedWriter(new FileWriter(new File(filename)))
@@ -33,11 +29,7 @@ object ARMRepresentation extends Representation {
             /** Arithmetic Instructions */
             case AddInstr(_, _, _, _) => generateAdd(instr)
             case SubInstr(_, _, _, _) | ReverseSubInstr(_, _, _, _) => generateSub(instr)
-            case SMullInstr(rdLo, rdHi, fst, snd, true) =>
-                s"\tSMULLS $rdLo, $rdHi, $fst, $snd"
-            case SMullInstr(rdLo, rdHi, fst, snd, false) =>
-                s"\tSMULL $rdLo, $rdHi, $fst, $snd"
-
+            case SMullInstr(_, _, _, _, _) => generateMultiply(instr)
 
             /** Load Instructions */
             case LoadLabelInstr(_, _, _) | LoadImmIntInstr(_, _, _) | LoadInstr(_, _, _, _) | 
@@ -98,6 +90,16 @@ object ARMRepresentation extends Representation {
             case SubInstr(dst, fst, snd, false) => s"\tSUB $dst, $fst, $snd"
             case ReverseSubInstr(dst, fst, snd, true) => s"\tRSBS $dst, $fst, $snd"
             case ReverseSubInstr(dst, fst, snd, false) => s"\tRSB $dst, $fst, $snd"
+            case _ => ""
+        }
+    }
+
+    def generateMultiply(i: Instruction): String = {
+        i match {
+            case SMullInstr(rdLo, rdHi, fst, snd, true) =>
+                s"\tSMULLS $rdLo, $rdHi, $fst, $snd"
+            case SMullInstr(rdLo, rdHi, fst, snd, false) =>
+                s"\tSMULL $rdLo, $rdHi, $fst, $snd"
             case _ => ""
         }
     }

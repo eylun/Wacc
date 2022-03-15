@@ -13,6 +13,8 @@ trait Representation {
 
     def generateMove(i: Instruction): String
 
+    def generateMultiply(i: Instruction): String
+
     def generatePush(i: Instruction): String
 
     def generatePop(i: Instruction): String
