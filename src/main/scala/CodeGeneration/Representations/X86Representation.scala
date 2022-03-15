@@ -86,6 +86,14 @@ object X86Representation extends Representation {
                 sb.append(s"$label:\n")
                 sb.toString
             }
+            case AndInstr(dst, fst, snd, _, Condition.NE) => {
+                val label: String = s".andne_${collector.tickGeneral()}:"
+                sb.append(s"\tjeq $label\n")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\tand $dst, $snd\n")
+                sb.append(s"$label:\n")
+                sb.toString
+            }
             case AndInstr(dst, fst, snd, _, Condition.GT) => {
                 val label: String = s".andgt_${collector.tickGeneral()}:"
                 sb.append(s"\tjle $label\n")
@@ -136,6 +144,54 @@ object X86Representation extends Representation {
             case XorInstr(dst, fst, snd, _, Condition.EQ) => {
                 val label: String = s".xoreq_${collector.tickGeneral()}:"
                 sb.append(s"\tjne $label\n")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\txor $dst, $snd\n")
+                sb.append(s"$label:\n")
+                sb.toString
+            }
+            case XorInstr(dst, fst, snd, _, Condition.NE) => {
+                val label: String = s".xorne_${collector.tickGeneral()}:"
+                sb.append(s"\tjeq $label\n")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\txor $dst, $snd\n")
+                sb.append(s"$label:\n")
+                sb.toString
+            }
+            case XorInstr(dst, fst, snd, _, Condition.GT) => {
+                val label: String = s".xorgt_${collector.tickGeneral()}:"
+                sb.append(s"\tjle $label\n")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\txor $dst, $snd\n")
+                sb.append(s"$label:\n")
+                sb.toString
+            }
+            case XorInstr(dst, fst, snd, _, Condition.GE) => {
+                val label: String = s".xorge_${collector.tickGeneral()}:"
+                sb.append(s"\tjl $label\n")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\txor $dst, $snd\n")
+                sb.append(s"$label:\n")
+                sb.toString
+            }
+            case XorInstr(dst, fst, snd, _, Condition.LT) => {
+                val label: String = s".xorlt_${collector.tickGeneral()}:"
+                sb.append(s"\tjge $label\n")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\txor $dst, $snd\n")
+                sb.append(s"$label:\n")
+                sb.toString
+            }
+            case XorInstr(dst, fst, snd, _, Condition.LE) => {
+                val label: String = s".xorle_${collector.tickGeneral()}:"
+                sb.append(s"\tjg $label\n")
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\txor $dst, $snd\n")
+                sb.append(s"$label:\n")
+                sb.toString
+            }
+            case XorInstr(dst, fst, snd, _, Condition.VS) => {
+                val label: String = s".xorvs_${collector.tickGeneral()}:"
+                sb.append(s"\tjno $label\n")
                 sb.append(s"\tmov $dst, $fst\n")
                 sb.append(s"\txor $dst, $snd\n")
                 sb.append(s"$label:\n")
