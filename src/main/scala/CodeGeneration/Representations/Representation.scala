@@ -17,5 +17,7 @@ trait Representation {
 
     def generatePop(i: Instruction): String
 
+    def generateStore(i: Instruction): String
+
     def generateSub(i: Instruction): String
 }

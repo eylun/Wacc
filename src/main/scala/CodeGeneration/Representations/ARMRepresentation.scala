@@ -44,24 +44,7 @@ object ARMRepresentation extends Representation {
                  LoadRegSignedByte(_, _, _, _) => generateLoad(instr)
 
             /** Store Instructions */
-            case StoreInstr(src, dst, ImmOffset(0), true) =>
-                s"\tSTR $src, [$dst]!"
-            case StoreInstr(src, dst, ImmOffset(offset), true) =>
-                s"\tSTR $src, [$dst, #$offset]!"
-            case StoreInstr(src, dst, ImmOffset(0), false) =>
-                s"\tSTR $src, [$dst]"
-            case StoreInstr(src, dst, ImmOffset(offset), false) =>
-                s"\tSTR $src, [$dst, #$offset]"
-
-            /** Store Byte Instructions */
-            case StoreByteInstr(src, dst, ImmOffset(0), true) =>
-                s"\tSTRB $src, [$dst]!"
-            case StoreByteInstr(src, dst, ImmOffset(offset), true) =>
-                s"\tSTRB $src, [$dst, #$offset]!"
-            case StoreByteInstr(src, dst, ImmOffset(0), false) =>
-                s"\tSTRB $src, [$dst]"
-            case StoreByteInstr(src, dst, ImmOffset(offset), false) =>
-                s"\tSTRB $src, [$dst, #$offset]"
+            case StoreInstr(_, _, _, _) | StoreByteInstr(_, _, _, _) => generateStore(instr)
 
             /** Branch Instructions */
             case BranchInstr(_, _) | BranchLinkInstr(_, _) => generateBranch(instr)
@@ -138,6 +121,30 @@ object ARMRepresentation extends Representation {
                 s"\tLDRSB$cond $dst, [$src]"
             case LoadRegSignedByte(dst, src, ImmOffset(offset), cond) =>
                 s"\tLDRSB$cond $dst, [$src, #$offset]"
+            case _ => ""
+        }
+    }
+
+    def generateStore(i: Instruction): String = {
+        i match {
+            case StoreInstr(src, dst, ImmOffset(0), true) =>
+                s"\tSTR $src, [$dst]!"
+            case StoreInstr(src, dst, ImmOffset(offset), true) =>
+                s"\tSTR $src, [$dst, #$offset]!"
+            case StoreInstr(src, dst, ImmOffset(0), false) =>
+                s"\tSTR $src, [$dst]"
+            case StoreInstr(src, dst, ImmOffset(offset), false) =>
+                s"\tSTR $src, [$dst, #$offset]"
+
+            case StoreByteInstr(src, dst, ImmOffset(0), true) =>
+                s"\tSTRB $src, [$dst]!"
+            case StoreByteInstr(src, dst, ImmOffset(offset), true) =>
+                s"\tSTRB $src, [$dst, #$offset]!"
+            case StoreByteInstr(src, dst, ImmOffset(0), false) =>
+                s"\tSTRB $src, [$dst]"
+            case StoreByteInstr(src, dst, ImmOffset(offset), false) =>
+                s"\tSTRB $src, [$dst, #$offset]"
+            
             case _ => ""
         }
     }

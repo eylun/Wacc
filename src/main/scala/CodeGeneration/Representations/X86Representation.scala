@@ -35,16 +35,7 @@ object X86Representation extends Representation {
                  LoadRegSignedByte(_, _, _, _) => generateLoad(instr)
 
             /** Store Instructions */
-            case StoreInstr(src, dst, ImmOffset(0), true) => "TODO"
-            case StoreInstr(src, dst, ImmOffset(offset), true) => "TODO"
-            case StoreInstr(src, dst, ImmOffset(0), false) => "TODO"
-            case StoreInstr(src, dst, ImmOffset(offset), false) => "TODO"
-
-            /** Store Byte Instructions */
-            case StoreByteInstr(src, dst, ImmOffset(0), true) => "TODO"
-            case StoreByteInstr(src, dst, ImmOffset(offset), true) => "TODO"
-            case StoreByteInstr(src, dst, ImmOffset(0), false) => "TODO"
-            case StoreByteInstr(src, dst, ImmOffset(offset), false) => "TODO"
+            case StoreInstr(_, _, _, _) | StoreByteInstr(_, _, _, _) => generateStore(instr)
 
             /** Comparison Instructions */
             case CompareInstr(_, _, _) => generateCompare(instr)
@@ -165,7 +156,7 @@ object X86Representation extends Representation {
             case MoveInstr(dst, src, Condition.GE) => s"\tcmovge $dst, $src"
             case MoveInstr(dst, src, Condition.LT) => s"\tcmovl $dst, $src"
             case MoveInstr(dst, src, Condition.LE) => s"\tcmovle $dst, $src"
-            case _ => ""
+            case _ => "TODO"
         }
     }
 
@@ -177,6 +168,19 @@ object X86Representation extends Representation {
             case LoadInstr(dst, src, ImmOffset(offset), Condition.AL) => s"\tlea $dst, $offset[$src]"
             case LoadRegSignedByte(dst, src, ImmOffset(0), Condition.AL) => s"\tlea $dst, [$src]"
             case LoadRegSignedByte(dst, src, ImmOffset(offset), Condition.AL) => s"\tlea $dst, $offset[$src]"
+            case _ => "TODO"
+        }
+    }
+
+    def generateStore(i: Instruction): String = {
+        i match {
+            case StoreInstr(src, dst, ImmOffset(0), _) => s"\tmov [$dst], $src"
+            case StoreInstr(src, dst, ImmOffset(i), _) => s"\tmov $i[$dst], $src"
+            case StoreInstr(src, dst, RegOp(r), _) => s"\tmov [$dst, $r], $src"
+            
+            case StoreByteInstr(src, dst, ImmOffset(0), _) => s"\tmov [$dst], $src"
+            case StoreByteInstr(src, dst, ImmOffset(i), _) => s"\tmov $i[$dst], $src"
+            case StoreByteInstr(src, dst, RegOp(r), _) => s"\tmov [$dst, $r], $src"
             case _ => "TODO"
         }
     }
