@@ -1,0 +1,31 @@
+# basic scan implementation
+
+# Input
+
+# Output:
+# 10
+# 11
+# 14
+# 19
+# 26
+
+# Exit:
+# 0
+
+# Program:
+
+begin
+  int plus(int x, int y) is
+	return x + y
+  end
+
+  int w = 10;
+  println w;
+  int[] x = [1, 3, 5, 7];
+  int[] y = fold plus w x;
+  println y[0];
+  println y[1];
+  println y[2];
+  println y[3];
+  println len y
+end

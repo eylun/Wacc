@@ -1,0 +1,19 @@
+# initial provided parameter must be of same type as function params
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int incre(int x, int y) is
+	return x + y
+  end
+
+  int[] x = [1, 2, 3];
+  int[] y = fold incre true x
+end
+

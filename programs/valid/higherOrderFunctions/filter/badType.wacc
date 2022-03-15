@@ -1,0 +1,27 @@
+# basic filter implementation
+
+# Input
+
+# Output:
+# 5
+# 10
+# 15
+# 3
+
+# Exit:
+# 0
+
+# Program:
+
+begin
+  bool check5(int x) is
+	return x / 5 == 0
+  end
+
+  int[] x = [5, 10, 15, 16];
+  int[] y = filter check5 x;
+  println y[0];
+  println y[1];
+  println y[2];
+  println len y
+end

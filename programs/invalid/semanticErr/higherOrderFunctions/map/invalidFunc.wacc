@@ -1,0 +1,18 @@
+# map can only use functions that take in 1 element
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int plusTogether(int x, int y) is
+	return x + y
+  end
+
+  int[] x = [1, 2, 3];
+  int[] y = map plusTogether x
+end

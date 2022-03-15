@@ -1,0 +1,18 @@
+# array element type does not match function argument type
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int plus2(int x) is
+	return x + 2
+  end
+
+  char[] x = ['a','b'];
+  int[] y = map plus2 x
+end

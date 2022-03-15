@@ -1,0 +1,29 @@
+# basic map implementation
+
+# Input
+
+# Output:
+# 5
+# 15
+# 25
+# 35
+# 4
+
+# Exit:
+# 0
+
+# Program:
+
+begin
+  int times5(int x) is
+	return x * 5
+  end
+
+  int[] x = [1, 3, 5, 7];
+  int[] y = map times5 x;
+  println y[0];
+  println y[1];
+  println y[2];
+  println y[3];
+  println len y
+end

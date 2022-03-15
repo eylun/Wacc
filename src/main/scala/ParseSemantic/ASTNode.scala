@@ -574,6 +574,74 @@ sealed trait AssignRHSNode extends ASTNode {
     def repr(): String
 }
 
+case class FilterNode(i: IdentNode, e: ExprNode)(val pos: (Int, Int))
+    extends AssignRHSNode {
+
+    override def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit =
+        ???
+
+    override def repr(): String = s"filter $i $e"
+}
+object FilterNode {
+    def apply(
+        i: => Parsley[IdentNode],
+        e: => Parsley[ExprNode]
+    ): Parsley[FilterNode] =
+        pos <**> (i, e).lazyZipped(FilterNode(_, _) _)
+}
+
+case class MapNode(i: IdentNode, e: ExprNode)(val pos: (Int, Int))
+    extends AssignRHSNode {
+
+    override def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit =
+        ???
+
+    override def repr(): String = s"map $i $e"
+}
+object MapNode {
+    def apply(
+        i: => Parsley[IdentNode],
+        e: => Parsley[ExprNode]
+    ): Parsley[MapNode] =
+        pos <**> (i, e).lazyZipped(MapNode(_, _) _)
+}
+case class FoldNode(i: IdentNode, e1: ExprNode, e2: ExprNode)(
+    val pos: (Int, Int)
+) extends AssignRHSNode {
+
+    override def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit =
+        ???
+
+    override def repr(): String = s"fold $i $e1 $e2"
+}
+
+object FoldNode {
+    def apply(
+        i: => Parsley[IdentNode],
+        e1: => Parsley[ExprNode],
+        e2: => Parsley[ExprNode]
+    ): Parsley[FoldNode] =
+        pos <**> (i, e1, e2).lazyZipped(FoldNode(_, _, _) _)
+}
+
+case class ScanNode(i: IdentNode, e1: ExprNode, e2: ExprNode)(
+    val pos: (Int, Int)
+) extends AssignRHSNode {
+
+    override def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit =
+        ???
+
+    override def repr(): String = s"scan $i $e1 $e2"
+}
+
+object ScanNode {
+    def apply(
+        i: => Parsley[IdentNode],
+        e1: => Parsley[ExprNode],
+        e2: => Parsley[ExprNode]
+    ): Parsley[ScanNode] =
+        pos <**> (i, e1, e2).lazyZipped(ScanNode(_, _, _) _)
+}
 case class NewPairNode(e1: ExprNode, e2: ExprNode)(val pos: (Int, Int))
     extends AssignRHSNode {
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {

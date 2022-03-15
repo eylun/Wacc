@@ -1,0 +1,18 @@
+# new array element type mismatch against function return type
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  bool plus2(int x) is
+	return true
+  end
+
+  int[] x = [1, 2, 3];
+  char[] y = filter plus2 x
+end
