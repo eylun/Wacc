@@ -1,0 +1,22 @@
+# Map empty array
+
+# Input
+
+# Output:
+# HELLO
+
+# Exit:
+# 0
+
+# Program:
+
+begin
+  char toUpper(char x) is
+    int offset = chr 'a' - chr 'A';
+	return ord (chr x - offset)
+  end
+
+  char[] x = ['h','e','l','l','o'];
+  char[] y = map toUpper x;
+  println y
+end

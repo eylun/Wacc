@@ -1,0 +1,21 @@
+# Fold empty array
+
+# Input
+
+# Output:
+# 5
+
+# Exit:
+# 0
+
+# Program:
+
+begin
+  int plus(int x, int y) is
+	return x + y
+  end
+
+  int[] x = [];
+  int y = fold plus 5 x;
+  println y
+end

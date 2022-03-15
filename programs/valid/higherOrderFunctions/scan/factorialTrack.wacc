@@ -1,0 +1,34 @@
+# basic scan implementation
+
+# Input
+
+# Output:
+# 1
+# 1
+# 2
+# 6
+# 24
+# 120
+# 6
+
+# Exit:
+# 0
+
+# Program:
+
+begin
+  int mult(int x, int y) is
+	return x * y
+  end
+
+  println w;
+  int[] x = [1, 2, 3, 4, 5];
+  int[] y = scan mult 1 x;
+  println y[0];
+  println y[1];
+  println y[2];
+  println y[3];
+  println y[4];
+  println y[5];
+  println len y
+end

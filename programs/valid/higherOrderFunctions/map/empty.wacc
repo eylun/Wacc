@@ -1,0 +1,21 @@
+# Map empty array
+
+# Input
+
+# Output:
+# 0
+
+# Exit:
+# 0
+
+# Program:
+
+begin
+  int times5(int x) is
+	return x * 5
+  end
+
+  int[] x = [];
+  int[] y = map times5 x;
+  println len y
+end

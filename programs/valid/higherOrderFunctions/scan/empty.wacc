@@ -1,0 +1,23 @@
+# Scan empty array
+
+# Input
+
+# Output:
+# 5
+# 1
+
+# Exit:
+# 0
+
+# Program:
+
+begin
+  int plus(int x, int y) is
+	return x + y
+  end
+
+  int[] x = [];
+  int[] y = scan plus 5 x;
+  println y[0];
+  println len y
+end

@@ -1,0 +1,25 @@
+# Fold empty array
+
+# Input
+
+# Output:
+# 9
+
+# Exit:
+# 0
+
+# Program:
+
+begin
+  int bind(int x, int y) is
+	int new = x + y;
+	while new > 10 do
+	  new = new - 10
+	done;
+	return new
+  end
+
+  int[] data = [5, 12, -4, 7, 7, 10, 12, 13, 1, 7];
+  int y = fold plus 0 x;
+  println y
+end
