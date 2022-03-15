@@ -78,62 +78,7 @@ object X86Representation extends Representation {
                 sb.append(s"\tand $fst, $snd")
                 sb.toString
             }
-            case AndInstr(dst, fst, snd, _, Condition.EQ) => {
-                val label: String = s".andeq_${collector.tickGeneral()}:"
-                sb.append(s"\tjne $label\n")
-                sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\tand $dst, $snd\n")
-                sb.append(s"$label:\n")
-                sb.toString
-            }
-            case AndInstr(dst, fst, snd, _, Condition.NE) => {
-                val label: String = s".andne_${collector.tickGeneral()}:"
-                sb.append(s"\tjeq $label\n")
-                sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\tand $dst, $snd\n")
-                sb.append(s"$label:\n")
-                sb.toString
-            }
-            case AndInstr(dst, fst, snd, _, Condition.GT) => {
-                val label: String = s".andgt_${collector.tickGeneral()}:"
-                sb.append(s"\tjle $label\n")
-                sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\tand $dst, $snd\n")
-                sb.append(s"$label:\n")
-                sb.toString
-            }
-            case AndInstr(dst, fst, snd, _, Condition.GE) => {
-                val label: String = s".andge_${collector.tickGeneral()}:"
-                sb.append(s"\tjl $label\n")
-                sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\tand $dst, $snd\n")
-                sb.append(s"$label:\n")
-                sb.toString
-            }
-            case AndInstr(dst, fst, snd, _, Condition.LT) => {
-                val label: String = s".andlt_${collector.tickGeneral()}:"
-                sb.append(s"\tjge $label\n")
-                sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\tand $dst, $snd\n")
-                sb.append(s"$label:\n")
-                sb.toString
-            }
-            case AndInstr(dst, fst, snd, _, Condition.LE) => {
-                val label: String = s".andle_${collector.tickGeneral()}:"
-                sb.append(s"\tjg $label\n")
-                sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\tand $dst, $snd\n")
-                sb.append(s"$label:\n")
-                sb.toString
-            }
-            case AndInstr(dst, fst, snd, _, Condition.VS) => {
-                val label: String = s".andvs_${collector.tickGeneral()}:"
-                sb.append(s"\tjno $label\n")
-                sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\tand $dst, $snd\n")
-                sb.append(s"$label:\n")
-                sb.toString
-            }
+            case AndInstr(_, _, _, _, _) => conditionalOp(i)
 
             /** XOR */
             case XorInstr(dst, fst, snd, _, Condition.AL) => {
@@ -141,62 +86,7 @@ object X86Representation extends Representation {
                 sb.append(s"\txor $fst, $snd")
                 sb.toString
             }
-            case XorInstr(dst, fst, snd, _, Condition.EQ) => {
-                val label: String = s".xoreq_${collector.tickGeneral()}:"
-                sb.append(s"\tjne $label\n")
-                sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\txor $dst, $snd\n")
-                sb.append(s"$label:\n")
-                sb.toString
-            }
-            case XorInstr(dst, fst, snd, _, Condition.NE) => {
-                val label: String = s".xorne_${collector.tickGeneral()}:"
-                sb.append(s"\tjeq $label\n")
-                sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\txor $dst, $snd\n")
-                sb.append(s"$label:\n")
-                sb.toString
-            }
-            case XorInstr(dst, fst, snd, _, Condition.GT) => {
-                val label: String = s".xorgt_${collector.tickGeneral()}:"
-                sb.append(s"\tjle $label\n")
-                sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\txor $dst, $snd\n")
-                sb.append(s"$label:\n")
-                sb.toString
-            }
-            case XorInstr(dst, fst, snd, _, Condition.GE) => {
-                val label: String = s".xorge_${collector.tickGeneral()}:"
-                sb.append(s"\tjl $label\n")
-                sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\txor $dst, $snd\n")
-                sb.append(s"$label:\n")
-                sb.toString
-            }
-            case XorInstr(dst, fst, snd, _, Condition.LT) => {
-                val label: String = s".xorlt_${collector.tickGeneral()}:"
-                sb.append(s"\tjge $label\n")
-                sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\txor $dst, $snd\n")
-                sb.append(s"$label:\n")
-                sb.toString
-            }
-            case XorInstr(dst, fst, snd, _, Condition.LE) => {
-                val label: String = s".xorle_${collector.tickGeneral()}:"
-                sb.append(s"\tjg $label\n")
-                sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\txor $dst, $snd\n")
-                sb.append(s"$label:\n")
-                sb.toString
-            }
-            case XorInstr(dst, fst, snd, _, Condition.VS) => {
-                val label: String = s".xorvs_${collector.tickGeneral()}:"
-                sb.append(s"\tjno $label\n")
-                sb.append(s"\tmov $dst, $fst\n")
-                sb.append(s"\txor $dst, $snd\n")
-                sb.append(s"$label:\n")
-                sb.toString
-            }
+            case XorInstr(_, _, _, _, _) => conditionalOp(i)
 
             /** OR */
             case OrInstr(dst, fst, snd, _, Condition.AL) => {
@@ -248,12 +138,7 @@ object X86Representation extends Representation {
     def generateMove(i: Instruction): String = {
         i match {
             case MoveInstr(dst, src, Condition.AL) => s"\tmov $dst, $src"
-            case MoveInstr(dst, src, Condition.EQ) => s"\tcmove $dst, $src"
-            case MoveInstr(dst, src, Condition.NE) => s"\tcmovne $dst, $src"
-            case MoveInstr(dst, src, Condition.GT) => s"\tcmovg $dst, $src"
-            case MoveInstr(dst, src, Condition.GE) => s"\tcmovge $dst, $src"
-            case MoveInstr(dst, src, Condition.LT) => s"\tcmovl $dst, $src"
-            case MoveInstr(dst, src, Condition.LE) => s"\tcmovle $dst, $src"
+            case MoveInstr(dst, src, cond) => s"\tcmov${generateCond(cond)} $dst, $src"
             case _ => "TODO"
         }
     }
@@ -286,16 +171,8 @@ object X86Representation extends Representation {
     def generateBranch(i: Instruction): String = {
         i match {
             case BranchInstr(label, Condition.AL) => s"\tjmp .$label"
-            case BranchInstr(label, Condition.EQ) => s"\tje .$label"
-            case BranchInstr(label, Condition.NE) => s"\tjne .$label"
-            case BranchInstr(label, Condition.GT) => s"\tjg .$label"
-            case BranchInstr(label, Condition.GE) => s"\tjge .$label"
-            case BranchInstr(label, Condition.LT) => s"\tjl .$label"
-            case BranchInstr(label, Condition.LE) => s"\tjle .$label"
-            case BranchInstr(label, Condition.VS) => s"\tjo .$label"
-
+            case BranchInstr(label, cond) => s"\tj${generateCond(cond)} .$label"
             case BranchLinkInstr(label, Condition.AL) => s"\tcall .$label"
-
             case _ => ""
         }
     }
@@ -355,6 +232,78 @@ object X86Representation extends Representation {
                 sb.toString
             }
             case _ => ""
+        }
+    }
+
+    /** X86 condition codes */
+    def generateCond(cond: Condition.Condition): String = {
+        cond match {
+            case Condition.EQ => "e"
+            case Condition.NE => "ne"
+            case Condition.GT => "g"
+            case Condition.GE => "ge"
+            case Condition.LT => "l"
+            case Condition.LE => "le"
+            case Condition.VS => "o"
+            case Condition.AL => ""
+        }
+    }
+
+    /** Complementary condition code, used for conditional execution */
+    def generateOppositeCond(cond: Condition.Condition): String = {
+        cond match {
+            case Condition.EQ => "ne"
+            case Condition.NE => "e"
+            case Condition.GT => "le"
+            case Condition.GE => "l"
+            case Condition.LT => "ge"
+            case Condition.LE => "g"
+            case Condition.VS => "no"
+            case Condition.AL => ""
+        }
+    }
+
+    /** Constructs the labels and jumps for a conditionally executed operation */
+    def conditionalOp(i: Instruction)(implicit collector: WaccBuffer): String = {
+        val sb: StringBuilder = new StringBuilder
+
+        val cond: Condition.Condition = {
+            i match {
+                case AndInstr(_, _, _, _, cond) => cond
+                case XorInstr(_, _, _, _, cond) => cond
+                case _ => Condition.AL
+            }
+        }
+
+        val label: String = {
+            i match {
+                case AndInstr(_, _, _, _, _) => s".and${cond}_${collector.tickGeneral()}:\n"
+                case XorInstr(_, _, _, _, _) => s".xor${cond}_${collector.tickGeneral()}:\n"
+                case _ => "TODO"
+            }
+        }
+        sb.append(s"\tj${generateOppositeCond(cond)} $label\n")
+        sb.append(opBody(i))
+        sb.append(s"\t$label:")
+        sb.toString
+    }
+
+    /** Constructs the operation body for arguments containing multiple lines. 
+      * Used to construct conditional operations in particular. */
+    def opBody(i: Instruction)(implicit collector: WaccBuffer): String = {
+        val sb: StringBuilder = new StringBuilder
+        i match {
+            case AndInstr(dst, fst, snd, _, cond) => {
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\tand $dst, $snd\n")
+                sb.toString
+            }
+            case XorInstr(dst, fst, snd, _, cond) => {
+                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\txor $dst, $snd\n")
+                sb.toString
+            }
+            case _ => "TODO"
         }
     }
 }
