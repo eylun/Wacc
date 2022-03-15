@@ -14,5 +14,5 @@ begin
   end
 
   int[] x = [1, 2, 3];
-  char[] y = fold plus2 0 x
+  char[] y = scan plus2 0 x
 end
