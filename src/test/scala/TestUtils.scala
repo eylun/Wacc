@@ -224,7 +224,9 @@ object testUtils {
 
         val fname: String = cleanFilename(f.getName())
 
-        s"as x86_${fname}.s -o x86_${fname}.o && ld x86_${fname}.o -o x86_$fname" !
+        s"as x86_${fname}.s -o x86_${fname}.o" !
+        
+        s"ld x86_${fname}.o -o x86_$fname" !
 
         val (input, expectedOutput, expectedExit) = extractTest(f)
 

@@ -36,6 +36,7 @@ object ARMRepresentation extends Representation {
         s"${instr match {
             case Label(labelName) => s"$labelName:"
             case Directive(name)  => s".$name"
+            case GlobalDirective() => ".global main"
             case PushInstr(reg)   => generatePush(instr)
             case PopInstr(_)      => generatePop(instr)
             case MoveInstr(dst, src, cond)        => generateMove(instr)

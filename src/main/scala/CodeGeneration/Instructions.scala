@@ -21,6 +21,8 @@ case class Label(labelName: String) extends Instruction
   */
 case class Directive(name: String) extends Instruction
 
+case class GlobalDirective() extends Instruction
+
 /** COMPARE INSTRUCTION */
 /** Compares the value in fstOp with sndOp. Updates condition flags on the
   * result

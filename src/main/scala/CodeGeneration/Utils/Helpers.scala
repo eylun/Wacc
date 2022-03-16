@@ -10,11 +10,8 @@ object Helpers {
     val OFFSET_MAX = 1024
 
     /** .text and .global main directives */
-    val mainSetup = List(
-      Directive("text"),
-      Directive("global main")
-    )
-
+    val mainSetup = List(Directive("text"), GlobalDirective())
+    
     /** Returns size of data associated with an identifier */
     def getTypeSize(t: Identifier): Int = {
         t match {

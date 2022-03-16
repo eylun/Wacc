@@ -1,5 +1,5 @@
 import java.io.{File, BufferedWriter, FileWriter}
-import constants.Register
+import constants._
 
 object X86Representation extends Representation {
     implicit val repr: Representation = this
@@ -15,7 +15,7 @@ object X86Representation extends Representation {
     /** Converts a operand. Register shift is performed this translation, so the shift is ignored. */
     def generateOperand(op: SecondOperand): String = {
         op match {
-            case ImmOffset(immOffset) => s"$immOffset"
+            case ImmOffset(immOffset) => "$" + s"$immOffset"
             case RegOp(regOp)         => s"$regOp"
             case LSLRegOp(r, _)       => s"$r"
             case LSRRegOp(r, _)       => s"$r"
@@ -28,16 +28,16 @@ object X86Representation extends Representation {
     def generateShiftValue(s: Shift): String = {
         s match {
             case ShiftReg(r) => s"$r"
-            case ShiftImm(i) => s"$i"
+            case ShiftImm(i) => "$" + s"$i"
         }
     }
 
     def generateShift(op: SecondOperand): String = {
         op match {
-            case LSLRegOp(r, s) => s"\tshl $r, ${generateShiftValue(s)}\n"
-            case LSRRegOp(r, s) => s"\tshr $r, ${generateShiftValue(s)}\n"
-            case ASRRegOp(r, s) => s"\tsar $r, ${generateShiftValue(s)}\n"
-            case RORRegOp(r, s) => s"\tror $r, ${generateShiftValue(s)}\n"
+            case LSLRegOp(r, s) => s"\tshl ${generateShiftValue(s)}, $r\n"
+            case LSRRegOp(r, s) => s"\tshr ${generateShiftValue(s)}, $r\n"
+            case ASRRegOp(r, s) => s"\tsar ${generateShiftValue(s)}, $r\n"
+            case RORRegOp(r, s) => s"\tror ${generateShiftValue(s)}, $r\n"
             case _ => ""
         }
     }
@@ -46,6 +46,7 @@ object X86Representation extends Representation {
         s"${instr match {
             case Label(labelName) => s"$labelName:"
             case Directive(name)  => s"\t.$name"
+            case GlobalDirective() => "\t.globl _start"
             case PushInstr(_)     => generatePush(instr)
             case PopInstr(_)      => generatePop(instr)
             case MoveInstr(_, _, _) => generateMove(instr)
@@ -79,8 +80,20 @@ object X86Representation extends Representation {
         val sb: StringBuilder = new StringBuilder
         i match {
             case PushInstr(regs) => {
-                sb.append(s"\tpush ${regs.head}")
-                regs.drop(1).foreach(r => sb.append(s"\n\tpush ${r}"))
+                if (regs.head == pc) {
+                    sb.append(s"\tleaq (${regWithLength(regs.head, 64)}), %r9\n")
+                    sb.append(s"\tpushq %r9")
+                } else {
+                    sb.append(s"\tpushq ${regWithLength(regs.head, 64)}")
+                }
+                regs.drop(1).foreach(r => {
+                    if (r == pc) {
+                        sb.append(s"\n\tleaq (${regWithLength(regs.head, 64)}), %r9")
+                        sb.append(s"\n\tpushq %r9")
+                    } else {
+                        sb.append(s"\n\tpushq ${regWithLength(r, 64)}")
+                    }
+                })
                 sb.toString
             }
             case _ => ""    
@@ -91,8 +104,18 @@ object X86Representation extends Representation {
         val sb: StringBuilder = new StringBuilder
         i match {
             case PopInstr(regs) => {
-                sb.append(s"\tpop ${regs.head}")
-                regs.drop(1).foreach(r => sb.append(s"\n\tpop ${r}"))
+                if (regs.head == pc) {
+                    sb.append(s"\tret")
+                } else {
+                    sb.append(s"\tpop ${regWithLength(regs.head, 64)}")
+                }
+                regs.drop(1).foreach(r => {
+                    if (r == pc) {
+                        sb.append(s"\n\tret")
+                    } else {
+                        sb.append(s"\n\tpop ${regWithLength(r, 64)}")
+                    }
+                })
                 sb.toString
             }
             case _ => "TODO POP"
@@ -121,9 +144,9 @@ object X86Representation extends Representation {
         val sb: StringBuilder = new StringBuilder
         i match {
             case AddInstr(dst, fst, snd, _) => {
-                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\tmovl $fst, $dst\n")
                 sb.append(generateShift(snd))
-                sb.append(s"\tadd $dst, ${generateOperand(snd)}")
+                sb.append(s"\taddl ${generateOperand(snd)}, $dst")
                 sb.toString
             }
             case _ => "TODO ADD"
@@ -134,15 +157,15 @@ object X86Representation extends Representation {
         val sb: StringBuilder = new StringBuilder
         i match {
             case SubInstr(dst, fst, snd, _) => {
-                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\tmovl $fst, $dst\n")
                 sb.append(generateShift(snd))
-                sb.append(s"\tsub $dst, ${generateOperand(snd)}")
+                sb.append(s"\tsubl ${generateOperand(snd)}, $dst")
                 sb.toString
             }
             case ReverseSubInstr(dst, fst, snd, _) => {
                 sb.append(generateShift(snd))
-                sb.append(s"\tmov $dst, ${generateOperand(snd)}\n")
-                sb.append(s"\tsub $dst, $fst")
+                sb.append(s"\tmovl ${generateOperand(snd)}, $dst\n")
+                sb.append(s"\tsubl $fst, $dst")
                 sb.toString
             }
             case _ => "TODO SUB"
@@ -153,9 +176,11 @@ object X86Representation extends Representation {
         val sb: StringBuilder = new StringBuilder
         i match {
             case SMullInstr(rdLo, rdHi, fst, snd, false) => {
-                sb.append(s"\timul $rdLo, $fst, $snd\n")
-                sb.append(s"\timul ${regWithLength(rdHi, 64)}, $fst, $snd\n")
-                sb.append(s"\tshr ${regWithLength(rdHi, 64)}, 32")
+                sb.append(s"\tmovl $fst, $rdLo\n")
+                sb.append(s"\timulq $snd, ${regWithLength(rdLo, 64)}\n")
+                sb.append(s"\tmovl $fst, $rdHi\n")
+                sb.append(s"\timulq $snd, ${regWithLength(rdHi, 64)}\n")
+                sb.append(s"\tshrq 32, ${regWithLength(rdHi, 64)}")
                 sb.toString
             }
             case _ => "TODO MUL"
@@ -167,12 +192,12 @@ object X86Representation extends Representation {
         i match {
             case MoveInstr(dst, src, Condition.AL) => {
                 sb.append(generateShift(src))
-                sb.append(s"\tmov $dst, ${generateOperand(src)}")
+                sb.append(s"\tmovl ${generateOperand(src)}, $dst")
                 sb.toString
             }
             case MoveInstr(dst, src, cond) => {
                 sb.append(generateShift(src))
-                sb.append(s"\tcmov${generateCond(cond)} $dst, ${generateOperand(src)}")
+                sb.append(s"\tcmov${generateCond(cond)} ${generateOperand(src)}, $dst")
                 sb.toString
             }
             case _ => "TODO MOV"
@@ -181,27 +206,27 @@ object X86Representation extends Representation {
 
     def generateLoad(i: Instruction): String = {
         i match {
-            case LoadLabelInstr(dst, label, Condition.AL) => s"\tmov $dst, $label"
-            case LoadLabelInstr(dst, label, cond)         => s"\tcmov${generateCond(cond)} $dst, $label"
-            case LoadImmIntInstr(dst, imm, Condition.AL)  => s"\tmov $dst, $imm"
-            case LoadImmIntInstr(dst, imm, cond)          => s"\tcmov${generateCond(cond)}, $dst, $imm"
-            case LoadInstr(dst, src, ImmOffset(0), Condition.AL)  => s"\tlea $dst, [$src]"
-            case LoadInstr(dst, src, ImmOffset(offset), Condition.AL) => s"\tlea $dst, [$src + $offset]"
-            case LoadRegSignedByte(dst, src, ImmOffset(0), Condition.AL) => s"\tlea $dst, [$src]"
-            case LoadRegSignedByte(dst, src, ImmOffset(offset), Condition.AL) => s"\tlea $dst, [$src + $offset]"
+            case LoadLabelInstr(dst, label, Condition.AL) => s"\tmovl $label, $dst"
+            case LoadLabelInstr(dst, label, cond)         => s"\tcmov${generateCond(cond)} $label, $dst"
+            case LoadImmIntInstr(dst, imm, Condition.AL)  => s"\tmovl $imm, $dst"
+            case LoadImmIntInstr(dst, imm, cond)          => s"\tcmov${generateCond(cond)} $imm, $dst"
+            case LoadInstr(dst, src, ImmOffset(0), Condition.AL)  => s"\tleal ($src), $dst"
+            case LoadInstr(dst, src, ImmOffset(ofs), Condition.AL) => s"\tleal $ofs($src), $dst"
+            case LoadRegSignedByte(dst, src, ImmOffset(0), Condition.AL) => s"\tleal ($src), $dst"
+            case LoadRegSignedByte(dst, src, ImmOffset(ofs), Condition.AL) => s"\tleal $ofs($src), $dst"
             case _ => s"TODO LOAD: $i"
         }
     }
 
     def generateStore(i: Instruction): String = {
         i match {
-            case StoreInstr(src, dst, ImmOffset(0), _) => s"\tmov [$dst], $src"
-            case StoreInstr(src, dst, ImmOffset(i), _) => s"\tmov [$dst + $i], $src"
-            case StoreInstr(src, dst, RegOp(r), _) => s"\tmov [$dst + $r], $src"
+            case StoreInstr(src, dst, ImmOffset(0), _) => s"\tmovl $src, ($dst)"
+            case StoreInstr(src, dst, ImmOffset(i), _) => s"\tmovl $src, $i($dst)"
+            case StoreInstr(src, dst, RegOp(r), _) => s"\tmovl $src, ($dst,$r)"
             
-            case StoreByteInstr(src, dst, ImmOffset(0), _) => s"\tmov [$dst], $src"
-            case StoreByteInstr(src, dst, ImmOffset(i), _) => s"\tmov $i[$dst], $src"
-            case StoreByteInstr(src, dst, RegOp(r), _) => s"\tmov [$dst + $r], $src"
+            case StoreByteInstr(src, dst, ImmOffset(0), _) => s"\tmovl $src, ($dst)"
+            case StoreByteInstr(src, dst, ImmOffset(i), _) => s"\tmovl $src, $i($dst)"
+            case StoreByteInstr(src, dst, RegOp(r), _) => s"\tmovl $src, ($dst,$r)"
             case _ => "TODO STORE"
         }
     }
@@ -295,26 +320,26 @@ object X86Representation extends Representation {
         val sb: StringBuilder = new StringBuilder
         i match {
             case AndInstr(dst, fst, snd, _, _) => {
-                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\tmovl $fst, $dst\n")
                 sb.append(generateShift(snd))
-                sb.append(s"\tand $dst, ${generateOperand(snd)}")
+                sb.append(s"\tandl ${generateOperand(snd)}, $dst")
                 sb.toString
             }
             case OrInstr(dst, fst, snd, _, _) => {
-                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\tmovl $fst, $dst\n")
                 sb.append(generateShift(snd))
-                sb.append(s"\tor $fst, ${generateOperand(snd)}")
+                sb.append(s"\torl ${generateOperand(snd)}, $dst")
                 sb.toString
             }
             case XorInstr(dst, fst, snd, _, _) => {
-                sb.append(s"\tmov $dst, $fst\n")
+                sb.append(s"\tmovl $fst, $dst\n")
                 sb.append(generateShift(snd))
-                sb.append(s"\txor $dst, ${generateOperand(snd)}")
+                sb.append(s"\txorl ${generateOperand(snd)}, $dst")
                 sb.toString
             }
             case CompareInstr(fst, snd, _) => {
                 sb.append(generateShift(snd))
-                sb.append(s"\tcmp $fst, ${generateOperand(snd)}")
+                sb.append(s"\tcmpl ${generateOperand(snd)}, $fst")
                 sb.toString
             }
             case BranchLinkInstr(label, _) => {
@@ -328,9 +353,9 @@ object X86Representation extends Representation {
     /** Returns x86 register representation in n-bit mode (default toString is the 32-bit mode) */
     def regWithLength(r: Register, bitLen: Int): String = {
         bitLen match {
-            case 16 => s"${r.toString.substring(1)}"
+            case 16 => s"%${r.toString.substring(2)}"
             case 32 => s"$r"
-            case 64 => s"r${r.toString.substring(1)}"
+            case 64 => s"%r${r.toString.substring(2)}"
             case _ => "undefined register length in x86"
         }
     }
