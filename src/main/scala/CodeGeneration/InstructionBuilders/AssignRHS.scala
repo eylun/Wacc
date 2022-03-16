@@ -7,12 +7,12 @@ object transRHS {
 
     /** Adds a list of instructions evaluating the RHS of an assignment to the Wacc Buffer collector
       */
-    def apply(rhs: AssignRHSNode, stackFrame: StackFrame, optFlag: OptimisationFlag = OptimisationFlag.O0)(implicit
+    def apply(rhs: AssignRHSNode, stackFrame: StackFrame)(implicit
         collector: WaccBuffer
     ): Unit = {
         rhs match {
             /** EXPRESSION NODE */
-            case e: ExprNode => transExpression(e, stackFrame, optFlag)
+            case e: ExprNode => transExpression(e, stackFrame)
             /** ARRAY-LITER NODE */
             case al @ ArrayLiterNode(es) => {
 
@@ -49,7 +49,7 @@ object transRHS {
                 var ofs = WORD_SIZE
                 es.foreach { e =>
                     {
-                        transExpression(e, stackFrame, optFlag)
+                        transExpression(e, stackFrame)
                         collector.addStatement(
                           List(
                             determineStoreInstr(
@@ -112,7 +112,7 @@ object transRHS {
                 /** Push params into stack */
                 (plist zip args).reverse.foreach {
                     case (p, e) => {
-                        transExpression(e, stackFrame, optFlag)
+                        transExpression(e, stackFrame)
                         collector.addStatement(List(p match {
                             case Param(CharType()) | Param(BoolType()) => {
                                 offset += BIT_SIZE
@@ -161,13 +161,13 @@ object transRHS {
                       ++
                           (e match {
                               case FirstPairElemNode(f) => {
-                                  transExpression(f, stackFrame, optFlag)
+                                  transExpression(f, stackFrame)
                                   List(
                                     LoadInstr(r0, r0, ImmOffset(0))
                                   )
                               }
                               case SecondPairElemNode(s) => {
-                                  transExpression(s, stackFrame, optFlag)
+                                  transExpression(s, stackFrame)
                                   List(
                                     LoadInstr(r0, r0, ImmOffset(WORD_SIZE))
                                   )

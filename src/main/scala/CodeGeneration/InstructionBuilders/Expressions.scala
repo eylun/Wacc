@@ -6,7 +6,7 @@ import OptimisationFlag._
 /** Adds the appropriate instructions for each expression into our Wacc Buffer collector
   */
 object transExpression {
-    def apply(exprNode: ExprNode, stackFrame: StackFrame, optFlag: OptimisationFlag = OptimisationFlag.O0)(implicit
+    def apply(exprNode: ExprNode, stackFrame: StackFrame)(implicit
         collector: WaccBuffer
     ): Unit =
         exprNode match {
@@ -140,14 +140,14 @@ object transExpression {
             /* * BINARY OPERATIONS */
 
             /** Optimization for binary operations */
-            case Add(IntLiterNode(x), IntLiterNode(y)) if optFlag == OptimisationFlag.Oph => {
+            case Add(IntLiterNode(x), IntLiterNode(y)) if collector.optFlag == OptimisationFlag.Oph => {
                 transExpression(
                   (IntLiterNode(x + y)(0, 0)),
                   stackFrame
                 )
             }
 
-            case Sub(IntLiterNode(x), IntLiterNode(y)) if optFlag == OptimisationFlag.Oph => {
+            case Sub(IntLiterNode(x), IntLiterNode(y)) if collector.optFlag == OptimisationFlag.Oph => {
                 transExpression(
                   (IntLiterNode(x - y)(0, 0)),
                   stackFrame

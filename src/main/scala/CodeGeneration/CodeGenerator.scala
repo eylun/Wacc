@@ -3,7 +3,7 @@ import OptimisationFlag._
 import PeepholeOptimisation._
 
 object CodeGenerator {
-    def apply(progNode: ProgramNode, st: SymbolTable, optFlag: OptimisationFlag)(implicit
+    def apply(progNode: ProgramNode, st: SymbolTable)(implicit
         collector: WaccBuffer
     ): List[Instruction] = {
 
@@ -24,7 +24,7 @@ object CodeGenerator {
         collector.addStatement(mainStackFrame.head)
 
         /** Generate instructions for every statement in the program */
-        transStatement(progNode.s, mainStackFrame, optFlag)
+        transStatement(progNode.s, mainStackFrame)
 
         /** Add instructions to increment the stack pointer */
         collector.addStatement(mainStackFrame.tail)
@@ -34,7 +34,7 @@ object CodeGenerator {
         )
 
         /** Execute optimisation function(s) if flag is set */
-        optFlag match {
+        collector.optFlag match {
             case OptimisationFlag.O0  => collector.emit()
             case OptimisationFlag.Oph => executePeepholeOptimisation(collector.emit())
         }

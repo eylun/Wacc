@@ -7,7 +7,7 @@ import OptimisationFlag._
 /** Evaluates a statement and adds the appropriate instructions into the wacc buffer
   */
 object transStatement {
-    def apply(statList: StatNode, stackFrame: StackFrame, optFlag: OptimisationFlag = OptimisationFlag.O0)(implicit
+    def apply(statList: StatNode, stackFrame: StackFrame)(implicit
         collector: WaccBuffer
     ): Unit = {
         val StatListNode(l) = statList
@@ -15,7 +15,7 @@ object transStatement {
             /** THROW STATEMENT: throw <expr> */
             case ThrowNode(e) => {
                 collector.insertUtil(UtilFlag.PExceptionError)
-                transExpression(e, stackFrame, optFlag)
+                transExpression(e, stackFrame)
                 collector.addStatement(
                   List(
                     LoadImmIntInstr(r7, typeNumConvert(e.typeId.get.getType())),
@@ -55,7 +55,7 @@ object transStatement {
                 stackFrame.addTempOffset(8)
                 val trySF = stackFrame.join(tc.tryST)
                 collector.addStatement(trySF.head)
-                transStatement(s, trySF, optFlag)
+                transStatement(s, trySF)
                 collector.addStatement(
                   trySF.tail ++:
                       List(
@@ -139,7 +139,7 @@ object transStatement {
                     val cSF = stackFrame.join(c.catchST)
                     cSF.unlock(c.i.s)
                     collector.addStatement(cSF.head)
-                    transStatement(c.s, cSF, optFlag)
+                    transStatement(c.s, cSF)
                     collector.addStatement(
                       cSF.tail :+ BranchInstr(s"catch_end_$idx")
                     )
@@ -152,7 +152,7 @@ object transStatement {
             case NewAssignNode(t, i, r) => {
 
                 /** Evaluate the RHS of the assignment */
-                transRHS(r, stackFrame, optFlag)
+                transRHS(r, stackFrame)
                 stackFrame.unlock(i.s)
 
                 /** Store instruction generated via determineStoreInstr() */
@@ -173,8 +173,8 @@ object transStatement {
                     case IdentNode(s) => {
 
                         /** Generates instructions for LHS and RHS */
-                        transRHS(r, stackFrame, optFlag)
-                        transLHS(l, stackFrame, optFlag)
+                        transRHS(r, stackFrame)
+                        transLHS(l, stackFrame)
 
                         collector.addStatement(
                           List(
@@ -190,8 +190,8 @@ object transStatement {
                     case ae @ ArrayElemNode(IdentNode(s), es) => {
 
                         /** Generates instructions for LHS and RHS */
-                        transRHS(r, stackFrame, optFlag)
-                        transLHS(l, stackFrame, optFlag)
+                        transRHS(r, stackFrame)
+                        transLHS(l, stackFrame)
 
                         collector.addStatement(
                           List(
@@ -206,8 +206,8 @@ object transStatement {
 
                     }
                     case l: PairElemNode => {
-                        transRHS(r, stackFrame, optFlag)
-                        transLHS(l, stackFrame, optFlag)
+                        transRHS(r, stackFrame)
+                        transLHS(l, stackFrame)
                         collector.addStatement(
                           List(
                             determineStoreInstr(
@@ -235,14 +235,14 @@ object transStatement {
                     stackFrame.join(ite.falseST)
 
                 /** Evaluate conditional expression and branch accordingly */
-                transExpression(e, stackFrame, optFlag)
+                transExpression(e, stackFrame)
                 collector.addStatement(
                   List(
                     CompareInstr(r0, ImmOffset(0), Condition.AL),
                     BranchInstr(labelFalse, Condition.EQ)
                   ) ++ trueSF.head
                 )
-                transStatement(s1, trueSF, optFlag)
+                transStatement(s1, trueSF)
                 collector.addStatement(
                   trueSF.tail ++
                       List(
@@ -251,7 +251,7 @@ object transStatement {
                       )
                       ++ falseSF.head
                 )
-                transStatement(s2, falseSF, optFlag)
+                transStatement(s2, falseSF)
                 collector.addStatement(falseSF.tail ++ List(Label(labelTrue)))
             }
             /** BEGIN-END STATEMENT: ‘begin’ ⟨stat⟩ ‘end’ */
@@ -262,7 +262,7 @@ object transStatement {
                   be.newScopeST
                 )
                 collector.addStatement(beSF.head)
-                transStatement(s, beSF, optFlag)
+                transStatement(s, beSF)
                 collector.addStatement(beSF.tail)
             }
             /** DO WHILE STATEMENT: ‘while’ ⟨expr ⟩ ‘do’ ⟨stat⟩ ‘done’ */
@@ -285,13 +285,13 @@ object transStatement {
                   wd.newScopeST
                 )
                 collector.addStatement(wdSF.head)
-                transStatement(s, wdSF, optFlag)
+                transStatement(s, wdSF)
                 collector.addStatement(wdSF.tail)
 
                 /** Branches to loop body instructions if condition is true
                   */
                 collector.addStatement(List(Label(labelCheck)))
-                transExpression(e, stackFrame, optFlag)
+                transExpression(e, stackFrame)
                 collector.addStatement(
                   (
                     List(
@@ -307,7 +307,7 @@ object transStatement {
             case ExitNode(e) => {
 
                 /** Evaluates expression and Branches */
-                transExpression(e, stackFrame, optFlag)
+                transExpression(e, stackFrame)
                 collector.addStatement(
                   List(
                     BranchLinkInstr("exit", Condition.AL)
@@ -318,13 +318,13 @@ object transStatement {
             case PrintNode(e) => {
 
                 /** Calls printExpr helper function */
-                printExpr(e, stackFrame, optFlag)
+                printExpr(e, stackFrame)
             }
             /** PRINTLN STATEMENT: ‘println’ ⟨expr ⟩ */
             case PrintlnNode(e) => {
 
                 /** Calls printExpr helper function */
-                printExpr(e, stackFrame, optFlag)
+                printExpr(e, stackFrame)
 
                 /** Inserts instructions for p_print_ln */
                 collector.insertUtil(PPrintNewLine)
@@ -334,7 +334,7 @@ object transStatement {
             }
             /** FREE STATEMENT: ‘free’ ⟨expr ⟩ */
             case FreeNode(e) => {
-                transExpression(e, stackFrame, optFlag)
+                transExpression(e, stackFrame)
                 e.typeId.get.getType() match {
                     case ArrayType(_, _, _) => {
                         collector.addStatement(
@@ -357,7 +357,7 @@ object transStatement {
             }
             /** RETURN STATEMENT: ‘return’ ⟨expr ⟩ */
             case ReturnNode(e) => {
-                transExpression(e, stackFrame, optFlag)
+                transExpression(e, stackFrame)
                 collector.addStatement(
                   stackFrame.returnTail ++ List(PopInstr(List(pc)))
                 )
@@ -366,7 +366,7 @@ object transStatement {
             case ReadNode(l) => {
 
                 /** transLHS generates instructions for the assign-lhs node */
-                transLHS(l, stackFrame, optFlag)
+                transLHS(l, stackFrame)
 
                 l match {
                     case IdentNode(s) => {
@@ -427,12 +427,12 @@ object transStatement {
     }
 
     /** Helper function for print and println. */
-    def printExpr(e: ExprNode, stackFrame: StackFrame, optFlag: OptimisationFlag)(implicit
+    def printExpr(e: ExprNode, stackFrame: StackFrame)(implicit
         collector: WaccBuffer
     ): Unit = {
 
         /** Evaluate the expression node */
-        transExpression(e, stackFrame, optFlag)
+        transExpression(e, stackFrame)
 
         /** Insert the instruction sequence corresponding to the Expression Node's type and a branch link instruction to
           * the inserted sequence

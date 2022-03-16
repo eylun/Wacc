@@ -7,7 +7,7 @@ object transLHS {
 
     /** Adds a list of instructions evaluating the LHS of an assignment to the Wacc Buffer collector
       */
-    def apply(lhs: AssignLHSNode, stackFrame: StackFrame, optFlag: OptimisationFlag = OptimisationFlag.O0)(implicit
+    def apply(lhs: AssignLHSNode, stackFrame: StackFrame)(implicit
         collector: WaccBuffer
     ): Unit = {
         lhs match {
@@ -30,7 +30,7 @@ object transLHS {
 
                 es.zipWithIndex.foreach {
                     case (e, idx) => {
-                        transExpression(e, stackFrame, optFlag)
+                        transExpression(e, stackFrame)
 
                         /** Branch to check_array_bounds */
                         collector.addStatement(
@@ -105,7 +105,7 @@ object transLHS {
                     /** Add Instructions take different offsets for first pair element and second pair element
                       */
                     case FirstPairElemNode(e) => {
-                        transExpression(e, stackFrame, optFlag)
+                        transExpression(e, stackFrame)
                         collector.addStatement(
                           List(
                             BranchLinkInstr("p_check_null_pointer"),
@@ -114,7 +114,7 @@ object transLHS {
                         )
                     }
                     case SecondPairElemNode(e) => {
-                        transExpression(e, stackFrame, optFlag)
+                        transExpression(e, stackFrame)
                         collector.addStatement(
                           List(
                             BranchLinkInstr("p_check_null_pointer"),
