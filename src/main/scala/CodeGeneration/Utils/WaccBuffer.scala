@@ -122,13 +122,19 @@ class WaccBuffer {
     /** emit() concatenates the data messages (if any) together with the
       * instructions generated for the main statements and utility statements
       */
-    def emit(): List[Instruction] = toList(
-      dataMsgs.length match {
-          case 0 => bssMsgs ++: mainStatements ++: utilityStatements
-          case _ =>
+    def emit()(implicit repr: Representation): List[Instruction] = toList(
+      (dataMsgs.length, repr) match {
+          case (0, ARMRepresentation) => bssMsgs ++: mainStatements ++: utilityStatements
+          case (_, ARMRepresentation) =>
               bssMsgs ++: (Directive(
                 "data"
               ) +=: dataMsgs) ++: mainStatements ++: utilityStatements
+
+          case (0, X86Representation) => bssMsgs ++: (mainStatements.init :+ BranchLinkInstr("exit")) ++: utilityStatements
+          case (_, X86Representation) =>
+              bssMsgs ++: (Directive(
+                "data"
+              ) +=: dataMsgs) ++: (mainStatements.init :+ BranchLinkInstr("exit")) ++: utilityStatements
       }
     )
 }

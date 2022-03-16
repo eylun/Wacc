@@ -1,14 +1,17 @@
 import java.io.{File, BufferedWriter, FileWriter}
 import constants._
+import scala.collection.immutable.Set
 
 object X86Representation extends Representation {
     implicit val repr: Representation = this
+    val externFunc1: Set[String] = Set("exit", "malloc", "free", "putchar", "printf", "fflush", "scanf", "puts")
+    val externFunc2: Set[String] = Set("__aeabi_idiv", "__aeabi_idivmod")
 
     def apply(progNode: ProgramNode, st: SymbolTable, filename: String): Unit = {
         implicit val collector: WaccBuffer = new WaccBuffer
         collector.setupMain()
         val bw = new BufferedWriter(new FileWriter(new File(filename)))
-        (CodeGenerator(progNode, st).init :+ BranchLinkInstr("exit")).foreach(l => bw.write(generateLine(l)))
+        CodeGenerator(progNode, st).foreach(l => bw.write(generateLine(l)))
         bw.close()
     }
 
@@ -45,6 +48,7 @@ object X86Representation extends Representation {
     def generateLine(instr: Instruction)(implicit collector: WaccBuffer, repr: Representation): String = {
         s"${instr match {
             case Label(labelName)   => s"$labelName:"
+            case Directive(s"word$_") => ""
             case Directive(name)    => s"\t.$name"
             case GlobalDirective()  => "\t.globl _start"
             case PushInstr(_)       => generatePush(instr)
@@ -208,8 +212,8 @@ object X86Representation extends Representation {
 
     def generateLoad(i: Instruction): String = {
         i match {
-            case LoadLabelInstr(dst, label, Condition.AL)                => s"\tmovl $label, $dst"
-            case LoadLabelInstr(dst, label, cond)                        => s"\tcmov${generateCond(cond)} $label, $dst"
+            case LoadLabelInstr(dst, label, Condition.AL)                => s"\tmovl $$$label, $dst"
+            case LoadLabelInstr(dst, label, cond)                        => s"\tcmov${generateCond(cond)} $$$label, $dst"
             case LoadImmIntInstr(dst, imm, Condition.AL)                 => s"\tmovl $$$imm, $dst"
             case LoadImmIntInstr(dst, imm, cond)                         => s"\tcmov${generateCond(cond)} $$$imm, $dst"
             case LoadInstr(dst, src, ImmOffset(0), Condition.AL)         => s"\tleal ($src), $dst"
@@ -234,9 +238,21 @@ object X86Representation extends Representation {
     }
 
     def generateBranch(i: Instruction)(implicit collector: WaccBuffer): String = {
+        val sb: StringBuilder = new StringBuilder
         i match {
             case BranchInstr(label, Condition.AL)     => s"\tjmp $label"
             case BranchInstr(label, cond)             => s"\tj${generateCond(cond)} $label"
+            case BranchLinkInstr(label, Condition.AL) if externFunc1.contains(label) => {
+                sb.append("\tmovl %eax, %edi\n")
+                sb.append(opBody(i))
+                sb.toString
+            }
+            case BranchLinkInstr(label, Condition.AL) if externFunc2.contains(label) => {
+                sb.append("\tmovl %eax, %edi\n")
+                sb.append("\tmovl %ecx, %esi\n")
+                sb.append(opBody(i))
+                sb.toString
+            } 
             case BranchLinkInstr(label, Condition.AL) => opBody(i)
             case BranchLinkInstr(label, _)            => conditionalOp(i)
             case _                                    => s"TODO BRANCH: $i"

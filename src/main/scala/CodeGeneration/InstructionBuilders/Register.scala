@@ -36,12 +36,12 @@ object constants {
                 case X86Representation => {
                     n match {
                         case 0 => "%eax"
-                        case 1 => "%edi"
-                        case 2 => "%esi"
-                        case 3 => "%edx"
-                        case 4 => "%ecx"
-                        case 5 => "%e8"
-                        case 6 => "%e9"
+                        case 1 => "%ecx"
+                        case 2 => "%edx"
+                        case 3 => "%esi"
+                        case 4 => "%edi"
+                        case 5 => "%r8d"
+                        case 6 => "%r9d"
                         case 7 => "%ebx"
                     }
                 }
