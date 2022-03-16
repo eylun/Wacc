@@ -1,13 +1,13 @@
 import Helpers._
 import Condition._
 import constants._
+import OptimisationFlag._
 
 object transLHS {
 
-    /** Adds a list of instructions evaluating the LHS of an assignment to the
-      * Wacc Buffer collector
+    /** Adds a list of instructions evaluating the LHS of an assignment to the Wacc Buffer collector
       */
-    def apply(lhs: AssignLHSNode, stackFrame: StackFrame)(implicit
+    def apply(lhs: AssignLHSNode, stackFrame: StackFrame, optFlag: OptimisationFlag = OptimisationFlag.O0)(implicit
         collector: WaccBuffer
     ): Unit = {
         lhs match {
@@ -30,7 +30,7 @@ object transLHS {
 
                 es.zipWithIndex.foreach {
                     case (e, idx) => {
-                        transExpression(e, stackFrame)
+                        transExpression(e, stackFrame, optFlag)
 
                         /** Branch to check_array_bounds */
                         collector.addStatement(
@@ -48,8 +48,7 @@ object transLHS {
                           )
                         )
 
-                        /** Include a different add instruction depending on
-                          * array type
+                        /** Include a different add instruction depending on array type
                           */
                         collector.addStatement(
                           if (idx == es.length - 1) {
@@ -103,11 +102,10 @@ object transLHS {
                   )
                 )
                 pe match {
-                    /** Add Instructions take different offsets for first pair
-                      * element and second pair element
+                    /** Add Instructions take different offsets for first pair element and second pair element
                       */
                     case FirstPairElemNode(e) => {
-                        transExpression(e, stackFrame)
+                        transExpression(e, stackFrame, optFlag)
                         collector.addStatement(
                           List(
                             BranchLinkInstr("p_check_null_pointer"),
@@ -116,7 +114,7 @@ object transLHS {
                         )
                     }
                     case SecondPairElemNode(e) => {
-                        transExpression(e, stackFrame)
+                        transExpression(e, stackFrame, optFlag)
                         collector.addStatement(
                           List(
                             BranchLinkInstr("p_check_null_pointer"),

@@ -16,8 +16,7 @@ object CodeGenerator {
             transFunction(f, StackFrame(funcSt))
         })
 
-        /** Add label for "main" instruction sequence and push link register
-          * onto stack
+        /** Add label for "main" instruction sequence and push link register onto stack
           */
         collector.addStatement(List(Label("main"), PushInstr(List(lr))))
 
@@ -25,7 +24,7 @@ object CodeGenerator {
         collector.addStatement(mainStackFrame.head)
 
         /** Generate instructions for every statement in the program */
-        transStatement(progNode.s, mainStackFrame)
+        transStatement(progNode.s, mainStackFrame, optFlag)
 
         /** Add instructions to increment the stack pointer */
         collector.addStatement(mainStackFrame.tail)
@@ -36,8 +35,8 @@ object CodeGenerator {
 
         /** Execute optimisation function(s) if flag is set */
         optFlag match {
-          case OptimisationFlag.O0 => collector.emit()
-          case OptimisationFlag.Oph => executePeepholeOptimisation(collector.emit())
+            case OptimisationFlag.O0  => collector.emit()
+            case OptimisationFlag.Oph => executePeepholeOptimisation(collector.emit())
         }
     }
 }

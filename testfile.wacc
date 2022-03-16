@@ -9,10 +9,5 @@
 # Program:
 
 begin
-  char x = 'x';
-  char y = 'y';
-  char a = x;
-  a = 'a';
-  a = y
-
+  int x = 10 - 5
 end

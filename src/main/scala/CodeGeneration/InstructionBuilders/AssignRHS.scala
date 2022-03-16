@@ -1,18 +1,18 @@
 import Helpers._
 import Condition._
 import constants._
+import OptimisationFlag._
 
 object transRHS {
 
-    /** Adds a list of instructions evaluating the RHS of an assignment to the
-      * Wacc Buffer collector
+    /** Adds a list of instructions evaluating the RHS of an assignment to the Wacc Buffer collector
       */
-    def apply(rhs: AssignRHSNode, stackFrame: StackFrame)(implicit
+    def apply(rhs: AssignRHSNode, stackFrame: StackFrame, optFlag: OptimisationFlag = OptimisationFlag.O0)(implicit
         collector: WaccBuffer
     ): Unit = {
         rhs match {
             /** EXPRESSION NODE */
-            case e: ExprNode => transExpression(e, stackFrame)
+            case e: ExprNode => transExpression(e, stackFrame, optFlag)
             /** ARRAY-LITER NODE */
             case al @ ArrayLiterNode(es) => {
 
@@ -49,7 +49,7 @@ object transRHS {
                 var ofs = WORD_SIZE
                 es.foreach { e =>
                     {
-                        transExpression(e, stackFrame)
+                        transExpression(e, stackFrame, optFlag)
                         collector.addStatement(
                           List(
                             determineStoreInstr(
@@ -86,8 +86,7 @@ object transRHS {
             /** NEW PAIR NODE */
             case NewPairNode(e1, e2) => {
 
-                /** Evaluate the pair-elem expressions and stores it in the
-                  * stack
+                /** Evaluate the pair-elem expressions and stores it in the stack
                   */
                 addNewPairElem(e1, stackFrame)
                 addNewPairElem(e2, stackFrame)
@@ -113,7 +112,7 @@ object transRHS {
                 /** Push params into stack */
                 (plist zip args).reverse.foreach {
                     case (p, e) => {
-                        transExpression(e, stackFrame)
+                        transExpression(e, stackFrame, optFlag)
                         collector.addStatement(List(p match {
                             case Param(CharType()) | Param(BoolType()) => {
                                 offset += BIT_SIZE
@@ -162,13 +161,13 @@ object transRHS {
                       ++
                           (e match {
                               case FirstPairElemNode(f) => {
-                                  transExpression(f, stackFrame)
+                                  transExpression(f, stackFrame, optFlag)
                                   List(
                                     LoadInstr(r0, r0, ImmOffset(0))
                                   )
                               }
                               case SecondPairElemNode(s) => {
-                                  transExpression(s, stackFrame)
+                                  transExpression(s, stackFrame, optFlag)
                                   List(
                                     LoadInstr(r0, r0, ImmOffset(WORD_SIZE))
                                   )
