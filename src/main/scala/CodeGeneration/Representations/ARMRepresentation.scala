@@ -169,7 +169,7 @@ object ARMRepresentation extends Representation {
         }
     }
 
-    def generateBranch(i: Instruction): String = {
+    def generateBranch(i: Instruction)(implicit collector: WaccBuffer): String = {
         i match {
             case BranchInstr(label, cond) => s"\tB$cond $label"
             case BranchLinkInstr(label, cond) => s"\tBL$cond $label"

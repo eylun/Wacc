@@ -182,7 +182,9 @@ object X86Representation extends Representation {
     def generateLoad(i: Instruction): String = {
         i match {
             case LoadLabelInstr(dst, label, Condition.AL) => s"\tmov $dst, $label"
-            case LoadImmIntInstr(dst, imm, Condition.AL) => s"\tmov $dst, $imm"
+            case LoadLabelInstr(dst, label, cond)         => s"\tcmov${generateCond(cond)} $dst, $label"
+            case LoadImmIntInstr(dst, imm, Condition.AL)  => s"\tmov $dst, $imm"
+            case LoadImmIntInstr(dst, imm, cond)          => s"\tcmov${generateCond(cond)}, $dst, $imm"
             case LoadInstr(dst, src, ImmOffset(0), Condition.AL)  => s"\tlea $dst, [$src]"
             case LoadInstr(dst, src, ImmOffset(offset), Condition.AL) => s"\tlea $dst, [$src + $offset]"
             case LoadRegSignedByte(dst, src, ImmOffset(0), Condition.AL) => s"\tlea $dst, [$src]"
@@ -204,11 +206,12 @@ object X86Representation extends Representation {
         }
     }
 
-    def generateBranch(i: Instruction): String = {
+    def generateBranch(i: Instruction)(implicit collector: WaccBuffer): String = {
         i match {
             case BranchInstr(label, Condition.AL) => s"\tjmp $label"
             case BranchInstr(label, cond) => s"\tj${generateCond(cond)} $label"
-            case BranchLinkInstr(label, Condition.AL) => s"\tcall $label"
+            case BranchLinkInstr(label, Condition.AL) => opBody(i)
+            case BranchLinkInstr(label, _) => conditionalOp(i)
             case _ => s"TODO BRANCH: $i"
         }
     }
@@ -252,7 +255,7 @@ object X86Representation extends Representation {
         }
     }
 
-    /** Constructs the labels and jumps for a conditionally executed operation */
+    /** Constructs the labels and jumps for a conditionally executed operation not natively supported in x86 */
     def conditionalOp(i: Instruction)(implicit collector: WaccBuffer): String = {
         val sb: StringBuilder = new StringBuilder
 
@@ -262,6 +265,7 @@ object X86Representation extends Representation {
                 case OrInstr(_, _, _, _, c) => c
                 case XorInstr(_, _, _, _, c) => c
                 case CompareInstr(_, _, c) => c
+                case BranchLinkInstr(_, c) => c
                 case _ => Condition.AL
             }
         }
@@ -274,6 +278,7 @@ object X86Representation extends Representation {
                 case OrInstr(_, _, _, _, _) => s"or${cond}_${labelNo}"
                 case XorInstr(_, _, _, _, _) => s"xor${cond}_${labelNo}:"
                 case CompareInstr(_, _, _) => s"cmp${cond}_${labelNo}:"
+                case BranchLinkInstr(_, _) => s"bl${cond}_${labelNo}:"
                 case _ => "TODO COND LABEL"
             }
         }
@@ -285,7 +290,7 @@ object X86Representation extends Representation {
     }
 
     /** Constructs the operation body for arguments containing multiple lines. 
-      * Used to construct conditional operations in particular. */
+      * Used to construct conditional operations in particular in conjunction with conditionalOp() */
     def opBody(i: Instruction)(implicit collector: WaccBuffer): String = {
         val sb: StringBuilder = new StringBuilder
         i match {
@@ -310,6 +315,10 @@ object X86Representation extends Representation {
             case CompareInstr(fst, snd, _) => {
                 sb.append(generateShift(snd))
                 sb.append(s"\tcmp $fst, ${generateOperand(snd)}")
+                sb.toString
+            }
+            case BranchLinkInstr(label, _) => {
+                sb.append(s"\tcall $label")
                 sb.toString
             }
             case _ => "TODO OPBODY"

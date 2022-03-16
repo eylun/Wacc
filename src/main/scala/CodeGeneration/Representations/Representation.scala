@@ -9,7 +9,7 @@ trait Representation {
 
     def generateCompare(i: Instruction)(implicit collector: WaccBuffer): String
 
-    def generateBranch(i: Instruction): String
+    def generateBranch(i: Instruction)(implicit collector: WaccBuffer): String
 
     def generateLoad(i: Instruction): String
 
