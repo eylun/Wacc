@@ -37,8 +37,7 @@ object testUtils {
     /* Compares the expected output string and actual output string */
     def assertExecuteEquals(expected: String, actual: String): Unit = {
         (expected, actual) match {
-            case (s"${exFront}0x$_ $exBack", s"${actFront}0x$_ $actBack")
-                if exFront != actFront || exBack != exBack =>
+            case (s"${exFront}0x$_ $exBack", s"${actFront}0x$_ $actBack") if exFront != actFront || exBack != exBack =>
                 fail(s"Expected: $expected, Actual: $actual")
             case (_, _) if expected != actual =>
                 fail(s"Expected: $expected, Actual: $actual")
@@ -136,8 +135,7 @@ object testUtils {
 
     /** Generate assembly file through test suite
       *
-      * Assumptions are made here that there are no syntax errors and no
-      * semantic errors
+      * Assumptions are made here that there are no syntax errors and no semantic errors
       */
     def testCodegen(f: File, repr: Representation): Unit = {
         import parsley.io.{ParseFromIO}
@@ -160,12 +158,7 @@ object testUtils {
         import scala.language.postfixOps
         import parsley.{Success, Failure}
         import Helpers.cleanFilename
-        import java.io.{
-            OutputStream,
-            ByteArrayOutputStream,
-            InputStream,
-            ByteArrayInputStream
-        }
+        import java.io.{OutputStream, ByteArrayOutputStream, InputStream, ByteArrayInputStream}
         import regexHelper._
 
         this.testCodegen(f, ARMRepresentation)
@@ -188,8 +181,7 @@ object testUtils {
         s"rm arm_${cleanFilename(f.getName())}" !
 
         (expectedOutput.split("\n") zip actualOutput.split("\n")).foreach {
-            case (expectedAddrRegex(el, er), actualAddrRegex(al, _, ar))
-                if el == al && er == ar =>
+            case (expectedAddrRegex(el, er), actualAddrRegex(al, _, ar)) if el == al && er == ar =>
             case (
                   expectedDuoAddrRegex(el, em, er),
                   actualDuoAddrRegex(al, _, am, _, ar)
@@ -212,12 +204,7 @@ object testUtils {
         import scala.language.postfixOps
         import parsley.{Success, Failure}
         import Helpers.cleanFilename
-        import java.io.{
-            OutputStream,
-            ByteArrayOutputStream,
-            InputStream,
-            ByteArrayInputStream
-        }
+        import java.io.{OutputStream, ByteArrayOutputStream, InputStream, ByteArrayInputStream}
         import regexHelper._
 
         this.testCodegen(f, X86Representation)
@@ -225,8 +212,8 @@ object testUtils {
         val fname: String = cleanFilename(f.getName())
 
         s"as x86_${fname}.s -o x86_${fname}.o" !
-        
-        s"ld -m elf_x86_64 --dynamic-linker /lib/x86_64-linux-gnu/ld-linux-x86-86.so.2 -lc -o x86_$fname x86_${fname}.o" !
+
+        s"ld -m elf_x86_64 -dynamic-linker /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 -lc -o x86_$fname x86_${fname}.o" !
 
         val (input, expectedOutput, expectedExit) = extractTest(f)
 
@@ -239,15 +226,14 @@ object testUtils {
 
         val actualOutput = outputStream.toString().trim()
 
-        //s"rm x86_${fname}.s" !
+        s"rm x86_${fname}.s" !
 
-        s"rm x86_${fname}.o"!
-        
+        s"rm x86_${fname}.o" !
+
         s"rm x86_${fname}" !
 
         (expectedOutput.split("\n") zip actualOutput.split("\n")).foreach {
-            case (expectedAddrRegex(el, er), actualAddrRegex(al, _, ar))
-                if el == al && er == ar =>
+            case (expectedAddrRegex(el, er), actualAddrRegex(al, _, ar)) if el == al && er == ar =>
             case (
                   expectedDuoAddrRegex(el, em, er),
                   actualDuoAddrRegex(al, _, am, _, ar)

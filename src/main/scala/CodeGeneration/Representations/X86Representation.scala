@@ -8,7 +8,7 @@ object X86Representation extends Representation {
         implicit val collector: WaccBuffer = new WaccBuffer
         collector.setupMain()
         val bw = new BufferedWriter(new FileWriter(new File(filename)))
-        CodeGenerator(progNode, st).foreach(l => bw.write(generateLine(l)))
+        (CodeGenerator(progNode, st).init :+ BranchLinkInstr("exit")).foreach(l => bw.write(generateLine(l)))
         bw.close()
     }
 
@@ -21,7 +21,7 @@ object X86Representation extends Representation {
             case LSRRegOp(r, _)       => s"$r"
             case ASRRegOp(r, _)       => s"$r"
             case RORRegOp(r, _)       => s"$r"
-            case _ => "TODO OP2"
+            case _                    => "TODO OP2"
         }
     }
 
@@ -38,33 +38,33 @@ object X86Representation extends Representation {
             case LSRRegOp(r, s) => s"\tshr ${generateShiftValue(s)}, $r\n"
             case ASRRegOp(r, s) => s"\tsar ${generateShiftValue(s)}, $r\n"
             case RORRegOp(r, s) => s"\tror ${generateShiftValue(s)}, $r\n"
-            case _ => ""
+            case _              => ""
         }
     }
 
     def generateLine(instr: Instruction)(implicit collector: WaccBuffer, repr: Representation): String = {
         s"${instr match {
-            case Label(labelName) => s"$labelName:"
-            case Directive(name)  => s"\t.$name"
-            case GlobalDirective() => "\t.globl _start"
-            case PushInstr(_)     => generatePush(instr)
-            case PopInstr(_)      => generatePop(instr)
+            case Label(labelName)   => s"$labelName:"
+            case Directive(name)    => s"\t.$name"
+            case GlobalDirective()  => "\t.globl _start"
+            case PushInstr(_)       => generatePush(instr)
+            case PopInstr(_)        => generatePop(instr)
             case MoveInstr(_, _, _) => generateMove(instr)
 
             /* Logical Instructions */
-            case AndInstr(_, _, _, _, _) | OrInstr(_, _, _, _, _) | XorInstr(_, _, _, _, _) 
-                => generateLogicalBinOp(instr)
+            case AndInstr(_, _, _, _, _) | OrInstr(_, _, _, _, _) | XorInstr(_, _, _, _, _) =>
+                generateLogicalBinOp(instr)
 
             /* Arithmetic Instructions*/
-            case AddInstr(_, _, _, _)    => generateAdd(instr)
+            case AddInstr(_, _, _, _)                               => generateAdd(instr)
             case SubInstr(_, _, _, _) | ReverseSubInstr(_, _, _, _) => generateSub(instr)
-            case SMullInstr(_, _, _, _, _) => generateMultiply(instr)
+            case SMullInstr(_, _, _, _, _)                          => generateMultiply(instr)
 
             case BranchInstr(_, _) | BranchLinkInstr(_, _) => generateBranch(instr)
 
-            /** Load Instructions*/
-            case LoadLabelInstr(_, _, _) | LoadImmIntInstr(_, _, _) | LoadInstr(_, _, _, _) | 
-                 LoadRegSignedByte(_, _, _, _) => generateLoad(instr)
+            /** Load Instructions */
+            case LoadLabelInstr(_, _, _) | LoadImmIntInstr(_, _, _) | LoadInstr(_, _, _, _) | LoadRegSignedByte(_, _, _, _) =>
+                generateLoad(instr)
 
             /** Store Instructions */
             case StoreInstr(_, _, _, _) | StoreByteInstr(_, _, _, _) => generateStore(instr)
@@ -86,20 +86,21 @@ object X86Representation extends Representation {
                 } else {
                     sb.append(s"\tpushq ${regWithLength(regs.head, 64)}")
                 }
-                regs.drop(1).foreach(r => {
-                    if (r == pc) {
-                        sb.append(s"\n\tleaq (${regWithLength(regs.head, 64)}), %r9")
-                        sb.append(s"\n\tpushq %r9")
-                    } else {
-                        sb.append(s"\n\tpushq ${regWithLength(r, 64)}")
-                    }
-                })
+                regs.drop(1)
+                    .foreach(r => {
+                        if (r == pc) {
+                            sb.append(s"\n\tleaq (${regWithLength(regs.head, 64)}), %r9")
+                            sb.append(s"\n\tpushq %r9")
+                        } else {
+                            sb.append(s"\n\tpushq ${regWithLength(r, 64)}")
+                        }
+                    })
                 sb.toString
             }
-            case _ => ""    
+            case _ => ""
         }
     }
-    
+
     def generatePop(i: Instruction): String = {
         val sb: StringBuilder = new StringBuilder
         i match {
@@ -109,13 +110,14 @@ object X86Representation extends Representation {
                 } else {
                     sb.append(s"\tpop ${regWithLength(regs.head, 64)}")
                 }
-                regs.drop(1).foreach(r => {
-                    if (r == pc) {
-                        sb.append(s"\n\tret")
-                    } else {
-                        sb.append(s"\n\tpop ${regWithLength(r, 64)}")
-                    }
-                })
+                regs.drop(1)
+                    .foreach(r => {
+                        if (r == pc) {
+                            sb.append(s"\n\tret")
+                        } else {
+                            sb.append(s"\n\tpop ${regWithLength(r, 64)}")
+                        }
+                    })
                 sb.toString
             }
             case _ => "TODO POP"
@@ -127,16 +129,16 @@ object X86Representation extends Representation {
         i match {
             /** AND */
             case AndInstr(_, _, _, _, Condition.AL) => opBody(i)
-            case AndInstr(_, _, _, _, _) => conditionalOp(i)
+            case AndInstr(_, _, _, _, _)            => conditionalOp(i)
 
             /** XOR */
             case XorInstr(_, _, _, _, Condition.AL) => opBody(i)
-            case XorInstr(_, _, _, _, _) => conditionalOp(i)
+            case XorInstr(_, _, _, _, _)            => conditionalOp(i)
 
             /** OR */
             case OrInstr(_, _, _, _, Condition.AL) => opBody(i)
-            case OrInstr(_, _, _, _, _) => conditionalOp(i)
-            case _ => "TODO LOGICAL BIN OP"
+            case OrInstr(_, _, _, _, _)            => conditionalOp(i)
+            case _                                 => "TODO LOGICAL BIN OP"
         }
     }
 
@@ -206,15 +208,15 @@ object X86Representation extends Representation {
 
     def generateLoad(i: Instruction): String = {
         i match {
-            case LoadLabelInstr(dst, label, Condition.AL) => s"\tmovl $label, $dst"
-            case LoadLabelInstr(dst, label, cond)         => s"\tcmov${generateCond(cond)} $label, $dst"
-            case LoadImmIntInstr(dst, imm, Condition.AL)  => s"\tmovl $$$imm, $dst"
-            case LoadImmIntInstr(dst, imm, cond)          => s"\tcmov${generateCond(cond)} $$$imm, $dst"
-            case LoadInstr(dst, src, ImmOffset(0), Condition.AL)  => s"\tleal ($src), $dst"
-            case LoadInstr(dst, src, ImmOffset(ofs), Condition.AL) => s"\tleal $ofs($src), $dst"
+            case LoadLabelInstr(dst, label, Condition.AL)                => s"\tmovl $label, $dst"
+            case LoadLabelInstr(dst, label, cond)                        => s"\tcmov${generateCond(cond)} $label, $dst"
+            case LoadImmIntInstr(dst, imm, Condition.AL)                 => s"\tmovl $$$imm, $dst"
+            case LoadImmIntInstr(dst, imm, cond)                         => s"\tcmov${generateCond(cond)} $$$imm, $dst"
+            case LoadInstr(dst, src, ImmOffset(0), Condition.AL)         => s"\tleal ($src), $dst"
+            case LoadInstr(dst, src, ImmOffset(ofs), Condition.AL)       => s"\tleal $ofs($src), $dst"
             case LoadRegSignedByte(dst, src, ImmOffset(0), Condition.AL) => s"\tleal ($src), $dst"
             case LoadRegSignedByte(dst, src, ImmOffset(ofs), Condition.AL) => s"\tleal $ofs($src), $dst"
-            case _ => s"TODO LOAD: $i"
+            case _                                                         => s"TODO LOAD: $i"
         }
     }
 
@@ -222,22 +224,22 @@ object X86Representation extends Representation {
         i match {
             case StoreInstr(src, dst, ImmOffset(0), _) => s"\tmovl $src, ($dst)"
             case StoreInstr(src, dst, ImmOffset(i), _) => s"\tmovl $src, $i($dst)"
-            case StoreInstr(src, dst, RegOp(r), _) => s"\tmovl $src, ($dst,$r)"
-            
+            case StoreInstr(src, dst, RegOp(r), _)     => s"\tmovl $src, ($dst,$r)"
+
             case StoreByteInstr(src, dst, ImmOffset(0), _) => s"\tmovl $src, ($dst)"
             case StoreByteInstr(src, dst, ImmOffset(i), _) => s"\tmovl $src, $i($dst)"
-            case StoreByteInstr(src, dst, RegOp(r), _) => s"\tmovl $src, ($dst,$r)"
-            case _ => "TODO STORE"
+            case StoreByteInstr(src, dst, RegOp(r), _)     => s"\tmovl $src, ($dst,$r)"
+            case _                                         => "TODO STORE"
         }
     }
 
     def generateBranch(i: Instruction)(implicit collector: WaccBuffer): String = {
         i match {
-            case BranchInstr(label, Condition.AL) => s"\tjmp $label"
-            case BranchInstr(label, cond) => s"\tj${generateCond(cond)} $label"
+            case BranchInstr(label, Condition.AL)     => s"\tjmp $label"
+            case BranchInstr(label, cond)             => s"\tj${generateCond(cond)} $label"
             case BranchLinkInstr(label, Condition.AL) => opBody(i)
-            case BranchLinkInstr(label, _) => conditionalOp(i)
-            case _ => s"TODO BRANCH: $i"
+            case BranchLinkInstr(label, _)            => conditionalOp(i)
+            case _                                    => s"TODO BRANCH: $i"
         }
     }
 
@@ -245,8 +247,8 @@ object X86Representation extends Representation {
         val sb: StringBuilder = new StringBuilder
         i match {
             case CompareInstr(fst, snd, Condition.AL) => opBody(i)
-            case CompareInstr(_, _, _) => conditionalOp(i)
-            case _ => "TODO CMP"
+            case CompareInstr(_, _, _)                => conditionalOp(i)
+            case _                                    => "TODO CMP"
         }
     }
 
@@ -261,7 +263,7 @@ object X86Representation extends Representation {
             case Condition.LE => "le"
             case Condition.VS => "o"
             case Condition.AL => ""
-            case _ => "TODO COND"
+            case _            => "TODO COND"
         }
     }
 
@@ -276,7 +278,7 @@ object X86Representation extends Representation {
             case Condition.LE => "g"
             case Condition.VS => "no"
             case Condition.AL => ""
-            case _ => "TODO REV COND"
+            case _            => "TODO REV COND"
         }
     }
 
@@ -287,11 +289,11 @@ object X86Representation extends Representation {
         val cond: Condition.Condition = {
             i match {
                 case AndInstr(_, _, _, _, c) => c
-                case OrInstr(_, _, _, _, c) => c
+                case OrInstr(_, _, _, _, c)  => c
                 case XorInstr(_, _, _, _, c) => c
-                case CompareInstr(_, _, c) => c
-                case BranchLinkInstr(_, c) => c
-                case _ => Condition.AL
+                case CompareInstr(_, _, c)   => c
+                case BranchLinkInstr(_, c)   => c
+                case _                       => Condition.AL
             }
         }
 
@@ -300,11 +302,11 @@ object X86Representation extends Representation {
         val label: String = {
             i match {
                 case AndInstr(_, _, _, _, _) => s"and${cond}_${labelNo}:"
-                case OrInstr(_, _, _, _, _) => s"or${cond}_${labelNo}"
+                case OrInstr(_, _, _, _, _)  => s"or${cond}_${labelNo}"
                 case XorInstr(_, _, _, _, _) => s"xor${cond}_${labelNo}:"
-                case CompareInstr(_, _, _) => s"cmp${cond}_${labelNo}:"
-                case BranchLinkInstr(_, _) => s"bl${cond}_${labelNo}:"
-                case _ => "TODO COND LABEL"
+                case CompareInstr(_, _, _)   => s"cmp${cond}_${labelNo}:"
+                case BranchLinkInstr(_, _)   => s"bl${cond}_${labelNo}:"
+                case _                       => "TODO COND LABEL"
             }
         }
         sb.append(s"\tj${generateOppositeCond(cond)} $label\n")
@@ -314,8 +316,9 @@ object X86Representation extends Representation {
         sb.toString
     }
 
-    /** Constructs the operation body for arguments containing multiple lines. 
-      * Used to construct conditional operations in particular in conjunction with conditionalOp() */
+    /** Constructs the operation body for arguments containing multiple lines. Used to construct conditional operations
+      * in particular in conjunction with conditionalOp()
+      */
     def opBody(i: Instruction)(implicit collector: WaccBuffer): String = {
         val sb: StringBuilder = new StringBuilder
         i match {
@@ -356,7 +359,7 @@ object X86Representation extends Representation {
             case 16 => s"%${r.toString.substring(2)}"
             case 32 => s"$r"
             case 64 => s"%r${r.toString.substring(2)}"
-            case _ => "undefined register length in x86"
+            case _  => "undefined register length in x86"
         }
     }
 }
