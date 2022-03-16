@@ -4,8 +4,7 @@ import constants._
 
 object transRHS {
 
-    /** Adds a list of instructions evaluating the RHS of an assignment to the
-      * Wacc Buffer collector
+    /** Adds a list of instructions evaluating the RHS of an assignment to the Wacc Buffer collector
       */
     def apply(rhs: AssignRHSNode, stackFrame: StackFrame)(implicit
         collector: WaccBuffer
@@ -86,8 +85,7 @@ object transRHS {
             /** NEW PAIR NODE */
             case NewPairNode(e1, e2) => {
 
-                /** Evaluate the pair-elem expressions and stores it in the
-                  * stack
+                /** Evaluate the pair-elem expressions and stores it in the stack
                   */
                 addNewPairElem(e1, stackFrame)
                 addNewPairElem(e2, stackFrame)
@@ -180,6 +178,10 @@ object transRHS {
                   List(determineLoadInstr(e.typeId.get.getType(), r0, r0, 0))
                 )
             }
+            case FilterNode(i, e)    => {}
+            case FoldNode(i, e1, e2) => {}
+            case MapNode(i, e)       => {}
+            case ScanNode(i, e1, e2) => {}
         }
     }
 }
