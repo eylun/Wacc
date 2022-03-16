@@ -2,8 +2,7 @@ import Helpers._
 import Helpers.UtilFlag._
 import constants._
 
-/** Adds the appropriate instructions for each expression into our Wacc Buffer
-  * collector
+/** Adds the appropriate instructions for each expression into our Wacc Buffer collector
   */
 object transExpression {
     def apply(exprNode: ExprNode, stackFrame: StackFrame)(implicit
@@ -14,8 +13,7 @@ object transExpression {
             case IdentNode(s) =>
                 collector.addStatement(
                   List(
-                    /** Adds a different load instruction depending on the
-                      * identifier type
+                    /** Adds a different load instruction depending on the identifier type
                       */
                     determineLoadInstr(
                       stackFrame.currST.lookupAll(s).get.getType(),
@@ -70,8 +68,7 @@ object transExpression {
                           )
                         )
                         collector.addStatement(ae.typeId.get.getType() match {
-                            case CharType() | BoolType()
-                                if idx == es.length - 1 =>
+                            case CharType() | BoolType() if idx == es.length - 1 =>
                                 List(
                                   AddInstr(
                                     r4,
