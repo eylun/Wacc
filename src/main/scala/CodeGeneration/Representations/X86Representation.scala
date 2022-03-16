@@ -208,8 +208,8 @@ object X86Representation extends Representation {
         i match {
             case LoadLabelInstr(dst, label, Condition.AL) => s"\tmovl $label, $dst"
             case LoadLabelInstr(dst, label, cond)         => s"\tcmov${generateCond(cond)} $label, $dst"
-            case LoadImmIntInstr(dst, imm, Condition.AL)  => s"\tmovl $imm, $dst"
-            case LoadImmIntInstr(dst, imm, cond)          => s"\tcmov${generateCond(cond)} $imm, $dst"
+            case LoadImmIntInstr(dst, imm, Condition.AL)  => s"\tmovl $$$imm, $dst"
+            case LoadImmIntInstr(dst, imm, cond)          => s"\tcmov${generateCond(cond)} $$$imm, $dst"
             case LoadInstr(dst, src, ImmOffset(0), Condition.AL)  => s"\tleal ($src), $dst"
             case LoadInstr(dst, src, ImmOffset(ofs), Condition.AL) => s"\tleal $ofs($src), $dst"
             case LoadRegSignedByte(dst, src, ImmOffset(0), Condition.AL) => s"\tleal ($src), $dst"

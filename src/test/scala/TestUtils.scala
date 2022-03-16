@@ -226,7 +226,7 @@ object testUtils {
 
         s"as x86_${fname}.s -o x86_${fname}.o" !
         
-        s"ld x86_${fname}.o -o x86_$fname" !
+        s"ld -m elf_x86_64 --dynamic-linker /lib/x86_64-linux-gnu/ld-linux-x86-86.so.2 -lc -o x86_$fname x86_${fname}.o" !
 
         val (input, expectedOutput, expectedExit) = extractTest(f)
 
@@ -239,7 +239,7 @@ object testUtils {
 
         val actualOutput = outputStream.toString().trim()
 
-        s"rm x86_${fname}.s" !
+        //s"rm x86_${fname}.s" !
 
         s"rm x86_${fname}.o"!
         
