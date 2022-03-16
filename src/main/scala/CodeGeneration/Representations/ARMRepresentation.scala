@@ -15,14 +15,14 @@ object ARMRepresentation extends Representation {
         op match {
             case ImmOffset(immOffset) => s"#$immOffset"
             case RegOp(regOp)         => s"$regOp"
-            case LSLRegOp(r, s)       => s"$r, LSL ${generateShift(s)}"
-            case LSRRegOp(r, s)       => s"$r, LSR ${generateShift(s)}"
-            case ASRRegOp(r, s)       => s"$r, ASR ${generateShift(s)}"
-            case RORRegOp(r, s)       => s"$r, ROR ${generateShift(s)}"
+            case LSLRegOp(r, s)       => s"$r, LSL ${generateShiftValue(s)}"
+            case LSRRegOp(r, s)       => s"$r, LSR ${generateShiftValue(s)}"
+            case ASRRegOp(r, s)       => s"$r, ASR ${generateShiftValue(s)}"
+            case RORRegOp(r, s)       => s"$r, ROR ${generateShiftValue(s)}"
         }
     }
 
-    def generateShift(s: Shift): String = {
+    def generateShiftValue(s: Shift): String = {
         s match {
             case ShiftReg(reg) => s"$reg"
             case ShiftImm(imm) => s"#$imm"

@@ -1,7 +1,7 @@
 trait Representation {
     def generateOperand(op: SecondOperand): String
 
-    def generateShift(s: Shift): String
+    def generateShiftValue(s: Shift): String
 
     def generateLine(i: Instruction)(implicit collector: WaccBuffer, repr: Representation): String
 

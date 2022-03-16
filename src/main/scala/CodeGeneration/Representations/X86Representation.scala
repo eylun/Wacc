@@ -12,19 +12,34 @@ object X86Representation extends Representation {
         bw.close()
     }
 
+    /** Converts a operand. Register shift is performed this translation, so the shift is ignored. */
     def generateOperand(op: SecondOperand): String = {
         op match {
             case ImmOffset(immOffset) => s"$immOffset"
             case RegOp(regOp)         => s"$regOp"
-            case LSLRegOp(r, s)       => s"TODO LSL"
-            case LSRRegOp(r, s)       => s"TODO LSR"
-            case ASRRegOp(r, s)       => s"TODO ASR"
-            case RORRegOp(r, s)       => s"TODO ROR"
+            case LSLRegOp(r, _)       => s"$r"
+            case LSRRegOp(r, _)       => s"$r"
+            case ASRRegOp(r, _)       => s"$r"
+            case RORRegOp(r, _)       => s"$r"
+            case _ => "TODO OP2"
         }
     }
 
-    def generateShift(s: Shift): String = {
-        "TODO SHIFT"
+    def generateShiftValue(s: Shift): String = {
+        s match {
+            case ShiftReg(r) => s"$r"
+            case ShiftImm(i) => s"$i"
+        }
+    }
+
+    def generateShift(op: SecondOperand): String = {
+        op match {
+            case LSLRegOp(r, s) => s"\tshl $r, ${generateShiftValue(s)}\n"
+            case LSRRegOp(r, s) => s"\tshr $r, ${generateShiftValue(s)}\n"
+            case ASRRegOp(r, s) => s"\tsar $r, ${generateShiftValue(s)}\n"
+            case RORRegOp(r, s) => s"\tror $r, ${generateShiftValue(s)}\n"
+            case _ => ""
+        }
     }
 
     def generateLine(instr: Instruction)(implicit collector: WaccBuffer, repr: Representation): String = {
@@ -107,6 +122,7 @@ object X86Representation extends Representation {
         i match {
             case AddInstr(dst, fst, snd, _) => {
                 sb.append(s"\tmov $dst, $fst\n")
+                sb.append(generateShift(snd))
                 sb.append(s"\tadd $dst, ${generateOperand(snd)}")
                 sb.toString
             }
@@ -119,10 +135,12 @@ object X86Representation extends Representation {
         i match {
             case SubInstr(dst, fst, snd, _) => {
                 sb.append(s"\tmov $dst, $fst\n")
+                sb.append(generateShift(snd))
                 sb.append(s"\tsub $dst, ${generateOperand(snd)}")
                 sb.toString
             }
             case ReverseSubInstr(dst, fst, snd, _) => {
+                sb.append(generateShift(snd))
                 sb.append(s"\tmov $dst, ${generateOperand(snd)}\n")
                 sb.append(s"\tsub $dst, $fst")
                 sb.toString
@@ -145,9 +163,18 @@ object X86Representation extends Representation {
     }
 
     def generateMove(i: Instruction): String = {
+        val sb: StringBuilder = new StringBuilder
         i match {
-            case MoveInstr(dst, src, Condition.AL) => s"\tmov $dst, ${generateOperand(src)}"
-            case MoveInstr(dst, src, cond) => s"\tcmov${generateCond(cond)} $dst, ${generateOperand(src)}"
+            case MoveInstr(dst, src, Condition.AL) => {
+                sb.append(generateShift(src))
+                sb.append(s"\tmov $dst, ${generateOperand(src)}")
+                sb.toString
+            }
+            case MoveInstr(dst, src, cond) => {
+                sb.append(generateShift(src))
+                sb.append(s"\tcmov${generateCond(cond)} $dst, ${generateOperand(src)}")
+                sb.toString
+            }
             case _ => "TODO MOV"
         }
     }
@@ -160,7 +187,7 @@ object X86Representation extends Representation {
             case LoadInstr(dst, src, ImmOffset(offset), Condition.AL) => s"\tlea $dst, [$src + $offset]"
             case LoadRegSignedByte(dst, src, ImmOffset(0), Condition.AL) => s"\tlea $dst, [$src]"
             case LoadRegSignedByte(dst, src, ImmOffset(offset), Condition.AL) => s"\tlea $dst, [$src + $offset]"
-            case _ => "TODO LOAD"
+            case _ => s"TODO LOAD: $i"
         }
     }
 
@@ -179,10 +206,10 @@ object X86Representation extends Representation {
 
     def generateBranch(i: Instruction): String = {
         i match {
-            case BranchInstr(label, Condition.AL) => s"\tjmp .$label"
-            case BranchInstr(label, cond) => s"\tj${generateCond(cond)} .$label"
-            case BranchLinkInstr(label, Condition.AL) => s"\tcall .$label"
-            case _ => "TODO BRANCH"
+            case BranchInstr(label, Condition.AL) => s"\tjmp $label"
+            case BranchInstr(label, cond) => s"\tj${generateCond(cond)} $label"
+            case BranchLinkInstr(label, Condition.AL) => s"\tcall $label"
+            case _ => s"TODO BRANCH: $i"
         }
     }
 
@@ -243,10 +270,10 @@ object X86Representation extends Representation {
 
         val label: String = {
             i match {
-                case AndInstr(_, _, _, _, _) => s".and${cond}_${labelNo}:"
-                case OrInstr(_, _, _, _, _) => s".or${cond}_${labelNo}"
-                case XorInstr(_, _, _, _, _) => s".xor${cond}_${labelNo}:"
-                case CompareInstr(_, _, _) => s".cmp${cond}_${labelNo}:"
+                case AndInstr(_, _, _, _, _) => s"and${cond}_${labelNo}:"
+                case OrInstr(_, _, _, _, _) => s"or${cond}_${labelNo}"
+                case XorInstr(_, _, _, _, _) => s"xor${cond}_${labelNo}:"
+                case CompareInstr(_, _, _) => s"cmp${cond}_${labelNo}:"
                 case _ => "TODO COND LABEL"
             }
         }
@@ -264,20 +291,24 @@ object X86Representation extends Representation {
         i match {
             case AndInstr(dst, fst, snd, _, _) => {
                 sb.append(s"\tmov $dst, $fst\n")
+                sb.append(generateShift(snd))
                 sb.append(s"\tand $dst, ${generateOperand(snd)}")
                 sb.toString
             }
             case OrInstr(dst, fst, snd, _, _) => {
                 sb.append(s"\tmov $dst, $fst\n")
+                sb.append(generateShift(snd))
                 sb.append(s"\tor $fst, ${generateOperand(snd)}")
                 sb.toString
             }
             case XorInstr(dst, fst, snd, _, _) => {
                 sb.append(s"\tmov $dst, $fst\n")
+                sb.append(generateShift(snd))
                 sb.append(s"\txor $dst, ${generateOperand(snd)}")
                 sb.toString
             }
             case CompareInstr(fst, snd, _) => {
+                sb.append(generateShift(snd))
                 sb.append(s"\tcmp $fst, ${generateOperand(snd)}")
                 sb.toString
             }
