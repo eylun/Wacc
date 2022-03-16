@@ -154,12 +154,12 @@ object X86Representation extends Representation {
 
     def generateLoad(i: Instruction): String = {
         i match {
-            case LoadLabelInstr(dst, label, Condition.AL) => s"\tmov $dst, .$label"
+            case LoadLabelInstr(dst, label, Condition.AL) => s"\tmov $dst, $label"
             case LoadImmIntInstr(dst, imm, Condition.AL) => s"\tmov $dst, $imm"
             case LoadInstr(dst, src, ImmOffset(0), Condition.AL)  => s"\tlea $dst, [$src]"
-            case LoadInstr(dst, src, ImmOffset(offset), Condition.AL) => s"\tlea $dst, $offset[$src]"
+            case LoadInstr(dst, src, ImmOffset(offset), Condition.AL) => s"\tlea $dst, [$src + $offset]"
             case LoadRegSignedByte(dst, src, ImmOffset(0), Condition.AL) => s"\tlea $dst, [$src]"
-            case LoadRegSignedByte(dst, src, ImmOffset(offset), Condition.AL) => s"\tlea $dst, $offset[$src]"
+            case LoadRegSignedByte(dst, src, ImmOffset(offset), Condition.AL) => s"\tlea $dst, [$src + $offset]"
             case _ => "TODO"
         }
     }
@@ -167,12 +167,12 @@ object X86Representation extends Representation {
     def generateStore(i: Instruction): String = {
         i match {
             case StoreInstr(src, dst, ImmOffset(0), _) => s"\tmov [$dst], $src"
-            case StoreInstr(src, dst, ImmOffset(i), _) => s"\tmov $i[$dst], $src"
-            case StoreInstr(src, dst, RegOp(r), _) => s"\tmov [$dst, $r], $src"
+            case StoreInstr(src, dst, ImmOffset(i), _) => s"\tmov [$dst + $i], $src"
+            case StoreInstr(src, dst, RegOp(r), _) => s"\tmov [$dst + $r], $src"
             
             case StoreByteInstr(src, dst, ImmOffset(0), _) => s"\tmov [$dst], $src"
             case StoreByteInstr(src, dst, ImmOffset(i), _) => s"\tmov $i[$dst], $src"
-            case StoreByteInstr(src, dst, RegOp(r), _) => s"\tmov [$dst, $r], $src"
+            case StoreByteInstr(src, dst, RegOp(r), _) => s"\tmov [$dst + $r], $src"
             case _ => "TODO"
         }
     }
