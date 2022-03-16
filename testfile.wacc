@@ -9,11 +9,10 @@
 # Program:
 
 begin
-  bool x = true;
-  bool y = false;
-  bool a = x;
-  a = y;
-  a = true
-  # can just be
-  # int a = y
+  char x = 'x';
+  char y = 'y';
+  char a = x;
+  a = 'a';
+  a = y
+
 end
