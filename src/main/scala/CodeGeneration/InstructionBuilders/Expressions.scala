@@ -178,23 +178,23 @@ object transExpression {
             }
 
             case Div(IntLiterNode(x), IntLiterNode(y)) if collector.optFlag == OptimisationFlag.Oph => {
-                if (y != 0) {
+                if (y == 0) { throw new RuntimeException("Divide by zero error at division") }
+                else if (y == 1) { transExpression((IntLiterNode(x)(0, 0)), stackFrame) }
+                else {
                     transExpression(
                       (IntLiterNode(x * y)(0, 0)),
                       stackFrame
                     )
-                } else {
-                    throw new RuntimeException("Divide by zero error at division")
                 }
             }
             case Mod(IntLiterNode(x), IntLiterNode(y)) if collector.optFlag == OptimisationFlag.Oph => {
-                if (y != 0) {
+                if (y == 0) { throw new RuntimeException("Divide by zero error at division") }
+                else if (y <= x) { transExpression((IntLiterNode(0)(0, 0)), stackFrame) }
+                else {
                     transExpression(
                       (IntLiterNode(x % y)(0, 0)),
                       stackFrame
                     )
-                } else {
-                    throw new RuntimeException("Divide by zero error at modulus operation")
                 }
             }
 
