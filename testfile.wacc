@@ -9,5 +9,5 @@
 # Program:
 
 begin
-  int x = 10 - 5
+  int x = 8 % 0
 end

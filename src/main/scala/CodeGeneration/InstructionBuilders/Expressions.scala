@@ -139,19 +139,63 @@ object transExpression {
 
             /* * BINARY OPERATIONS */
 
-            /** Optimization for binary operations */
+            /** Optimisation Cases for binary operations involving only integer literals */
             case Add(IntLiterNode(x), IntLiterNode(y)) if collector.optFlag == OptimisationFlag.Oph => {
-                transExpression(
-                  (IntLiterNode(x + y)(0, 0)),
-                  stackFrame
-                )
+                val z: Long = x.toLong + y.toLong
+                if (z.toInt == z) {
+                    transExpression(
+                      (IntLiterNode(x + y)(0, 0)),
+                      stackFrame
+                    )
+                } else {
+                    throw new RuntimeException("Integer Overflow at addition")
+                }
+
             }
 
             case Sub(IntLiterNode(x), IntLiterNode(y)) if collector.optFlag == OptimisationFlag.Oph => {
-                transExpression(
-                  (IntLiterNode(x - y)(0, 0)),
-                  stackFrame
-                )
+                val z: Long = x.toLong - y.toLong
+                if (z.toInt == z) {
+                    transExpression(
+                      (IntLiterNode(x - y)(0, 0)),
+                      stackFrame
+                    )
+                } else {
+                    throw new RuntimeException("Integer Overflow at subtraction")
+                }
+            }
+
+            case Mult(IntLiterNode(x), IntLiterNode(y)) if collector.optFlag == OptimisationFlag.Oph => {
+                val z: Long = x.toLong * y.toLong
+                if (z.toInt == z) {
+                    transExpression(
+                      (IntLiterNode(x * y)(0, 0)),
+                      stackFrame
+                    )
+                } else {
+                    throw new RuntimeException("Integer Overflow at multiplication")
+                }
+            }
+
+            case Div(IntLiterNode(x), IntLiterNode(y)) if collector.optFlag == OptimisationFlag.Oph => {
+                if (y != 0) {
+                    transExpression(
+                      (IntLiterNode(x * y)(0, 0)),
+                      stackFrame
+                    )
+                } else {
+                    throw new RuntimeException("Divide by zero error at division")
+                }
+            }
+            case Mod(IntLiterNode(x), IntLiterNode(y)) if collector.optFlag == OptimisationFlag.Oph => {
+                if (y != 0) {
+                    transExpression(
+                      (IntLiterNode(x % y)(0, 0)),
+                      stackFrame
+                    )
+                } else {
+                    throw new RuntimeException("Divide by zero error at modulus operation")
+                }
             }
 
             case Add(e1, e2) => {
@@ -172,6 +216,7 @@ object transExpression {
                 )
                 stackFrame.dropTempOffset(WORD_SIZE)
             }
+
             case Sub(e1, e2) => {
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(r0))))
