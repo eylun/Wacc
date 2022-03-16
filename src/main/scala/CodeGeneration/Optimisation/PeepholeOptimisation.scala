@@ -9,9 +9,7 @@ object PeepholeOptimisation {
         for ((instr, i) <- instrList.zipWithIndex) {
             /* TODO: functions mutate the list given an index */
             removeUnnecessaryLoadAndStore(i)
-
-            /** removeUnnecessaryStores(i) removeUnnecessaryPushAndPop(i)
-              */
+            removeUnnecessaryPushAndPop(i)
         }
 
         instrList.toList
@@ -85,7 +83,23 @@ object PeepholeOptimisation {
       *   - Push r1; Pop r1
       *   - Push r1; Push r2; Pop r2; Pop r1
       */
-    def removeUnnecessaryPushAndPop(i: Int)(implicit instrList: mutable.ListBuffer[Instruction]): Unit = {}
+    def removeUnnecessaryPushAndPop(i: Int)(implicit instrList: mutable.ListBuffer[Instruction]): Unit = {
+        if (i < instrList.size - 2) {
+            (instrList(i), instrList(i + 1)) match {
+                case (PushInstr(regList1), PopInstr(regList2)) if regList1 == regList2 => {
+                    instrList.remove(i)
+                    instrList.remove(i)
+                    removeUnnecessaryPushAndPop(i)
+                }
+                case (PopInstr(regList1), PushInstr(regList2)) if regList1 == regList2 => {
+                    instrList.remove(i)
+                    instrList.remove(i)
+                    removeUnnecessaryPushAndPop(i)
+                }
+                case _ =>
+            }
+        }
+    }
 
 }
 
