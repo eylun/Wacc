@@ -17,6 +17,12 @@ object PeepholeOptimisation {
         instrList.toList
     }
 
+    /** Example of unnnecessary cases:
+      *   - Push r1; Pop r1
+      *   - Push r1; Push r2; Pop r2; Pop r1
+      */
+    def removeUnnecessaryPushAndPop(i: Int)(implicit instrList: mutable.ListBuffer[Instruction]): Unit = {}
+
     def removeUnnecessaryLoadAndStore(i: Int)(implicit instrList: mutable.ListBuffer[Instruction]): Unit = {
         if (i < instrList.size - 4) {
             (instrList(i), instrList(i + 1)) match {
@@ -49,6 +55,14 @@ object PeepholeOptimisation {
                     (instrList(i + 2), instrList(i + 3)) match {
                         case (
                               LoadRegSignedByte(`loadDst1`, _, _, _),
+                              StoreByteInstr(`storeSrc1`, `storeDst1`, `offset1`, _)
+                            ) => {
+                            instrList.remove(i)
+                            instrList.remove(i)
+                            removeUnnecessaryLoadAndStore(i)
+                        }
+                        case (
+                              MoveInstr(`loadDst1`, _, _),
                               StoreByteInstr(`storeSrc1`, `storeDst1`, `offset1`, _)
                             ) => {
                             instrList.remove(i)
