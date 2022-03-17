@@ -5,7 +5,13 @@ class SymbolTable(
     var dict: Map[String, Identifier],
     var constantIntsMap: Map[String, Int]
 ) {
+
     var order: List[String] = List.empty
+
+    var removeConstants: Boolean = false
+    def setToRemove(): Unit = {
+        removeConstants = true
+    }
 
     /** Sets the parent of this symbol table. */
     def setParent(parent: SymbolTable): Unit = encSymTable = Some(parent)
@@ -46,14 +52,15 @@ class SymbolTable(
         constantIntsMap = constantIntsMap ++ constants
     }
 
-    /** To remove variables that are in the loop condition or loop body from the map */
+    /** To remove variables that are in the loop condition or loop body from constant map */
     def removeConstantVar(name: String): Unit = {
-        constantIntsMap = constantIntsMap.removed(name)
-    }
+        var s: Option[SymbolTable] = Some(this)
+        while (s != None) {
+            var st = s.get
+            st.constantIntsMap = constantIntsMap.removed(name)
+            s = st.encSymTable
 
-    /** Empties the constant map - to be used in function call or declaration */
-    def clearConstants(): Unit = {
-        constantIntsMap = Map[String, Int]().empty
+        }
     }
 
     /** Propogates up (checks parent symbol table for constant) */

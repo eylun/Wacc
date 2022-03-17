@@ -172,6 +172,17 @@ object transStatement {
                 l match {
                     case IdentNode(s) => {
 
+                        /** Removes identifier from (parent)constant map if removeConstants flag is set */
+                        if (collector.optFlag == OptimisationFlag.Oph & stackFrame.currST.removeConstants) {
+
+                            /** TODO: remove debug print statements */
+                            println("reached")
+                            stackFrame.currST.encSymTable.get.constantIntsMap.keys.foreach(k => println(k))
+                            stackFrame.currST.encSymTable.get.removeConstantVar(s)
+                            println(" after removal")
+                            stackFrame.currST.encSymTable.get.constantIntsMap.keys.foreach(k => println(k))
+                        }
+
                         /** Generates instructions for LHS and RHS */
                         transRHS(r, stackFrame, s)
                         transLHS(l, stackFrame)
@@ -224,20 +235,19 @@ object transStatement {
             /** IF THEN ELSE STATEMENT: ‘if’ ⟨expr ⟩ ‘then’ ⟨stat⟩ ‘else’ ⟨stat⟩ ‘fi’
               */
             case ite @ IfThenElseNode(e, s1, s2) => {
-                println(" here")
 
                 /** Labels for True and False cases */
                 val labelFalse = s"ite_${collector.tickIte()}"
                 val labelTrue = s"ite_${collector.tickIte()}"
 
+                /** Constant prop: clear constants */
+                ite.trueST.setToRemove()
+                ite.falseST.setToRemove()
+
                 /** Stack frames */
                 val trueSF = stackFrame.join(ite.trueST)
                 val falseSF =
                     stackFrame.join(ite.falseST)
-
-                /* debug*/
-                trueSF.currST.dict.keys.foreach(k => print(k))
-                print(" here part 2")
 
                 /** Evaluate conditional expression and branch accordingly */
                 transExpression(e, stackFrame)
@@ -248,9 +258,6 @@ object transStatement {
                   ) ++ trueSF.head
                 )
                 transStatement(s1, trueSF)
-
-                /* debug*/
-                trueSF.currST.dict.keys.foreach(k => print(k))
 
                 collector.addStatement(
                   trueSF.tail ++
@@ -273,6 +280,9 @@ object transStatement {
                 val beSF = stackFrame.join(
                   be.newScopeST
                 )
+
+                beSF.currST.setToRemove()
+
                 collector.addStatement(beSF.head)
                 transStatement(s, beSF)
                 collector.addStatement(beSF.tail)

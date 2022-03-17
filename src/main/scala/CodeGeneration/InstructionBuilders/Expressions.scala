@@ -215,13 +215,10 @@ object transExpression {
                 if (checkIfConstant(e1, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
                     val const1 = (IntLiterNode(getConstantInt(e1, stackFrame))(0, 0))
                     if (checkIfConstant(e2, stackFrame)) {
-                        println(" before const2")
                         val const2 = (IntLiterNode(getConstantInt(e2, stackFrame))(0, 0))
                         transExpression(Add(const1, const2)(0, 0), stackFrame)
                         return
                     }
-                    println(" only const1")
-                    println(const1.i)
                     transExpression(Add(const1, e2)(0, 0), stackFrame)
                     return
                 }

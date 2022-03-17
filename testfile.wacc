@@ -8,10 +8,14 @@
 
 # Program:
 
-
 begin
-
-  int b = 5;
-  int c = b
+  int a = 1;	
+  begin 
+    begin
+      a = 5
+      end
+  end;
+  int b = a
 end
 
+# a should be 5
