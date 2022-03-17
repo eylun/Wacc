@@ -3,7 +3,7 @@ import scala.collection.immutable.Map
 class SymbolTable(
     var encSymTable: Option[SymbolTable],
     var dict: Map[String, Identifier],
-    var propConstantInts: Map[String, Int]
+    var constantIntsMap: Map[String, Int]
 ) {
     var order: List[String] = List.empty
 
@@ -38,20 +38,24 @@ class SymbolTable(
 
     /** Add a constant variable to the map for constant propogation */
     def addConstantVar(name: String, value: Int): Unit = {
-        propConstantInts = propConstantInts + (name -> value)
+        constantIntsMap = constantIntsMap + (name -> value)
     }
 
     def removeConstantVar(name: String): Unit = {
-        propConstantInts = propConstantInts.removed(name)
+        constantIntsMap = constantIntsMap.removed(name)
+    }
+
+    def clearConstants(): Unit = {
+        constantIntsMap = Map[String, Int]().empty
     }
 
     def containsConstant(name: String): Boolean = {
-        propConstantInts.contains(name)
+        constantIntsMap.contains(name)
     }
 
     /** Only called after containsConstant() check */
     def getConstant(name: String): Int = {
-        propConstantInts.get(name).get
+        constantIntsMap.get(name).get
     }
 }
 

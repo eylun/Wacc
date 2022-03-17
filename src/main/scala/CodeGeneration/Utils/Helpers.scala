@@ -34,6 +34,8 @@ object Helpers {
         }
     }
 
+    /** Returns the integer value associated with the constant variable */
+    /** Only called after checkIfConstant() */
     def getConstantInt(ident: ExprNode, sf: StackFrame): Int = {
         ident match {
             case IdentNode(s) => sf.currST.getConstant(s)
