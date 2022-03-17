@@ -1,0 +1,54 @@
+begin
+    bool isLowerCase(char c) is
+        int ascii = ord c;
+        return ascii >= 97 && ascii <= 122
+    end
+
+    bool isUpperCase(char c) is
+        int ascii = ord c;
+        return ascii >= 65 && ascii <= 90
+    end
+
+    bool isDigit(char c) is
+        int ascii = ord c;
+        return ascii >= 48 && ascii <= 57
+
+    end
+
+    bool isSpace(char c) is
+        return ord c == 32
+
+    end
+
+    bool isAlpha(char c) is
+        bool upper = call isUpperCase(c);
+        bool lower = call isLowerCase(c);
+        return upper || lower
+    end
+
+    bool isAlphaNum(char c) is
+        bool alpha = call isAlpha(c);
+        bool digit = call isDigit(c);
+        return alpha || digit
+    end
+
+    char toLower(char c) is
+        bool b = call isUpperCase(c);
+        if b then 
+            return chr (ord c + 32)
+        else
+            return c
+        fi        
+    end
+
+    char toUpper(char c) is
+        bool b = call isLowerCase(c);
+        if b then 
+            return chr (ord c - 32)
+        else
+            return c
+        fi    
+    end
+    
+    skip
+end

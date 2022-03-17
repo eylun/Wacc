@@ -70,6 +70,19 @@ object Helpers {
         }
     }
 
+    // strlen result in r1
+    // takes register that stores string
+    def stringLen(reg: Register): List[Instruction] = {
+        List(
+            MoveInstr(r1, ImmOffset(0)),
+            Label("strlen"),
+            LoadRegSignedByte(r2, reg, RegOp(r1)),
+            AddInstr(r1, r1, ImmOffset(1)),
+            CompareInstr(r2, ImmOffset(0)),
+            BranchInstr("strlen", Condition.NE)
+            )
+    }
+
     /** Generates instructions for evaluating an expression stored in a pair and
       * pushes it onto the stack
       */
@@ -472,6 +485,61 @@ object Helpers {
         collector.insertUtil(UtilFlag.PRuntimeError)
     }
 
+    /** Print Check String Overflow */
+    /** Print Check String Overflow */
+    def printCheckStringBoundsDirective(
+        largeIdx: Int,
+        negIdx: Int
+    ): List[Instruction] = {
+        List(
+          /** Negative Index Data Message */
+          Label(s"msg_$negIdx"),
+          Directive(s"word 45"),
+          Directive(
+            s"ascii \"StringIndexOutOfBoundsError: negative index\\n\\0\""
+          ),
+          /** Index Too Large Data Message */
+          Label(s"msg_$largeIdx"),
+          Directive(s"word 46"),
+          Directive(
+            s"ascii \"StringIndexOutOfBoundsError: index too large\\n\\0\""
+          )
+        )
+    }
+
+    def printCheckStringBoundsFunc(
+        largeIdx: Int,
+        negIdx: Int
+    ): List[Instruction] = {
+        List(
+          Label("p_check_string_bounds"),
+          LoadInstr(r3,sp,ImmOffset(0)),
+          PushInstr(List(lr)),
+          CompareInstr(r0, ImmOffset(0)),
+          LoadLabelInstr(r0, s"msg_$negIdx", Condition.LT),
+          BranchLinkInstr("p_throw_runtime_error", Condition.LT),
+          LoadInstr(r1, r3, ImmOffset(0)),
+          CompareInstr(r0, RegOp(r1)),
+          LoadLabelInstr(r0, s"msg_$largeIdx", Condition.CS),
+          BranchLinkInstr("p_throw_runtime_error", Condition.CS),
+          PopInstr(List(pc)),
+        )
+    }
+
+    def printCheckStringBounds(implicit collector: WaccBuffer) = {
+
+        /** Add DataMsg for index too large and negative index errors */
+        val negIdx: Int = collector.tickDataMsg()
+        val largeIdx: Int = collector.tickDataMsg()
+        collector.addDataMsg(printCheckStringBoundsDirective(largeIdx, negIdx))
+
+        /** Add p_check_string_bounds function */
+        collector.addUtilStatement(printCheckStringBoundsFunc(largeIdx, negIdx))
+
+        /** Add p_throw_runtime_error to the asm file */
+        collector.insertUtil(UtilFlag.PRuntimeError)
+    }
+
     /** Print Read Int */
     def printReadIntDirective(idx: Int): List[Instruction] = {
         List(
@@ -609,8 +677,8 @@ object Helpers {
         type UtilFlag = Value
         val PPrintInt, PPrintBool, PPrintChar, PPrintString, PPrintRef,
             PPrintNewLine, PThrowOverflowError, PRuntimeError,
-            PCheckDivideByZero, PCheckArrayBounds, PReadChar, PReadInt,
-            PFreePair, PCheckNullPointer = Value
+            PCheckDivideByZero, PCheckArrayBounds, PCheckStringBounds, 
+            PReadChar, PReadInt, PFreePair, PCheckNullPointer = Value
     }
 
     def cleanFilename(fn: String): String = fn.take(fn.lastIndexOf("."))

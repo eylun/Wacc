@@ -56,7 +56,8 @@ object Utility {
       "chr",
       "true",
       "false",
-      "null"
+      "null",
+      "charAt"
     )
 
     val operators = Set(

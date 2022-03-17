@@ -2,5 +2,5 @@ begin
     int f() is
         return 0 
     end
-    skip
+    println "hello"
 end

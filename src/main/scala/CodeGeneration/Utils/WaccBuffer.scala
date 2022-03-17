@@ -69,6 +69,7 @@ class WaccBuffer {
             case PRuntimeError       => printRuntimeError(this)
             case PCheckDivideByZero  => printCheckDivideByZero(this)
             case PCheckArrayBounds   => printCheckArrayBounds(this)
+            case PCheckStringBounds  => printCheckStringBounds(this)
             case PCheckNullPointer   => printCheckNullPointer(this)
 
         }

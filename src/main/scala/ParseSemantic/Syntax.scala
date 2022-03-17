@@ -298,7 +298,7 @@ object syntax {
         precedence[ExprNode](
           ("(" *> expr <* ")").label("bracketed expressions")
               <|> attempt(arrayElem)
-              <|> exprAtoms
+              <|> exprAtoms <|> sCharAt
         )(
           Ops(Prefix)(
             Not <# "!".label("unary operator"),
@@ -369,6 +369,11 @@ object syntax {
             "function arguments"
           ) <* ")"
         )
+
+    lazy val sCharAt =
+        SCharAtNode(
+            "charAt" *> "(" *>  expr <* ",", expr <* ")"
+        )    
 
     /** array-liter := ‘[’ ( ⟨expr ⟩ (‘,’ ⟨expr ⟩)* )? ‘]’ */
     lazy val arrayLiter = ArrayLiterNode(

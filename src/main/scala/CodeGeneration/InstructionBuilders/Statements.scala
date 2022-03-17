@@ -300,7 +300,7 @@ object transStatement {
         e match {
             case IntLiterNode(_) | Neg(_) | Len(_) | Ord(_) | Mult(_, _) |
                 Div(_, _) | Mod(_, _) | Add(_, _) | Sub(_, _) => {
-
+ 
                 /** Insert instruction sequence for printing integers */
                 collector.insertUtil(PPrintInt)
 
@@ -321,7 +321,7 @@ object transStatement {
                   List(BranchLinkInstr("p_print_bool"))
                 )
             }
-            case CharLiterNode(_) | Chr(_) => {
+            case CharLiterNode(_) | Chr(_) | SCharAtNode(_, _) => {
                 collector.addStatement(
                   List(BranchLinkInstr("putchar"))
                 )
