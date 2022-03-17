@@ -152,7 +152,7 @@ object transStatement {
             case NewAssignNode(t, i, r) => {
 
                 /** Evaluate the RHS of the assignment */
-                transRHS(r, stackFrame)
+                transRHS(r, stackFrame, i.s)
                 stackFrame.unlock(i.s)
 
                 /** Store instruction generated via determineStoreInstr() */
@@ -173,7 +173,7 @@ object transStatement {
                     case IdentNode(s) => {
 
                         /** Generates instructions for LHS and RHS */
-                        transRHS(r, stackFrame)
+                        transRHS(r, stackFrame, s)
                         transLHS(l, stackFrame)
 
                         collector.addStatement(
@@ -190,7 +190,7 @@ object transStatement {
                     case ae @ ArrayElemNode(IdentNode(s), es) => {
 
                         /** Generates instructions for LHS and RHS */
-                        transRHS(r, stackFrame)
+                        transRHS(r, stackFrame, s)
                         transLHS(l, stackFrame)
 
                         collector.addStatement(

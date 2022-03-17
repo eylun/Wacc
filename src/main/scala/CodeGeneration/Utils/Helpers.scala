@@ -26,6 +26,22 @@ object Helpers {
         }
     }
 
+    /** Checks if identifier is a constant (for Constant Propogation) */
+    def checkIfConstant(node: ExprNode, sf: StackFrame): Boolean = {
+        node match {
+            case IdentNode(s) => { sf.currST.containsConstant(s) }
+            case _            => false
+        }
+    }
+
+    def getConstantInt(ident: ExprNode, sf: StackFrame): Int = {
+        ident match {
+            case IdentNode(s) => sf.currST.getConstant(s)
+            case _            => throw new RuntimeException("Expression node is expected to be an identifier")
+        }
+
+    }
+
     /** Generates data message for strings */
     def getStringDirective(s: String, idx: Int): List[Instruction] = {
 
@@ -38,8 +54,7 @@ object Helpers {
         )
     }
 
-    /** Adds backslashes so escape characters can be properly represented in
-      * generated instructions
+    /** Adds backslashes so escape characters can be properly represented in generated instructions
       */
     def escapeConvert(str: String): String = {
         val sb = new StringBuilder
@@ -70,8 +85,7 @@ object Helpers {
         }
     }
 
-    /** Generates instructions for evaluating an expression stored in a pair and
-      * pushes it onto the stack
+    /** Generates instructions for evaluating an expression stored in a pair and pushes it onto the stack
       */
     def addNewPairElem(e: ExprNode, stackFrame: StackFrame)(implicit
         collector: WaccBuffer
@@ -109,8 +123,7 @@ object Helpers {
         case _               => throw new RuntimeException("Invalid Catch Type")
     }
 
-    /** Identifiers with char or bool type uses the Store Byte Instruction
-      * instead of regular Store Instruction
+    /** Identifiers with char or bool type uses the Store Byte Instruction instead of regular Store Instruction
       */
     def determineStoreInstr(
         t: Type,
@@ -124,8 +137,8 @@ object Helpers {
         case _ => StoreInstr(src, dst, ImmOffset(offset), writeBack)
     }
 
-    /** Identifiers with char or bool type uses the Load Register Signed Byte
-      * Instruction instead of regular Load Instruction
+    /** Identifiers with char or bool type uses the Load Register Signed Byte Instruction instead of regular Load
+      * Instruction
       */
     def determineLoadInstr(
         t: Type,
@@ -654,10 +667,9 @@ object Helpers {
     /** Enumerations: Condition Codes, Flags */
     object UtilFlag extends Enumeration {
         type UtilFlag = Value
-        val PPrintInt, PPrintBool, PPrintChar, PPrintString, PPrintRef,
-            PPrintNewLine, PThrowOverflowError, PRuntimeError,
-            PCheckDivideByZero, PCheckArrayBounds, PReadChar, PReadInt,
-            PFreePair, PCheckNullPointer, PExceptionError = Value
+        val PPrintInt, PPrintBool, PPrintChar, PPrintString, PPrintRef, PPrintNewLine, PThrowOverflowError,
+            PRuntimeError, PCheckDivideByZero, PCheckArrayBounds, PReadChar, PReadInt, PFreePair, PCheckNullPointer,
+            PExceptionError = Value
     }
 
     def cleanFilename(fn: String): String = fn.take(fn.lastIndexOf("."))

@@ -7,12 +7,12 @@ object transRHS {
 
     /** Adds a list of instructions evaluating the RHS of an assignment to the Wacc Buffer collector
       */
-    def apply(rhs: AssignRHSNode, stackFrame: StackFrame)(implicit
+    def apply(rhs: AssignRHSNode, stackFrame: StackFrame, identString: String = "")(implicit
         collector: WaccBuffer
     ): Unit = {
         rhs match {
             /** EXPRESSION NODE */
-            case e: ExprNode => transExpression(e, stackFrame)
+            case e: ExprNode => transExpression(e, stackFrame, true, identString)
             /** ARRAY-LITER NODE */
             case al @ ArrayLiterNode(es) => {
 

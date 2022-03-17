@@ -104,7 +104,12 @@ object PeepholeOptimisation {
 }
 
 /** Enumeration for optimisation option flag */
-/** Reference: O0 = no optimisation (default) Oph = peephole optimisation
+/** Reference: O0 = no optimisation (default) ; Oph = peephole optimisation */
+/** Peephole Optimisation includes:
+  *   - removing unnecessary load and store pairs,
+  *   - removing unnecessary push & pop instructions,
+  *   - constant folding (binary operations)
+  *   - TODO: constant propogation
   */
 object OptimisationFlag extends Enumeration {
     type OptimisationFlag = Value

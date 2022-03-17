@@ -6,11 +6,15 @@ import OptimisationFlag._
 /** Adds the appropriate instructions for each expression into our Wacc Buffer collector
   */
 object transExpression {
-    def apply(exprNode: ExprNode, stackFrame: StackFrame)(implicit
+    def apply(exprNode: ExprNode, stackFrame: StackFrame, assignRHS: Boolean = false, identString: String = "")(implicit
         collector: WaccBuffer
     ): Unit =
         exprNode match {
             /** IDENTIFIER */
+            case IdentNode(s) if assignRHS & stackFrame.currST.containsConstant(s) => {
+                collector.addStatement(List(LoadImmIntInstr(r0, stackFrame.currST.getConstant(s))))
+            }
+
             case IdentNode(s) =>
                 collector.addStatement(
                   List(
@@ -24,6 +28,10 @@ object transExpression {
                     )
                   )
                 )
+            /** Constant Propogation */
+            case IntLiterNode(n) if assignRHS & collector.optFlag == OptimisationFlag.Oph => {
+                stackFrame.currST.addConstantVar(identString, n)
+            }
 
             /** LITERALS: int, char, bool, string, pair, array-elem */
             case IntLiterNode(n) =>
@@ -199,6 +207,10 @@ object transExpression {
             }
 
             case Add(e1, e2) => {
+                if (checkIfConstant(e1, stackFrame)) {
+                    transExpression(Add((IntLiterNode(getConstantInt(e1, stackFrame))(0, 0)), e2)(0, 0), stackFrame)
+                    return
+                }
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
