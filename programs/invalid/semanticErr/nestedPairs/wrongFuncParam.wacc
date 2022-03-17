@@ -1,0 +1,24 @@
+# Nested pair retrieved is not of matching type
+
+# Input:
+
+# Output:
+# 1
+
+# Exit: 0
+
+# Program:
+
+begin
+  int func(pair(pair(int, int), pair(char, char)) param) is
+    pair(int, int) p = fst param;
+	int ret = fst p;
+	return ret
+  end
+
+  pair(int, int) intp = newpair(10, 100);
+  pair(char, int) mixp = newpair('c', 500);
+  pair(pair(int,int), pair(char,int)) param = newpair(intp, mixp);
+  int ret = call func(param);
+  println ret
+end

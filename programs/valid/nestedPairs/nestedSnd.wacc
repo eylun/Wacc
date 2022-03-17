@@ -1,0 +1,18 @@
+# First element of variable is a full pair
+
+# Input:
+
+# Output:
+# 100
+
+# Exit: 0
+
+# Program:
+
+begin
+  pair(int, int) base = newpair (1, 100);
+  pair(int, pair(int, int)) new = newpair(10, base);	
+  pair(int, int) basecopy = snd new;
+  int value = snd basecopy;
+  println value
+end

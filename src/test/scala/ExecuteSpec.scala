@@ -143,4 +143,9 @@ class ExecuteSpec extends AnyFlatSpec {
         waccProgramsInDir(new File("./programs/valid/higherOrderFunctions/scan"))
             .foreach((executeAndCompare(_)))
     }
+    behavior of "nested pairs"
+    it should "execute statements with nested pairs" in {
+        waccProgramsInDir(new File("./programs/valid/nestedPairs"))
+            .foreach((executeAndCompare(_)))
+    }
 }

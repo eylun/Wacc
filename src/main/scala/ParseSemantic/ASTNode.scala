@@ -961,7 +961,8 @@ object StringTypeNode extends ParserBuilderPos0[StringTypeNode]
 /** Pair Type Node */
 case class PairTypeNode(fst: PairElemTypeNode, snd: PairElemTypeNode)(
     val pos: (Int, Int)
-) extends TypeNode {
+) extends TypeNode
+    with PairElemTypeNode {
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
         fst.check(st, errors)
         snd.check(st, errors)
