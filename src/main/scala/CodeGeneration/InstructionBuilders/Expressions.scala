@@ -30,6 +30,7 @@ object transExpression {
               * variable
               */
             case IntLiterNode(n) if assignRHS & collector.optFlag == OptimisationFlag.Oph => {
+                collector.addStatement(List(LoadImmIntInstr(r0, n)))
                 stackFrame.currST.addConstantVar(identString, n)
             }
             case IntLiterNode(n) =>
