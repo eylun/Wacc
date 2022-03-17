@@ -304,8 +304,7 @@ object transStatement {
                   wd.newScopeST
                 )
 
-                /** Constant Propogation: set flag so any assigned identifier in scope will be removed from the map of
-                  * constants
+                /** Constant Propogation: clear constants to avoid looping infinitely
                   */
                 wdSF.currST.clearAllConstants()
 

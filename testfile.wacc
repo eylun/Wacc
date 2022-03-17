@@ -16,13 +16,12 @@
 # Exit: 0
 
 begin
-  int f(int n) is
-    int i = 0;
-    while i < n do
-      i = i + 1;
-    done;
-    return i 
-  end
-  int x = call f(10) ;
-  println x 
+  int a = 1;
+  int b = 2;
+  int c = b + a;
+    println(c);
+  b = 4 / 1;
+
+  b = 10;
+  println(b)
 end

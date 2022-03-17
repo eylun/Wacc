@@ -16,12 +16,6 @@ object transExpression {
 
                     /** Constant Propogation */
                     val const1 = (IntLiterNode(getConstantInt(exprNode, stackFrame, assignRHS, identString))(0, 0))
-
-                    /** If the constant is being reassigned, remove it from the map of constants */
-                    if (s == identString) {
-                        println(" debug remove")
-                        stackFrame.currST.removeConstantVar(s)
-                    }
                     stackFrame.currST.removeConstantVar(s)
                     transExpression(const1, stackFrame, false)
                 } else {
@@ -214,7 +208,6 @@ object transExpression {
                 else if (y > x & y > 0 & x > 0) {
                     transExpression((IntLiterNode(x)(0, 0)), stackFrame)
                 } else {
-                    print("here")
                     transExpression(
                       (IntLiterNode(x % y)(0, 0)),
                       stackFrame
@@ -225,12 +218,6 @@ object transExpression {
             case Add(e1, e2) => {
                 if (checkIfConstant(e1, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
                     val const1 = (IntLiterNode(getConstantInt(e1, stackFrame, assignRHS, identString))(0, 0))
-                    println(" first constant grabn")
-
-                    /** TODO: refactor */
-                    /** if (assignRHS) { e1 match { case IdentNode(s) => { if (s == identString) {
-                      * stackFrame.currST.removeConstantVar(s) } } } }
-                      */
                     if (checkIfConstant(e2, stackFrame)) {
                         val const2 = (IntLiterNode(getConstantInt(e2, stackFrame, assignRHS, identString))(0, 0))
                         transExpression(Add(const1, const2)(0, 0), stackFrame)
