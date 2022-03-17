@@ -1,16 +1,18 @@
 # basic scan implementation
 
-# Input
+# Input:
 
 # Output:
+# 10
 # 10
 # 11
 # 14
 # 19
 # 26
+# 35
+# 6
 
-# Exit:
-# 0
+# Exit: 0
 
 # Program:
 
@@ -21,11 +23,13 @@ begin
 
   int w = 10;
   println w;
-  int[] x = [1, 3, 5, 7];
+  int[] x = [1, 3, 5, 7, 9];
   int[] y = scan plus w x;
   println y[0];
   println y[1];
   println y[2];
   println y[3];
+  println y[4];
+  println y[5];
   println len y
 end
