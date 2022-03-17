@@ -174,13 +174,7 @@ object transStatement {
 
                         /** Removes identifier from (parent)constant map if removeConstants flag is set */
                         if (collector.optFlag == OptimisationFlag.Oph & stackFrame.currST.removeConstants) {
-
-                            /** TODO: remove debug print statements */
-                            println("reached")
-                            stackFrame.currST.encSymTable.get.constantIntsMap.keys.foreach(k => println(k))
                             stackFrame.currST.encSymTable.get.removeConstantVar(s)
-                            println(" after removal")
-                            stackFrame.currST.encSymTable.get.constantIntsMap.keys.foreach(k => println(k))
                         }
 
                         /** Generates instructions for LHS and RHS */
@@ -281,6 +275,9 @@ object transStatement {
                   be.newScopeST
                 )
 
+                /** Constant Propogation: set flag so any assigned identifier in scope will be removed from the map of
+                  * constants
+                  */
                 beSF.currST.setToRemove()
 
                 collector.addStatement(beSF.head)
@@ -306,6 +303,13 @@ object transStatement {
                 val wdSF = stackFrame.join(
                   wd.newScopeST
                 )
+
+                /** Constant Propogation: set flag so any assigned identifier in scope will be removed from the map of
+                  * constants
+                  */
+                wdSF.currST.setToRemove()
+                println("here")
+
                 collector.addStatement(wdSF.head)
                 transStatement(s, wdSF)
                 collector.addStatement(wdSF.tail)

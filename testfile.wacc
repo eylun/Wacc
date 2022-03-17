@@ -9,13 +9,16 @@
 # Program:
 
 begin
-  int a = 1;	
-  begin 
-    begin
-      a = 5
-      end
-  end;
-  int b = a
+	int x = 3 ;
+  int y = 2;
+	while y < 5  do
+		y = x ;
+		x = x + 1
+	done;
+  int a = x;
+  int b = y
 end
 
-# a should be 5
+# loops twice
+# x should be 6
+# y should be 5
