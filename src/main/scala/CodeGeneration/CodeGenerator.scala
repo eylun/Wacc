@@ -1,4 +1,6 @@
 import constants._
+import OptimisationFlag._
+import PeepholeOptimisation._
 
 object CodeGenerator {
     def apply(progNode: ProgramNode, st: SymbolTable)(implicit
@@ -14,8 +16,7 @@ object CodeGenerator {
             transFunction(f, StackFrame(funcSt))
         })
 
-        /** Add label for "main" instruction sequence and push link register
-          * onto stack
+        /** Add label for "main" instruction sequence and push link register onto stack
           */
         collector.addStatement(List(Label("main"), PushInstr(List(lr))))
 
@@ -31,6 +32,11 @@ object CodeGenerator {
         collector.addStatement(
           List(MoveInstr(Reg(0), ImmOffset(0)), PopInstr(List(pc)))
         )
-        collector.emit()
+
+        /** Execute optimisation function(s) if flag is set */
+        collector.optFlag match {
+            case OptimisationFlag.O0  => collector.emit()
+            case OptimisationFlag.Oph => executePeepholeOptimisation(collector.emit())
+        }
     }
 }
