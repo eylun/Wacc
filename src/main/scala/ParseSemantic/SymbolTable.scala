@@ -41,16 +41,31 @@ class SymbolTable(
         constantIntsMap = constantIntsMap + (name -> value)
     }
 
+    /** constant propogation test */
+    def addConstants(constants: Map[String, Int]): Unit = {
+        constantIntsMap = constantIntsMap ++ constants
+    }
+
+    /** To remove variables that are in the loop condition or loop body from the map */
     def removeConstantVar(name: String): Unit = {
         constantIntsMap = constantIntsMap.removed(name)
     }
 
+    /** Empties the constant map - to be used in function call or declaration */
     def clearConstants(): Unit = {
         constantIntsMap = Map[String, Int]().empty
     }
 
     def containsConstant(name: String): Boolean = {
-        constantIntsMap.contains(name)
+        var s: Option[SymbolTable] = Some(this)
+        while (s != None) {
+            var st = s.get
+            if (constantIntsMap.contains(name)) {
+                return true
+            }
+            s = st.encSymTable
+        }
+        false
     }
 
     /** Only called after containsConstant() check */

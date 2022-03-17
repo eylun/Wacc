@@ -234,6 +234,10 @@ object transStatement {
                 val falseSF =
                     stackFrame.join(ite.falseST)
 
+                /** Add currST constant map to falseST and trueST constant map */
+                ite.trueST.addConstants(stackFrame.currST.constantIntsMap)
+                ite.falseST.addConstants(stackFrame.currST.constantIntsMap)
+
                 /** Evaluate conditional expression and branch accordingly */
                 transExpression(e, stackFrame)
                 collector.addStatement(
