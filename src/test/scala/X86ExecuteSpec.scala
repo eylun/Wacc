@@ -26,13 +26,13 @@ class X86ExecuteSpec extends AnyFlatSpec {
 
     behavior of "basic programs"
     it should "execute skip statements" in {
-        pending
+        //pending
 
         waccProgramsInDir(new File("./programs/valid/basic/skip")).foreach(x86ExecuteAndCompare(_))
     }
 
     it should "execute exit statements" in {
-        pending
+        //pending
 
         waccProgramsInDir(new File("./programs/valid/basic/exit")).foreach(x86ExecuteAndCompare(_))
     }
@@ -126,11 +126,5 @@ class X86ExecuteSpec extends AnyFlatSpec {
         pending
 
         waccProgramsInDir(new File("./programs/valid/while")).foreach((x86ExecuteAndCompare(_)))
-    }
-    behavior of "try-catch programs"
-    it should "execute try-catch statement errors" in {
-        pending
-
-        waccProgramsInDir(new File("./programs/valid/tryCatch")).foreach((x86ExecuteAndCompare(_)))
     }
 }

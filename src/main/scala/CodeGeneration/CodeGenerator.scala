@@ -19,7 +19,11 @@ object CodeGenerator {
 
         repr match {
             case ARMRepresentation => collector.addStatement(List(Label("main"), PushInstr(List(lr))))
-            case X86Representation => collector.addStatement(List(Label("_start"), PushInstr(List(lr))))
+            case X86Representation => collector.addStatement(List(
+                    Label("_start"), 
+                    PushInstr(List(lr)), 
+                    MoveInstr(lr, RegOp(sp))
+                ))
         }
 
         /** Add instructions to decrement stack pointer */

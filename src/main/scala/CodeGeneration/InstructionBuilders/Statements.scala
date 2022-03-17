@@ -322,6 +322,10 @@ object transStatement {
 
                 /** Evaluates expression and Branches */
                 transExpression(e, stackFrame)
+                repr match {
+                    case X86Representation => collector.addStatement(List(MoveInstr(r4, RegOp(r0))))
+                    case _ => 
+                }
                 collector.addStatement(
                   List(
                     BranchLinkInstr("exit", Condition.AL)
@@ -351,6 +355,10 @@ object transStatement {
                 transExpression(e, stackFrame)
                 e.typeId.get.getType() match {
                     case ArrayType(_, _, _) => {
+                        repr match {
+                            case X86Representation => collector.addStatement(List(MoveInstr(r4, RegOp(r0))))
+                            case _ => 
+                        }
                         collector.addStatement(
                           List(
                             BranchLinkInstr("free")
@@ -439,6 +447,10 @@ object transStatement {
                 )
             }
             case CharLiterNode(_) | Chr(_) => {
+                repr match {
+                    case X86Representation => collector.addStatement(List(MoveInstr(r4, RegOp(r0))))
+                    case _ => 
+                }
                 collector.addStatement(
                   List(BranchLinkInstr("putchar"))
                 )
@@ -531,8 +543,12 @@ object transStatement {
                 )
             }
             case CharType() => {
+                repr match {
+                    case X86Representation => collector.addStatement(List(MoveInstr(r4, RegOp(r0))))
+                    case _ => 
+                }
                 collector.addStatement(
-                  List(BranchLinkInstr("putchar"))
+                    List(BranchLinkInstr("putchar"))
                 )
             }
             case StringType() | ExceptionType() => {

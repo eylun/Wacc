@@ -35,11 +35,19 @@ object Helpers {
     def getStringDirective(s: String, idx: Int)(implicit repr: Representation): List[Instruction] = {
         /** Convert escape characters into printable escape characters */
         val string = escapeConvert(s)
-        List(
-          Label(s"msg_$idx"),
-          Directive(s"word ${s.length()}"),
-          formatStringDirective(string)
-        )
+
+        repr match {
+            case ARMRepresentation => List(
+                Label(s"msg_$idx"),
+                Directive(s"word ${s.length()}"),
+                formatStringDirective(string)
+            )
+
+            case X86Representation => List(
+                Label(s"msg_$idx"),
+                formatStringDirective(string)
+            )
+        }
     }
 
     /** Adds backslashes so escape characters can be properly represented in
@@ -147,26 +155,51 @@ object Helpers {
     /** Print Int Literal */
     /** Generates data message */
     def getPrintIntDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label(s"msg_$idx"),
-          Directive(s"word 3"),
-          formatStringDirective("%d\\0")
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label(s"msg_$idx"),
+                Directive(s"word 3"),
+                formatStringDirective("%d\\0")
+            )
+                
+            case X86Representation => List(
+                Label(s"msg_$idx"),
+                formatStringDirective("%d\\0")
+            )
+        }
     }
 
     /** Generates p_print_int instruction sequence */
     def printIntLiterFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label("p_print_int"),
-          PushInstr(List(lr)),
-          MoveInstr(r1, RegOp(r0)),
-          LoadLabelInstr(r0, s"msg_$idx"),
-          AddInstr(r0, r0, ImmOffset(4), false),
-          BranchLinkInstr("printf"),
-          MoveInstr(r0, ImmOffset(0)),
-          BranchLinkInstr("fflush"),
-          PopInstr(List(pc))
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label("p_print_int"),
+                PushInstr(List(lr)),
+                MoveInstr(r1, RegOp(r0)),
+                LoadLabelInstr(r0, s"msg_$idx"),
+                AddInstr(r0, r0, ImmOffset(4), false),
+                BranchLinkInstr("printf"),
+                MoveInstr(r0, ImmOffset(0)),
+                BranchLinkInstr("fflush"),
+                PopInstr(List(pc))
+            )
+        
+            case X86Representation => List(
+                Label("p_print_int"),
+                PushInstr(List(lr)),
+                MoveInstr(lr, RegOp(sp)),
+                MoveInstr(r3, RegOp(r0)),
+                LoadLabelInstr(r4, s"msg_$idx"),
+                XorInstr(r0, r0, RegOp(r0)),
+                BranchLinkInstr("printf"),
+                MoveInstr(r0, ImmOffset(0)),
+                MoveInstr(r4, RegOp(r0)),
+                XorInstr(r4, r4, RegOp(r4)),
+                BranchLinkInstr("fflush"),
+                MoveInstr(lr, RegOp(sp)),
+                PopInstr(List(pc))
+            )
+        }
     }
 
     def printIntLiter(implicit collector: WaccBuffer, repr: Representation) = {
@@ -183,36 +216,66 @@ object Helpers {
     /** Print Bool Literal */
     /** Generates data message for a 'true' boolean value */
     def getPrintTrueDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label(s"msg_$idx"),
-          Directive(s"word 5"),
-          formatStringDirective("true\\0")
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label(s"msg_$idx"),
+                Directive(s"word 5"),
+                formatStringDirective("true\\0")
+            )
+            case X86Representation => List(
+                Label(s"msg_$idx"),
+                formatStringDirective("true\\0")
+            )
+        }
     }
 
     /** Generates data message for a 'false' boolean value */
     def getPrintFalseDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label(s"msg_$idx"),
-          Directive(s"word 6"),
-          formatStringDirective("false\\0")
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label(s"msg_$idx"),
+                Directive(s"word 6"),
+                formatStringDirective("false\\0")
+            )
+            case X86Representation => List(
+                Label(s"msg_$idx"),
+                formatStringDirective("false\\0")
+            )
+        }
     }
 
     /** Generates p_print_bool instruction sequence */
     def printBoolLiterFunc(idxTrue: Int, idxFalse: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label("p_print_bool"),
-          PushInstr(List(lr)),
-          CompareInstr(r0, ImmOffset(0), Condition.AL),
-          LoadLabelInstr(r0, s"msg_$idxTrue", Condition.NE),
-          LoadLabelInstr(r0, s"msg_$idxFalse", Condition.EQ),
-          AddInstr(r0, r0, ImmOffset(4), false),
-          BranchLinkInstr("printf"),
-          MoveInstr(r0, ImmOffset(0)),
-          BranchLinkInstr("fflush"),
-          PopInstr(List(pc))
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label("p_print_bool"),
+                PushInstr(List(lr)),
+                CompareInstr(r0, ImmOffset(0), Condition.AL),
+                LoadLabelInstr(r0, s"msg_$idxTrue", Condition.NE),
+                LoadLabelInstr(r0, s"msg_$idxFalse", Condition.EQ),
+                AddInstr(r0, r0, ImmOffset(4), false),
+                BranchLinkInstr("printf"),
+                MoveInstr(r0, ImmOffset(0)),
+                BranchLinkInstr("fflush"),
+                PopInstr(List(pc))
+            )
+            case X86Representation => List(
+                Label("p_print_bool"),
+                PushInstr(List(lr)),
+                CompareInstr(r0, ImmOffset(0), Condition.AL),
+                LoadLabelInstr(r0, s"msg_$idxTrue", Condition.NE),
+                LoadLabelInstr(r0, s"msg_$idxFalse", Condition.EQ),
+                MoveInstr(r4, RegOp(r0)),
+                XorInstr(r0, r0, RegOp(r0)),
+                BranchLinkInstr("printf"),
+                MoveInstr(r0, ImmOffset(0)),
+                MoveInstr(r4, RegOp(r0)),
+                XorInstr(r4, r4, RegOp(r4)),
+                BranchLinkInstr("fflush"),
+                MoveInstr(lr, RegOp(sp)),
+                PopInstr(List(pc))
+            )
+        }
     }
 
     def printBoolLiter(implicit collector: WaccBuffer, repr: Representation) = {
@@ -236,27 +299,53 @@ object Helpers {
     /** Print String Literal */
     /** Generates data message for printing strings */
     def getPrintStrDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label(s"msg_$idx"),
-          Directive(s"word 5"),
-          formatStringDirective("%.*s\\0")
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label(s"msg_$idx"),
+                Directive(s"word 5"),
+                formatStringDirective("%.*s\\0")
+            )
+
+            case X86Representation => List(
+                Label(s"msg_$idx"),
+                formatStringDirective("%s\\0")
+            )
+        }
     }
 
     /** Generates p_print_string instruction sequence */
     def printStrLiterFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label("p_print_string"),
-          PushInstr(List(lr)),
-          LoadInstr(r1, r0, ImmOffset(0)),
-          AddInstr(r2, r0, ImmOffset(4), false),
-          LoadLabelInstr(r0, s"msg_$idx"),
-          AddInstr(r0, r0, ImmOffset(4), false),
-          BranchLinkInstr("printf"),
-          MoveInstr(r0, ImmOffset(0)),
-          BranchLinkInstr("fflush"),
-          PopInstr(List(pc))
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label("p_print_string"),
+                PushInstr(List(lr)),
+                LoadInstr(r1, r0, ImmOffset(0)),
+                AddInstr(r2, r0, ImmOffset(4), false),
+                LoadLabelInstr(r0, s"msg_$idx"),
+                AddInstr(r0, r0, ImmOffset(4), false),
+                BranchLinkInstr("printf"),
+                MoveInstr(r0, ImmOffset(0)),
+                BranchLinkInstr("fflush"),
+                PopInstr(List(pc))
+            )
+            case X86Representation => List(
+                Label("p_print_string"),
+                PushInstr(List(lr)),
+                MoveInstr(lr, RegOp(sp)),
+                LoadInstr(r1, r0, ImmOffset(0)),
+                LoadLabelInstr(r0, s"msg_$idx"),
+                MoveInstr(r4, RegOp(r0)),
+                MoveInstr(r3, RegOp(r1)),
+                XorInstr(r0, r0, RegOp(r0)),
+                BranchLinkInstr("printf"),
+                MoveInstr(r0, ImmOffset(0)),
+                MoveInstr(r4, RegOp(r0)),
+                XorInstr(r4, r4, RegOp(r4)),
+                BranchLinkInstr("fflush"),
+                MoveInstr(lr, RegOp(sp)),
+                PopInstr(List(lr, pc))
+            )
+        }
     }
 
     def printStrLiter(implicit collector: WaccBuffer, repr: Representation) = {
@@ -274,26 +363,44 @@ object Helpers {
     /** Print (Memory) References */
     /** Generates data message for printing memory references */
     def getPrintRefDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label(s"msg_$idx"),
-          Directive(s"word 3"),
-          formatStringDirective("%p\\0")
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label(s"msg_$idx"),
+                Directive(s"word 3"),
+                formatStringDirective("%p\\0")
+            )
+            case X86Representation => List(
+                Label(s"msg_$idx"),
+                formatStringDirective("%p\\0")
+            )
+        }
     }
 
     /** Generates p_print_reference instruction sequence */
     def printRefFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label("p_print_reference"),
-          PushInstr(List(lr)),
-          MoveInstr(r1, RegOp(r0)),
-          LoadLabelInstr(r0, s"msg_$idx"),
-          AddInstr(r0, r0, ImmOffset(4), false),
-          BranchLinkInstr("printf"),
-          MoveInstr(r0, ImmOffset(0)),
-          BranchLinkInstr("fflush"),
-          PopInstr(List(pc))
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label("p_print_reference"),
+                PushInstr(List(lr)),
+                MoveInstr(r1, RegOp(r0)),
+                LoadLabelInstr(r0, s"msg_$idx"),
+                AddInstr(r0, r0, ImmOffset(4), false),
+                BranchLinkInstr("printf"),
+                MoveInstr(r0, ImmOffset(0)),
+                BranchLinkInstr("fflush"),
+                PopInstr(List(pc))
+            )
+            case X86Representation => List(
+                Label("p_print_reference"),
+                PushInstr(List(lr)),
+                MoveInstr(r3, RegOp(r0)),
+                LoadLabelInstr(r4, s"msg_$idx"),
+                BranchLinkInstr("printf"),
+                MoveInstr(r4, ImmOffset(0)),
+                BranchLinkInstr("fflush"),
+                PopInstr(List(pc))
+            )
+        }
     }
 
     def printRef(implicit collector: WaccBuffer, repr: Representation) = {
@@ -311,25 +418,44 @@ object Helpers {
     /** Print New Line */
     /** Generates data message for printing a new line */
     def getPrintNewLineDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label(s"msg_$idx"),
-          Directive(s"word 1"),
-          formatStringDirective("\\0")
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label(s"msg_$idx"),
+                Directive(s"word 1"),
+                formatStringDirective("\\0")
+            )
+            case X86Representation => List(
+                Label(s"msg_$idx"),
+                formatStringDirective("\\0")
+            )
+        }
     }
 
     /** Generates p_print_ln instruction sequence */
     def printNewLineFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label("p_print_ln"),
-          PushInstr(List(lr)),
-          LoadLabelInstr(r0, s"msg_$idx"),
-          AddInstr(r0, r0, ImmOffset(4), false),
-          BranchLinkInstr("puts"),
-          MoveInstr(r0, ImmOffset(0)),
-          BranchLinkInstr("fflush"),
-          PopInstr(List(pc))
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label("p_print_ln"),
+                PushInstr(List(lr)),
+                LoadLabelInstr(r0, s"msg_$idx"),
+                AddInstr(r0, r0, ImmOffset(4), false),
+                BranchLinkInstr("puts"),
+                MoveInstr(r0, ImmOffset(0)),
+                BranchLinkInstr("fflush"),
+                PopInstr(List(pc))
+            )
+            case X86Representation => List(
+                Label("p_print_ln"),
+                PushInstr(List(lr)),
+                LoadLabelInstr(r4, s"msg_$idx"),
+                BranchLinkInstr("puts"),
+                MoveInstr(r4, ImmOffset(0)),
+                XorInstr(r4, r4, RegOp(r4)),
+                BranchLinkInstr("fflush"),
+                MoveInstr(r4, RegOp(r0)),
+                PopInstr(List(lr, pc))
+            )
+        }
     }
 
     def printNewLine(implicit collector: WaccBuffer, repr: Representation) = {
@@ -345,12 +471,19 @@ object Helpers {
 
     /** Print Throw Overflow Error */
     def getPrintOverflowErrorDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label(s"msg_$idx"),
-          Directive(s"word 83"),
-          formatStringDirective("OverflowError: the result is too small/large to store in a 4-byte signed-integer.\\n\\0")
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label(s"msg_$idx"),
+                Directive(s"word 83"),
+                formatStringDirective("OverflowError: the result is too small/large to store in a 4-byte signed-integer.\\n\\0")
+            )
+            case X86Representation => List(
+                Label(s"msg_$idx"),
+                formatStringDirective("OverflowError: the result is too small/large to store in a 4-byte signed-integer.\\n\\0")
+            )
+        }
     }
+    
     def printOverflowErrorFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label("p_throw_overflow_error"),
@@ -358,6 +491,7 @@ object Helpers {
           BranchLinkInstr("p_throw_runtime_error")
         )
     }
+
     def printOverflowError(implicit collector: WaccBuffer, repr: Representation) = {
         /** Add DataMsg for print overflow error */
         val idx: Int = collector.tickDataMsg()
@@ -374,20 +508,37 @@ object Helpers {
 
     /** Print Runtime Error */
     def printRuntimeErrorFunc()(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label("p_throw_runtime_error"),
-          /** Check if there is a catch_address active first */
-          LoadImmIntInstr(r7, 5),
-          LoadLabelInstr(r2, "catch_address"),
-          LoadInstr(r2, r2, ImmOffset(0)),
-          CompareInstr(r2, ImmOffset(0)),
-          MoveInstr(pc, RegOp(r2), Condition.NE),
-          /** Continue on to exit if catch_address is null */
-          BranchLinkInstr("p_print_string"),
-          MoveInstr(r0, ImmOffset(-1)),
-          BranchLinkInstr("exit")
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label("p_throw_runtime_error"),
+                /** Check if there is a catch_address active first */
+                LoadImmIntInstr(r7, 5),
+                LoadLabelInstr(r2, "catch_address"),
+                LoadInstr(r2, r2, ImmOffset(0)),
+                CompareInstr(r2, ImmOffset(0)),
+                MoveInstr(pc, RegOp(r2), Condition.NE),
+                /** Continue on to exit if catch_address is null */
+                BranchLinkInstr("p_print_string"),
+                MoveInstr(r0, ImmOffset(-1)),
+                BranchLinkInstr("exit")
+            )
+            case X86Representation => List(
+                Label("p_throw_runtime_error"),
+                /** Check if there is a catch_address active first */
+                LoadImmIntInstr(r7, 5),
+                LoadLabelInstr(r2, "catch_address"),
+                LoadInstr(r2, r2, ImmOffset(0)),
+                CompareInstr(r2, ImmOffset(0)),
+                MoveInstr(pc, RegOp(r2), Condition.NE),
+                /** Continue on to exit if catch_address is null */
+                BranchLinkInstr("p_print_string"),
+                MoveInstr(r0, ImmOffset(-1)),
+                MoveInstr(r4, RegOp(r0)),
+                BranchLinkInstr("exit")
+            )
+        }
     }
+
     def printRuntimeError(implicit collector: WaccBuffer, repr: Representation) = {
         /** Add p_throw_runtime_error function */
         collector.addUtilStatement(printRuntimeErrorFunc())
@@ -398,12 +549,19 @@ object Helpers {
 
     /** Print Check Divide By Zero */
     def printCheckDivideByZeroDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label(s"msg_$idx"),
-          Directive(s"word 45"),
-          formatStringDirective("DivideByZeroError: divide or modulo by zero\\n\\0")
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label(s"msg_$idx"),
+                Directive(s"word 45"),
+                formatStringDirective("DivideByZeroError: divide or modulo by zero\\n\\0")
+            )
+            case X86Representation => List(
+                Label(s"msg_$idx"),
+                formatStringDirective("DivideByZeroError: divide or modulo by zero\\n\\0")
+            ) 
+        }
     }
+
     def printCheckDivideByZeroFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label("p_check_divide_by_zero"),
@@ -414,6 +572,7 @@ object Helpers {
           PopInstr(List(pc))
         )
     }
+
     def printCheckDivideByZero(implicit collector: WaccBuffer, repr: Representation) = {
         /** Add DataMsg for check divide by zero */
         val idx: Int = collector.tickDataMsg()
@@ -430,17 +589,28 @@ object Helpers {
 
     /** Print Check Array Bounds */
     def printCheckArrayBoundsDirective(largeIdx: Int, negIdx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          /** Negative Index Data Message */
-          Label(s"msg_$negIdx"),
-          Directive(s"word 44"),
-          formatStringDirective("ArrayIndexOutOfBoundsError: negative index\\n\\0"),
-          /** Index Too Large Data Message */
-          Label(s"msg_$largeIdx"),
-          Directive(s"word 45"),
-          formatStringDirective("ArrayIndexOutOfBoundsError: index too large\\n\\0")
-        )
+        repr match {
+            case ARMRepresentation => List(
+                /** Negative Index Data Message */
+                Label(s"msg_$negIdx"),
+                Directive(s"word 44"),
+                formatStringDirective("ArrayIndexOutOfBoundsError: negative index\\n\\0"),
+                /** Index Too Large Data Message */
+                Label(s"msg_$largeIdx"),
+                Directive(s"word 45"),
+                formatStringDirective("ArrayIndexOutOfBoundsError: index too large\\n\\0")
+            )
+            case X86Representation => List(
+                /** Negative Index Data Message */
+                Label(s"msg_$negIdx"),
+                formatStringDirective("ArrayIndexOutOfBoundsError: negative index\\n\\0"),
+                /** Index Too Large Data Message */
+                Label(s"msg_$largeIdx"),
+                formatStringDirective("ArrayIndexOutOfBoundsError: index too large\\n\\0")
+            )
+        }
     }
+
     def printCheckArrayBoundsFunc(largeIdx: Int, negIdx: Int)(implicit repr: Representation): List[Instruction] = {
         List(
           Label("p_check_array_bounds"),
@@ -455,11 +625,11 @@ object Helpers {
           PopInstr(List(pc))
         )
     }
+
     def printCheckArrayBounds(implicit collector: WaccBuffer, repr: Representation) = {
         /** Add DataMsg for index too large and negative index errors */
         val negIdx: Int = collector.tickDataMsg()
         val largeIdx: Int = collector.tickDataMsg()
-
         collector.addDataMsg(printCheckArrayBoundsDirective(largeIdx, negIdx))
 
         /** Add p_check_array_bounds function */
@@ -471,23 +641,39 @@ object Helpers {
 
     /** Print Read Int */
     def printReadIntDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label(s"msg_$idx"),
-          Directive(s"word 3"),
-          formatStringDirective("%d\\0")
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label(s"msg_$idx"),
+                Directive(s"word 3"),
+                formatStringDirective("%d\\0")
+            )
+            case X86Representation => List(
+                Label(s"msg_$idx"),
+                formatStringDirective("%d\\0")
+            )
+        }
     }
 
     def printReadIntFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label("p_read_int"),
-          PushInstr(List(lr)),
-          MoveInstr(r1, RegOp(r0)),
-          LoadLabelInstr(r0, s"msg_$idx"),
-          AddInstr(r0, r0, ImmOffset(4), false),
-          BranchLinkInstr("scanf"),
-          PopInstr(List(pc))
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label("p_read_int"),
+                PushInstr(List(lr)),
+                MoveInstr(r1, RegOp(r0)),
+                LoadLabelInstr(r0, s"msg_$idx"),
+                AddInstr(r0, r0, ImmOffset(4), false),
+                BranchLinkInstr("scanf"),
+                PopInstr(List(pc))
+            )
+            case X86Representation => List(
+                Label("p_read_int"),
+                PushInstr(List(lr)),
+                MoveInstr(r3, RegOp(r0)),
+                LoadLabelInstr(r4, s"msg_$idx"),
+                BranchLinkInstr("scanf"),
+                PopInstr(List(pc))
+            )
+        }
     }
 
     def printReadInt(implicit collector: WaccBuffer, repr: Representation) = {
@@ -501,23 +687,39 @@ object Helpers {
 
     /** Print Read Char */
     def printReadCharDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label(s"msg_$idx"),
-          Directive(s"word 4"),
-          formatStringDirective(" %c\\0")
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label(s"msg_$idx"),
+                Directive(s"word 4"),
+                formatStringDirective(" %c\\0")
+            )
+            case X86Representation => List(
+                Label(s"msg_$idx"),
+                formatStringDirective(" %c\\0")
+            )
+        }
     }
 
     def printReadCharFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label("p_read_char"),
-          PushInstr(List(lr)),
-          MoveInstr(r1, RegOp(r0)),
-          LoadLabelInstr(r0, s"msg_$idx"),
-          AddInstr(r0, r0, ImmOffset(4), false),
-          BranchLinkInstr("scanf"),
-          PopInstr(List(pc))
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label("p_read_char"),
+                PushInstr(List(lr)),
+                MoveInstr(r1, RegOp(r0)),
+                LoadLabelInstr(r0, s"msg_$idx"),
+                AddInstr(r0, r0, ImmOffset(4), false),
+                BranchLinkInstr("scanf"),
+                PopInstr(List(pc))
+            )
+            case X86Representation => List(
+                Label("p_read_char"),
+                PushInstr(List(lr)),
+                MoveInstr(r3, RegOp(r0)),
+                LoadLabelInstr(r4, s"msg_$idx"),
+                BranchLinkInstr("scanf"),
+                PopInstr(List(pc))
+            )
+        }
     }
 
     def printReadChar(implicit collector: WaccBuffer, repr: Representation) = {
@@ -531,11 +733,17 @@ object Helpers {
 
     /** Print Free Pair */
     def printFreePairDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label(s"msg_$idx"),
-          Directive(s"word 50"),
-          formatStringDirective("NullReferenceError: dereference a null reference\\n\\0")
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label(s"msg_$idx"),
+                Directive(s"word 50"),
+                formatStringDirective("NullReferenceError: dereference a null reference\\n\\0")
+            )
+            case X86Representation => List(
+                Label(s"msg_$idx"),
+                formatStringDirective("NullReferenceError: dereference a null reference\\n\\0")
+            )
+        }
     }
 
     def printFreePairFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
@@ -571,11 +779,17 @@ object Helpers {
 
     /** Print Check Null Pointer */
     def printCheckNullPointerDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label(s"msg_$idx"),
-          Directive(s"word 50"),
-          formatStringDirective("NullReferenceError: dereference a null reference\\n\\0")
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label(s"msg_$idx"),
+                Directive(s"word 50"),
+                formatStringDirective("NullReferenceError: dereference a null reference\\n\\0")
+            )
+            case X86Representation => List(
+                Label(s"msg_$idx"),
+                formatStringDirective("NullReferenceError: dereference a null reference\\n\\0")
+            )
+        }
     }
 
     def printCheckNullPointerFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
@@ -603,11 +817,17 @@ object Helpers {
 
     /** Print Exception Error */
     def printExceptionErrorDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label(s"msg_$idx"),
-          Directive(s"word 58"),
-          formatStringDirective("ExceptionError: no appropriate catch for throw statement\\n\\0")
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label(s"msg_$idx"),
+                Directive(s"word 58"),
+                formatStringDirective("ExceptionError: no appropriate catch for throw statement\\n\\0")
+            )
+            case X86Representation => List(
+                Label(s"msg_$idx"),
+                formatStringDirective("ExceptionError: no appropriate catch for throw statement\\n\\0")
+            )
+        }
     }
     
     def printExceptionErrorFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {

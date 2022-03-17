@@ -130,11 +130,11 @@ class WaccBuffer {
                 "data"
               ) +=: dataMsgs) ++: mainStatements ++: utilityStatements
 
-          case (0, X86Representation) => bssMsgs ++: (mainStatements.init :+ BranchLinkInstr("exit")) ++: utilityStatements
+          case (0, X86Representation) => bssMsgs ++: (mainStatements.init :+ MoveInstr(r4, RegOp(r0)) :+ BranchLinkInstr("exit")) ++: utilityStatements
           case (_, X86Representation) =>
               bssMsgs ++: (Directive(
                 "data"
-              ) +=: dataMsgs) ++: (mainStatements.init :+ BranchLinkInstr("exit")) ++: utilityStatements
+              ) +=: dataMsgs) ++: (mainStatements.init :+ MoveInstr(r4, RegOp(r0)) :+ BranchLinkInstr("exit")) ++: utilityStatements
       }
     )
 }
