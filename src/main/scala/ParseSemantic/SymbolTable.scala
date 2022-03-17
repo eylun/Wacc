@@ -63,6 +63,11 @@ class SymbolTable(
         }
     }
 
+    /** Clears all constants from the map */
+    def clearAllConstants() = {
+        constantIntsMap = Map[String, Int]()
+    }
+
     /** Propogates up (checks parent symbol table for constant) */
     def containsConstant(name: String): Boolean = {
         var s: Option[SymbolTable] = Some(this)

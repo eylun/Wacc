@@ -36,10 +36,16 @@ object Helpers {
 
     /** Returns the integer value associated with the constant variable */
     /** Only called after checkIfConstant() */
-    def getConstantInt(ident: ExprNode, sf: StackFrame): Int = {
+    def getConstantInt(ident: ExprNode, sf: StackFrame, assignRHS: Boolean, assignIdent: String): Int = {
         ident match {
-            case IdentNode(s) => sf.currST.getConstant(s)
-            case _            => throw new RuntimeException("Expression node is expected to be an identifier")
+            case IdentNode(s) => {
+                val constant = sf.currST.getConstant(s)
+                if (assignRHS & s == assignIdent) {
+                    sf.currST.removeConstantVar(s)
+                }
+                constant
+            }
+            case _ => throw new RuntimeException("Expression node is expected to be an identifier")
         }
 
     }

@@ -17,10 +17,14 @@ object PeepholeOptimisation {
     def removeUnnecessaryLoadAndStore(i: Int)(implicit instrList: mutable.ListBuffer[Instruction]): Unit = {
         if (i < instrList.size - 4) {
             (instrList(i), instrList(i + 1)) match {
-                case (LoadInstr(loadDst1, _, _, _), StoreInstr(storeSrc1, storeDst1, offset1, _)) => {
+                case (LoadInstr(loadDst1, _, _, _), StoreInstr(storeSrc1, storeDst1, offset1, false)) => {
                     (instrList(i + 2), instrList(i + 3)) match {
-                        case (LoadInstr(`loadDst1`, _, _, _), StoreInstr(`storeSrc1`, `storeDst1`, `offset1`, _)) |
-                            (LoadImmIntInstr(`loadDst1`, _, _), StoreInstr(`storeSrc1`, `storeDst1`, `offset1`, _)) => {
+                        case (LoadInstr(`loadDst1`, _, _, _), StoreInstr(`storeSrc1`, `storeDst1`, `offset1`, false)) |
+                            (
+                              LoadImmIntInstr(`loadDst1`, _, _),
+                              StoreInstr(`storeSrc1`, `storeDst1`, `offset1`, false)
+                            ) => {
+                            print(" HERERERERERERERER")
                             instrList.remove(i)
                             instrList.remove(i)
                             removeUnnecessaryLoadAndStore(i)
@@ -30,10 +34,13 @@ object PeepholeOptimisation {
 
                 }
 
-                case (LoadImmIntInstr(loadDst1, _, _), StoreInstr(storeSrc1, storeDst1, offset1, _)) => {
+                case (LoadImmIntInstr(loadDst1, _, _), StoreInstr(storeSrc1, storeDst1, offset1, false)) => {
                     (instrList(i + 2), instrList(i + 3)) match {
-                        case (LoadInstr(`loadDst1`, _, _, _), StoreInstr(`storeSrc1`, `storeDst1`, `offset1`, _)) |
-                            (LoadImmIntInstr(`loadDst1`, _, _), StoreInstr(`storeSrc1`, `storeDst1`, `offset1`, _)) => {
+                        case (LoadInstr(`loadDst1`, _, _, _), StoreInstr(`storeSrc1`, `storeDst1`, `offset1`, false)) |
+                            (
+                              LoadImmIntInstr(`loadDst1`, _, _),
+                              StoreInstr(`storeSrc1`, `storeDst1`, `offset1`, false)
+                            ) => {
                             instrList.remove(i)
                             instrList.remove(i)
                             removeUnnecessaryLoadAndStore(i)
@@ -42,29 +49,31 @@ object PeepholeOptimisation {
                     }
 
                 }
-                case (LoadRegSignedByte(loadDst1, _, _, _), StoreByteInstr(storeSrc1, storeDst1, offset1, _)) => {
+                case (LoadRegSignedByte(loadDst1, _, _, _), StoreByteInstr(storeSrc1, storeDst1, offset1, false)) => {
                     (instrList(i + 2), instrList(i + 3)) match {
                         case (
                               LoadRegSignedByte(`loadDst1`, _, _, _),
-                              StoreByteInstr(`storeSrc1`, `storeDst1`, `offset1`, _)
-                            ) |
-                            (MoveInstr(`loadDst1`, _, _), StoreByteInstr(`storeSrc1`, `storeDst1`, `offset1`, _)) => {
-                            instrList.remove(i)
-                            instrList.remove(i)
-                            removeUnnecessaryLoadAndStore(i)
-                        }
-                        case _ =>
-                    }
-
-                }
-                case (MoveInstr(loadDst1, _, _), StoreByteInstr(storeSrc1, storeDst1, offset1, _)) => {
-                    (instrList(i + 2), instrList(i + 3)) match {
-                        case (
-                              LoadRegSignedByte(`loadDst1`, _, _, _),
-                              StoreByteInstr(`storeSrc1`, `storeDst1`, `offset1`, _)
+                              StoreByteInstr(`storeSrc1`, `storeDst1`, `offset1`, false)
                             ) | (
                               MoveInstr(`loadDst1`, _, _),
-                              StoreByteInstr(`storeSrc1`, `storeDst1`, `offset1`, _)
+                              StoreByteInstr(`storeSrc1`, `storeDst1`, `offset1`, false)
+                            ) => {
+                            instrList.remove(i)
+                            instrList.remove(i)
+                            removeUnnecessaryLoadAndStore(i)
+                        }
+                        case _ =>
+                    }
+
+                }
+                case (MoveInstr(loadDst1, _, _), StoreByteInstr(storeSrc1, storeDst1, offset1, false)) => {
+                    (instrList(i + 2), instrList(i + 3)) match {
+                        case (
+                              LoadRegSignedByte(`loadDst1`, _, _, _),
+                              StoreByteInstr(`storeSrc1`, `storeDst1`, `offset1`, false)
+                            ) | (
+                              MoveInstr(`loadDst1`, _, _),
+                              StoreByteInstr(`storeSrc1`, `storeDst1`, `offset1`, false)
                             ) => {
                             instrList.remove(i)
                             instrList.remove(i)

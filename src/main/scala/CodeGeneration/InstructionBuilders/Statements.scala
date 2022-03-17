@@ -307,7 +307,7 @@ object transStatement {
                 /** Constant Propogation: set flag so any assigned identifier in scope will be removed from the map of
                   * constants
                   */
-                wdSF.currST.setToRemove()
+                wdSF.currST.clearAllConstants()
 
                 collector.addStatement(wdSF.head)
                 transStatement(s, wdSF)

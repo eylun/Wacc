@@ -15,7 +15,14 @@ object transExpression {
                 if (assignRHS & checkIfConstant(exprNode, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
 
                     /** Constant Propogation */
-                    val const1 = (IntLiterNode(getConstantInt(exprNode, stackFrame))(0, 0))
+                    val const1 = (IntLiterNode(getConstantInt(exprNode, stackFrame, assignRHS, identString))(0, 0))
+
+                    /** If the constant is being reassigned, remove it from the map of constants */
+                    if (s == identString) {
+                        println(" debug remove")
+                        stackFrame.currST.removeConstantVar(s)
+                    }
+                    stackFrame.currST.removeConstantVar(s)
                     transExpression(const1, stackFrame, false)
                 } else {
                     collector.addStatement(
@@ -217,20 +224,15 @@ object transExpression {
 
             case Add(e1, e2) => {
                 if (checkIfConstant(e1, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
-                    val const1 = (IntLiterNode(getConstantInt(e1, stackFrame))(0, 0))
+                    val const1 = (IntLiterNode(getConstantInt(e1, stackFrame, assignRHS, identString))(0, 0))
+                    println(" first constant grabn")
 
                     /** TODO: refactor */
-                    if (assignRHS) {
-                        e1 match {
-                            case IdentNode(s) => {
-                                if (s == identString) {
-                                    stackFrame.currST.removeConstantVar(s)
-                                }
-                            }
-                        }
-                    }
+                    /** if (assignRHS) { e1 match { case IdentNode(s) => { if (s == identString) {
+                      * stackFrame.currST.removeConstantVar(s) } } } }
+                      */
                     if (checkIfConstant(e2, stackFrame)) {
-                        val const2 = (IntLiterNode(getConstantInt(e2, stackFrame))(0, 0))
+                        val const2 = (IntLiterNode(getConstantInt(e2, stackFrame, assignRHS, identString))(0, 0))
                         transExpression(Add(const1, const2)(0, 0), stackFrame)
                         return
                     }
@@ -257,9 +259,9 @@ object transExpression {
 
             case Sub(e1, e2) => {
                 if (checkIfConstant(e1, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
-                    val const1 = (IntLiterNode(getConstantInt(e1, stackFrame))(0, 0))
+                    val const1 = (IntLiterNode(getConstantInt(e1, stackFrame, assignRHS, identString))(0, 0))
                     if (checkIfConstant(e2, stackFrame)) {
-                        val const2 = (IntLiterNode(getConstantInt(e2, stackFrame))(0, 0))
+                        val const2 = (IntLiterNode(getConstantInt(e2, stackFrame, assignRHS, identString))(0, 0))
                         transExpression(Sub(const1, const2)(0, 0), stackFrame)
                         return
                     }
@@ -285,9 +287,9 @@ object transExpression {
             }
             case Mult(e1, e2) => {
                 if (checkIfConstant(e1, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
-                    val const1 = (IntLiterNode(getConstantInt(e1, stackFrame))(0, 0))
+                    val const1 = (IntLiterNode(getConstantInt(e1, stackFrame, assignRHS, identString))(0, 0))
                     if (checkIfConstant(e2, stackFrame)) {
-                        val const2 = (IntLiterNode(getConstantInt(e2, stackFrame))(0, 0))
+                        val const2 = (IntLiterNode(getConstantInt(e2, stackFrame, assignRHS, identString))(0, 0))
                         transExpression(Mult(const1, const2)(0, 0), stackFrame)
                         return
                     }
@@ -314,9 +316,9 @@ object transExpression {
             }
             case Div(e1, e2) => {
                 if (checkIfConstant(e1, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
-                    val const1 = (IntLiterNode(getConstantInt(e1, stackFrame))(0, 0))
+                    val const1 = (IntLiterNode(getConstantInt(e1, stackFrame, assignRHS, identString))(0, 0))
                     if (checkIfConstant(e2, stackFrame)) {
-                        val const2 = (IntLiterNode(getConstantInt(e2, stackFrame))(0, 0))
+                        val const2 = (IntLiterNode(getConstantInt(e2, stackFrame, assignRHS, identString))(0, 0))
                         transExpression(Div(const1, const2)(0, 0), stackFrame)
                         return
                     }
@@ -342,9 +344,9 @@ object transExpression {
             }
             case Mod(e1, e2) => {
                 if (checkIfConstant(e1, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
-                    val const1 = (IntLiterNode(getConstantInt(e1, stackFrame))(0, 0))
+                    val const1 = (IntLiterNode(getConstantInt(e1, stackFrame, assignRHS, identString))(0, 0))
                     if (checkIfConstant(e2, stackFrame)) {
-                        val const2 = (IntLiterNode(getConstantInt(e2, stackFrame))(0, 0))
+                        val const2 = (IntLiterNode(getConstantInt(e2, stackFrame, assignRHS, identString))(0, 0))
                         transExpression(Mod(const1, const2)(0, 0), stackFrame)
                         return
                     }
