@@ -73,12 +73,17 @@ object Helpers {
     }
 
     /** Returns size of the array */
-    def getArraySize(arrayType: Type, size: Int): Int = {
+    def getArraySize(arrayType: Type, size: Int)(implicit repr: Representation): Int = {
         val ArrayType(t, _, d) = arrayType
         (t, d) match {
-            case (BoolType(), 1) | (CharType(), 1) =>
-                BIT_SIZE * size + WORD_SIZE
-            case _ => WORD_SIZE * size + WORD_SIZE
+            case (BoolType(), 1) | (CharType(), 1) => repr match {
+                case ARMRepresentation => BIT_SIZE * size + WORD_SIZE
+                case X86Representation => BIT_SIZE * size
+            }
+            case _ => repr match {
+                case ARMRepresentation => WORD_SIZE * size + WORD_SIZE
+                case X86Representation => WORD_SIZE * size
+            }
         }
     }
 
@@ -197,7 +202,7 @@ object Helpers {
                 XorInstr(r4, r4, RegOp(r4)),
                 BranchLinkInstr("fflush"),
                 MoveInstr(lr, RegOp(sp)),
-                PopInstr(List(pc))
+                PopInstr(List(lr, pc))
             )
         }
     }
@@ -447,12 +452,14 @@ object Helpers {
             case X86Representation => List(
                 Label("p_print_ln"),
                 PushInstr(List(lr)),
+                MoveInstr(lr, RegOp(sp)),
                 LoadLabelInstr(r4, s"msg_$idx"),
                 BranchLinkInstr("puts"),
-                MoveInstr(r4, ImmOffset(0)),
+                MoveInstr(r0, ImmOffset(0)),
+                MoveInstr(r4, RegOp(r0)),
                 XorInstr(r4, r4, RegOp(r4)),
                 BranchLinkInstr("fflush"),
-                MoveInstr(r4, RegOp(r0)),
+                MoveInstr(lr, RegOp(sp)),
                 PopInstr(List(lr, pc))
             )
         }

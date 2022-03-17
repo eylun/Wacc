@@ -156,37 +156,37 @@ object transStatement {
                 transRHS(r, stackFrame)
                 stackFrame.unlock(i.s)
 
-                /** Store instruction generated via determineStoreInstr() */
-                collector.addStatement(
-                  List(
-                    determineStoreInstr(
-                      t.typeId.get.getType(),
-                      r0,
-                      sp,
-                      stackFrame.getOffset(i.s)
-                    )
-                  )
-                )
+                repr match {
+                    case ARMRepresentation => {
+                        /** Store instruction generated via determineStoreInstr() */
+                        collector.addStatement(
+                            List(determineStoreInstr(t.typeId.get.getType(), r0, sp, stackFrame.getOffset(i.s)))
+                        )
+                    }
+                    case X86Representation => 
+                }
             }
             /** LR ASSIGNMENT STATEMENT: <Assign-LHS> '=' <Assign-RHS> */
             case LRAssignNode(l, r) => {
                 l match {
                     case IdentNode(s) => {
-
                         /** Generates instructions for LHS and RHS */
                         transRHS(r, stackFrame)
                         transLHS(l, stackFrame)
-
-                        collector.addStatement(
-                          List(
-                            determineStoreInstr(
-                              stackFrame.currST.lookupAll(s).get.getType(),
-                              r0,
-                              sp,
-                              stackFrame.getOffset(s)
+                        
+                        repr match {
+                            case ARMRepresentation => collector.addStatement(
+                                List(
+                                    determineStoreInstr(
+                                        stackFrame.currST.lookupAll(s).get.getType(),
+                                        r0,
+                                        sp,
+                                        stackFrame.getOffset(s)
+                                    )
+                                )
                             )
-                          )
-                        )
+                            case X86Representation => 
+                        }
                     }
                     case ae @ ArrayElemNode(IdentNode(s), es) => {
 
@@ -457,7 +457,6 @@ object transStatement {
             }
 
             case StringLiterNode(_) => {
-
                 /** Insert instruction sequence for printing strings */
                 collector.insertUtil(PPrintString)
 

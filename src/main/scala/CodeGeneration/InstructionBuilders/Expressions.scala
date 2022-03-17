@@ -10,21 +10,25 @@ object transExpression {
             (implicit collector: WaccBuffer, repr: Representation): Unit = {
         exprNode match {
             /** IDENTIFIER */
-            case IdentNode(s) =>
-                collector.addStatement(
-                  List(
-                    /** Adds a different load instruction depending on the
-                      * identifier type
-                      */
-                    determineLoadInstr(
-                      stackFrame.currST.lookupAll(s).get.getType(),
-                      r0,
-                      sp,
-                      stackFrame.getOffset(s)
+            case IdentNode(s) => {
+                repr match {
+                    case ARMRepresentation => collector.addStatement(
+                        List(
+                            /** Adds a different load instruction depending on the
+                             * identifier type
+                             */
+                            determineLoadInstr(
+                                stackFrame.currST.lookupAll(s).get.getType(),
+                                r0,
+                                sp,
+                                stackFrame.getOffset(s)
+                            )
+                        )
                     )
-                  )
-                )
-
+                    case X86Representation =>
+                }
+            }
+                
             /** LITERALS: int, char, bool, string, pair, array-elem */
             case IntLiterNode(n) =>
                 collector.addStatement(List(LoadImmIntInstr(r0, n)))

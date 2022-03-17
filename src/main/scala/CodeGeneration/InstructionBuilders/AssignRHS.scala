@@ -25,38 +25,50 @@ object transRHS {
                     }
                     case a @ ArrayType(_, _, _) => {
                         collector.addStatement(
-                          List(
-                            MoveInstr(r0, ImmOffset(getArraySize(a, es.length)))
-                          )
+                            List(MoveInstr(r0, ImmOffset(getArraySize(a, es.length))))
                         )
                     }
                     case _ =>
                 }
-                collector.addStatement(
-                  List(
+
+                repr match {
+                    case X86Representation => collector.addStatement(List(
+                        MoveInstr(r4, RegOp(r0))
+                    ))
+                    case _ =>
+                }
+                
+                collector.addStatement(List(
                     BranchLinkInstr("malloc", Condition.AL),
                     MoveInstr(r3, RegOp(r0))
-                  )
-                )
+                ))
+
                 var ofs = WORD_SIZE
-                es.foreach { e =>
-                    {
-                        transExpression(e, stackFrame)
-                        collector.addStatement(
-                          List(
-                            determineStoreInstr(e.typeId.get.getType(), r0, r3, ofs)
-                          )
-                        )
-                        ofs += getTypeSize(e.typeId.get.getType())
-                    }
+                repr match {
+                    case X86Representation => ofs = 0
+                    case _ => 
                 }
-                collector.addStatement(
-                  List(
-                    MoveInstr(r0, ImmOffset(es.length)),
-                    StoreInstr(r0, r3, ImmOffset(0)),
-                    MoveInstr(r0, RegOp(r3))
-                  )
-                )
+
+                es.foreach { e => {
+                    transExpression(e, stackFrame)
+                    collector.addStatement(
+                        List(
+                        determineStoreInstr(e.typeId.get.getType(), r0, r3, ofs)
+                        )
+                    )
+                    ofs += getTypeSize(e.typeId.get.getType())
+                }}
+
+                repr match {
+                    case ARMRepresentation => collector.addStatement(List(
+                        MoveInstr(r0, ImmOffset(es.length)),
+                        StoreInstr(r0, r3, ImmOffset(0)),
+                        MoveInstr(r0, RegOp(r3))
+                    ))
+                    case X86Representation => collector.addStatement(List(
+                        MoveInstr(r0, RegOp(r3))
+                    ))
+                }
             }
             /** NEW PAIR NODE */
             case NewPairNode(e1, e2) => {
