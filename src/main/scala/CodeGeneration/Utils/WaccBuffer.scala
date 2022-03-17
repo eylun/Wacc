@@ -1,12 +1,13 @@
 import scala.collection.mutable
+import OptimisationFlag._
 
-class WaccBuffer {
+class WaccBuffer(val optFlag: OptimisationFlag = OptimisationFlag.O0) {
     import constants._
     import Helpers._
     import Helpers.UtilFlag._
 
-    /** Counters for data messages, if-then-else statements, do-while statements
-      * and for the number of statements in general
+    /** Counters for data messages, if-then-else statements, do-while statements and for the number of statements in
+      * general
       */
     private var generalCount = 0
     private var dataMsgCount = 0
@@ -41,19 +42,18 @@ class WaccBuffer {
 
     /** One-off Utility Pool
       *
-      * This set contains all the enums that currently exist within the program
-      * If a enum already exists, it cannot be added a second time.
+      * This set contains all the enums that currently exist within the program If a enum already exists, it cannot be
+      * added a second time.
       */
     private val utilpool = mutable.Set[UtilFlag]().empty
 
     /** One-off Utility Function
       *
-      * These functions are meant to add data messages. However they should not
-      * occur more than once in a program, so calling them a second time will
-      * not do anything.
+      * These functions are meant to add data messages. However they should not occur more than once in a program, so
+      * calling them a second time will not do anything.
       *
-      * On first call, the function will also add a list of instructions into
-      * the utilities listbuffer which will be printed in the end
+      * On first call, the function will also add a list of instructions into the utilities listbuffer which will be
+      * printed in the end
       */
     def insertUtil(flag: UtilFlag): Unit = {
         if (utilpool.contains(flag)) return
@@ -120,8 +120,8 @@ class WaccBuffer {
     def toList(buffer: mutable.ListBuffer[Instruction]): List[Instruction] =
         buffer.toList
 
-    /** emit() concatenates the data messages (if any) together with the
-      * instructions generated for the main statements and utility statements
+    /** emit() concatenates the data messages (if any) together with the instructions generated for the main statements
+      * and utility statements
       */
     def emit(): List[Instruction] = toList(
       dataMsgs.length match {
