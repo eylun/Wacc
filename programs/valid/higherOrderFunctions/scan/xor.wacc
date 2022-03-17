@@ -1,0 +1,28 @@
+# Scan boolean array
+
+# Input:
+
+# Output:
+# true
+# false
+# true
+# true
+# 4
+
+# Exit: 0
+
+# Program:
+
+begin
+  bool xor(bool x, bool y) is
+	return !(x == y)
+  end
+
+  bool[] x = [true, true, false];
+  bool[] y = scan xor true x;
+  println y[0];
+  println y[1];
+  println y[2];
+  println y[3];
+  println len y
+end

@@ -128,4 +128,19 @@ class ExecuteSpec extends AnyFlatSpec {
         waccProgramsInDir(new File("./programs/valid/tryCatch"))
             .foreach((executeAndCompare(_)))
     }
+    behavior of "map programs"
+    it should "execute maps" in {
+        waccProgramsInDir(new File("./programs/valid/higherOrderFunctions/map"))
+            .foreach((executeAndCompare(_)))
+    }
+    behavior of "fold programs"
+    it should "execute folds" in {
+        waccProgramsInDir(new File("./programs/valid/higherOrderFunctions/fold"))
+            .foreach((executeAndCompare(_)))
+    }
+    behavior of "scan programs"
+    it should "execute scans" in {
+        waccProgramsInDir(new File("./programs/valid/higherOrderFunctions/scan"))
+            .foreach((executeAndCompare(_)))
+    }
 }

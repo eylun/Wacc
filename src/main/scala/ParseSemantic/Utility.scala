@@ -25,6 +25,10 @@ object Utility {
     }
 
     val keywords = Set(
+      "fold",
+      "map",
+      "filter",
+      "scan",
       "throw",
       "catch",
       "try",
