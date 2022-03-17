@@ -13,6 +13,8 @@ object transExpression {
             /** IDENTIFIER */
             case IdentNode(s) =>
                 if (assignRHS & checkIfConstant(exprNode, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
+
+                    /** Constant Propogation */
                     val const1 = (IntLiterNode(getConstantInt(exprNode, stackFrame))(0, 0))
                     transExpression(const1, stackFrame, false)
                 } else {
@@ -202,8 +204,10 @@ object transExpression {
             }
             case Mod(IntLiterNode(x), IntLiterNode(y)) if collector.optFlag == OptimisationFlag.Oph => {
                 if (y == 0) { throw new RuntimeException("Divide by zero error at modulus") }
-                else if (y <= x) { transExpression((IntLiterNode(0)(0, 0)), stackFrame) }
-                else {
+                else if (y > x & y > 0 & x > 0) {
+                    transExpression((IntLiterNode(x)(0, 0)), stackFrame)
+                } else {
+                    print("here")
                     transExpression(
                       (IntLiterNode(x % y)(0, 0)),
                       stackFrame
@@ -214,6 +218,17 @@ object transExpression {
             case Add(e1, e2) => {
                 if (checkIfConstant(e1, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
                     val const1 = (IntLiterNode(getConstantInt(e1, stackFrame))(0, 0))
+
+                    /** TODO: refactor */
+                    if (assignRHS) {
+                        e1 match {
+                            case IdentNode(s) => {
+                                if (s == identString) {
+                                    stackFrame.currST.removeConstantVar(s)
+                                }
+                            }
+                        }
+                    }
                     if (checkIfConstant(e2, stackFrame)) {
                         val const2 = (IntLiterNode(getConstantInt(e2, stackFrame))(0, 0))
                         transExpression(Add(const1, const2)(0, 0), stackFrame)

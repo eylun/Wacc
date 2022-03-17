@@ -13,6 +13,7 @@ object transRHS {
         rhs match {
             /** EXPRESSION NODE */
             case e: ExprNode => transExpression(e, stackFrame, true, identString)
+
             /** ARRAY-LITER NODE */
             case al @ ArrayLiterNode(es) => {
 

@@ -308,7 +308,6 @@ object transStatement {
                   * constants
                   */
                 wdSF.currST.setToRemove()
-                println("here")
 
                 collector.addStatement(wdSF.head)
                 transStatement(s, wdSF)
@@ -396,6 +395,10 @@ object transStatement {
 
                 l match {
                     case IdentNode(s) => {
+
+                        /** Reassign variable: remove from constant propogation map */
+                        stackFrame.currST.removeConstantVar(s)
+
                         collector.addStatement(
                           List(
                             AddInstr(

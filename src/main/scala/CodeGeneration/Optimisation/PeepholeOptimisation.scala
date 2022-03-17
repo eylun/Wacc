@@ -7,7 +7,6 @@ object PeepholeOptimisation {
         implicit val instrList: mutable.ListBuffer[Instruction] = instructions.to(mutable.ListBuffer)
 
         for ((instr, i) <- instrList.zipWithIndex) {
-            /* TODO: functions mutate the list given an index */
             removeUnnecessaryLoadAndStore(i)
             removeUnnecessaryPushAndPop(i)
         }
@@ -109,7 +108,7 @@ object PeepholeOptimisation {
   *   - removing unnecessary load and store pairs,
   *   - removing unnecessary push & pop instructions,
   *   - constant folding (binary operations)
-  *   - TODO: constant propogation
+  *   - constant propogation
   */
 object OptimisationFlag extends Enumeration {
     type OptimisationFlag = Value
