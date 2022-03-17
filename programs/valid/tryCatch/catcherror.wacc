@@ -1,0 +1,22 @@
+
+# Input:
+
+# Output:
+# 5
+# #runtime_error#
+
+# Exit: 255
+
+# Program:
+begin
+try
+	int x = 5 / 0
+catch (exception e)
+	try
+		int x = 5 / 0
+	catch (exception e)
+		println 5
+	end;
+	int x = 5 / 0
+end
+end

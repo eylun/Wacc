@@ -97,6 +97,12 @@ class ExecuteSpec extends AnyFlatSpec {
     //     )
     //         .foreach((executeAndCompare(_)))
     // }
+    // it should "execute uncaught exception errors" in {
+    //     waccProgramsInDir(
+    //       new File("./programs/valid/runtimeErr/uncaughtException")
+    //     )
+    //         .foreach((executeAndCompare(_)))
+    // }
     // behavior of "scope programs"
     // it should "execute scope statements" in {
     //     waccProgramsInDir(new File("./programs/valid/scope"))
@@ -115,6 +121,26 @@ class ExecuteSpec extends AnyFlatSpec {
     // behavior of "while programs"
     // it should "execute while statement errors" in {
     //     waccProgramsInDir(new File("./programs/valid/while"))
+    //         .foreach((executeAndCompare(_)))
+    // }
+    // behavior of "try-catch programs"
+    // it should "execute try-catch statement errors" in {
+    //     waccProgramsInDir(new File("./programs/valid/tryCatch"))
+    //         .foreach((executeAndCompare(_)))
+    // }
+    // behavior of "map programs"
+    // it should "execute maps" in {
+    //     waccProgramsInDir(new File("./programs/valid/higherOrderFunctions/map"))
+    //         .foreach((executeAndCompare(_)))
+    // }
+    // behavior of "fold programs"
+    // it should "execute folds" in {
+    //     waccProgramsInDir(new File("./programs/valid/higherOrderFunctions/fold"))
+    //         .foreach((executeAndCompare(_)))
+    // }
+    // behavior of "scan programs"
+    // it should "execute scans" in {
+    //     waccProgramsInDir(new File("./programs/valid/higherOrderFunctions/scan"))
     //         .foreach((executeAndCompare(_)))
     // }
 }

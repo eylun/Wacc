@@ -1,0 +1,18 @@
+# Catch a division by zero error
+
+# Input:
+
+# Output:
+# #runtime_error#
+
+# Exit: 0
+
+# Program:
+
+begin
+  try
+    int x = 5/0
+  catch(exception e)
+	println e
+  end
+end

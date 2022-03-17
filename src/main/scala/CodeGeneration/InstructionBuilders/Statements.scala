@@ -12,6 +12,144 @@ object transStatement {
     ): Unit = {
         val StatListNode(l) = statList
         l.foreach {
+            /** THROW STATEMENT: throw <expr> */
+            case ThrowNode(e) => {
+                collector.insertUtil(UtilFlag.PExceptionError)
+                transExpression(e, stackFrame)
+                collector.addStatement(
+                  List(
+                    LoadImmIntInstr(r7, typeNumConvert(e.typeId.get.getType())),
+                    LoadLabelInstr(r2, "catch_address"),
+                    LoadInstr(r2, r2, ImmOffset(0)),
+                    CompareInstr(r2, ImmOffset(0)),
+                    BranchInstr("p_exception_error", Condition.EQ),
+                    MoveInstr(pc, RegOp(r2))
+                  )
+                )
+            }
+            /** TRY-CATCH STATEMENT: try <stat> catch (<type> <ident>) <stat> or
+              * catch (<type> <ident>) <stat>
+              */
+            case tc @ TryCatchNode(s, cs) => {
+                val idx = collector.tickTryCatch()
+                collector.insertUtil(UtilFlag.PExceptionError)
+
+                /** ASM code for the Try block */
+                collector.addStatement(
+                  List(
+                    /** Storing bss values onto the stack */
+                    SubInstr(sp, sp, ImmOffset(8)),
+                    LoadLabelInstr(r2, "prev_sp"),
+                    LoadInstr(r2, r2, ImmOffset(0)),
+                    StoreInstr(r2, sp, ImmOffset(4)),
+                    LoadLabelInstr(r2, "catch_address"),
+                    LoadInstr(r2, r2, ImmOffset(0)),
+                    StoreInstr(r2, sp, ImmOffset(0)),
+                    /** Loading bss values with new values */
+                    LoadLabelInstr(r2, "prev_sp"),
+                    StoreInstr(sp, r2, ImmOffset(0)),
+                    LoadLabelInstr(r2, "catch_address"),
+                    LoadLabelInstr(r3, s"catch_handler_$idx"),
+                    StoreInstr(r3, r2, ImmOffset(0))
+                  )
+                )
+                stackFrame.addTempOffset(8)
+                val trySF = stackFrame.join(tc.tryST)
+                collector.addStatement(trySF.head)
+                transStatement(s, trySF)
+                collector.addStatement(
+                  trySF.tail ++:
+                      List(
+                        LoadInstr(r2, sp, ImmOffset(4)),
+                        LoadLabelInstr(r3, "prev_sp"),
+                        StoreInstr(r2, r3, ImmOffset(0)),
+                        LoadInstr(r2, sp, ImmOffset(0)),
+                        LoadLabelInstr(r3, "catch_address"),
+                        StoreInstr(r2, r3, ImmOffset(0)),
+                        AddInstr(sp, sp, ImmOffset(8)),
+                        BranchInstr(s"catch_end_$idx")
+                      )
+                )
+
+                /** ASM code for the catch handler */
+                /** Reset sp, previous sp and catch address */
+                collector.addStatement(
+                  List(
+                    Label(s"catch_handler_$idx"),
+                    /** Reset sp value to previous sp */
+                    LoadLabelInstr(r2, "prev_sp"),
+                    LoadInstr(sp, r2, ImmOffset(0)),
+                    /** Revert bss values to previous */
+                    LoadInstr(r2, sp, ImmOffset(4)),
+                    LoadLabelInstr(r3, "prev_sp"),
+                    StoreInstr(r2, r3, ImmOffset(0)),
+                    LoadInstr(r2, sp, ImmOffset(0)),
+                    LoadLabelInstr(r3, "catch_address"),
+                    StoreInstr(r2, r3, ImmOffset(0)),
+                    AddInstr(sp, sp, ImmOffset(8))
+                  )
+                )
+                stackFrame.dropTempOffset(8)
+
+                /** ASM code for branching to appropriate catch statements */
+                cs.foreach(c => {
+                    val typeNum = typeNumConvert(c.t.typeId.get.getType())
+                    collector.addStatement(
+                      List(
+                        CompareInstr(r7, ImmOffset(typeNum)),
+                        BranchInstr(
+                          s"catch_${c.t.typeId.get.getType()}_$idx",
+                          Condition.EQ
+                        )
+                      )
+                    )
+                })
+                /* ASM code for handling cases where nothing is caught */
+                collector.addStatement(
+                  List(
+                    LoadLabelInstr(r2, "catch_address"),
+                    LoadInstr(r2, r2, ImmOffset(0)),
+                    CompareInstr(r2, ImmOffset(0)),
+                    BranchInstr("p_exception_error", Condition.EQ),
+                    MoveInstr(pc, RegOp(r2))
+                  )
+                )
+
+                /** ASM code for the catch block(s) */
+                cs.foreach(c => {
+
+                    /** Add label for each catch block */
+                    collector.addStatement(
+                      Label(s"catch_${c.t.typeId.get.getType()}_$idx")
+                    )
+
+                    /** Insert the thrown value to the stack at the appropriate
+                      * position
+                      */
+                    c.t.typeId.get.getType() match {
+                        case BoolType() | CharType() =>
+                            collector.addStatement(
+                              StoreByteInstr(r0, sp, ImmOffset(-1))
+                            )
+                        case _ =>
+                            collector.addStatement(
+                              StoreInstr(r0, sp, ImmOffset(-4))
+                            )
+                    }
+
+                    /** Translate statement within each catch block */
+                    val cSF = stackFrame.join(c.catchST)
+                    cSF.unlock(c.i.s)
+                    collector.addStatement(cSF.head)
+                    transStatement(c.s, cSF)
+                    collector.addStatement(
+                      cSF.tail :+ BranchInstr(s"catch_end_$idx")
+                    )
+                })
+
+                /** Label to jump to to exit try-catch */
+                collector.addStatement(Label(s"catch_end_$idx"))
+            }
             /** NEW ASSIGNMENT STATEMENT: <type> <ident> '=' <Assign-RHS> */
             case NewAssignNode(t, i, r) => {
 
@@ -212,8 +350,25 @@ object transStatement {
             /** FREE STATEMENT: ‘free’ ⟨expr ⟩ */
             case FreeNode(e) => {
                 transExpression(e, stackFrame)
-                collector.insertUtil(UtilFlag.PFreePair)
-                collector.addStatement(List(BranchLinkInstr("p_free_pair")))
+                e.typeId.get.getType() match {
+                    case ArrayType(_, _, _) => {
+                        collector.addStatement(
+                          List(
+                            BranchLinkInstr("free")
+                          )
+                        )
+                    }
+                    case PairType(_, _) => {
+                        collector.insertUtil(UtilFlag.PFreePair)
+                        collector.addStatement(
+                          List(BranchLinkInstr("p_free_pair"))
+                        )
+                    }
+                    case _ =>
+                        throw new RuntimeException(
+                          "Invalid Target Type for Free Statement"
+                        )
+                }
             }
             /** RETURN STATEMENT: ‘return’ ⟨expr ⟩ */
             case ReturnNode(e) => {
@@ -420,7 +575,7 @@ object transStatement {
                   List(BranchLinkInstr("putchar"))
                 )
             }
-            case StringType() => {
+            case StringType() | ExceptionType() => {
                 collector.insertUtil(UtilFlag.PPrintString)
 
                 /** Add branch instruction statement */

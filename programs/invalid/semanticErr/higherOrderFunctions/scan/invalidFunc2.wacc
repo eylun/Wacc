@@ -1,0 +1,19 @@
+# fold can only use functions that take in 2 elements
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int incre(int x, int y, int z) is
+	return x + y + z
+  end
+
+  int[] x = [1, 2, 3];
+  int[] y = fold incre 0 x
+end
+

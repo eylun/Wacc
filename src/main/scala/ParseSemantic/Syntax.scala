@@ -1,30 +1,14 @@
 import parsley.Parsley, Parsley._
 import parsley.implicits.lift.{Lift0, Lift1, Lift2, Lift3, Lift4}
 import scala.language.implicitConversions
-import parsley.errors.combinator.{
-    fail => pfail,
-    unexpected,
-    amend,
-    entrench,
-    ErrorMethods
-}
+import parsley.errors.combinator.{fail => pfail, unexpected, amend, entrench, ErrorMethods}
 
 /** Lexer
   *
-  * Contains parsing for literals and simple items. Raw strings defined in lexer
-  * do not have whitespace checking.
+  * Contains parsing for literals and simple items. Raw strings defined in lexer do not have whitespace checking.
   */
 object lexer {
-    import parsley.character.{
-        digit,
-        isWhitespace,
-        alphaNum,
-        noneOf,
-        string,
-        letter,
-        anyChar,
-        satisfy
-    }
+    import parsley.character.{digit, isWhitespace, alphaNum, noneOf, string, letter, anyChar, satisfy}
     import parsley.token.{LanguageDef, Lexer, Parser, Predicate}
     import parsley.implicits.character.{charLift, stringLift}
     import parsley.combinator.{eof, many, manyUntil, optional, some}
@@ -57,13 +41,21 @@ object lexer {
     def fully[A](p: => Parsley[A]): Parsley[A] =
         lexer.whiteSpace ~> p <~ (eof <|> _kw)
 
-    /** Identifier := ( ‘ ’ | ‘a’-‘z’ | ‘A’-‘Z’ ) ( ‘ ’ | ‘a’-‘z’ | ‘A’-‘Z’ |
-      * ‘0’-‘9’ )*
+    /** Identifier := ( ‘ ’ | ‘a’-‘z’ | ‘A’-‘Z’ ) ( ‘ ’ | ‘a’-‘z’ | ‘A’-‘Z’ | ‘0’-‘9’ )*
       */
     val ident = IdentNode(lexer.identifier.filterOut {
         case v if lang.keywords(v) =>
             s"keyword $v may not be used as an identifier"
     }).label("identifier")
+
+    val funcIdent = IdentNode(
+      lexer.identifier
+          .filterOut {
+              case v if lang.keywords(v) =>
+                  s"keyword $v may not be used as an identifier"
+          }
+          .map("f_" + _)
+    ).label("function identifier")
 
     val number =
         lexer
@@ -98,9 +90,7 @@ object lexer {
 
     /** int-sign := '+' | '-' */
     val intSign =
-        (lexer.lexeme("+") #> identity[Long] _ <|> lexer.lexeme("-") #> (
-          (x: Long) => -x
-        ))
+        (lexer.lexeme("+") #> identity[Long] _ <|> lexer.lexeme("-") #> ((x: Long) => -x))
             .label("integer sign")
 
     /* LITERALS */
@@ -166,6 +156,8 @@ object lexer {
     lazy val charType = CharTypeNode <# lexer.keyword("char").label("Char Type")
     lazy val stringType =
         StringTypeNode <# lexer.keyword("string").label("String Type")
+    lazy val exceptionType =
+        ExceptionTypeNode <# lexer.keyword("exception").label("Exception Type")
     lazy val baseType: Parsley[BaseTypeNode] =
         (intType <|> boolType <|> charType <|> stringType)
             .label("Base Types: int, bool, char, string")
@@ -186,20 +178,13 @@ object lexer {
   * Contains parsing for values that are that require other parsers
   */
 object syntax {
-    import lexer.{baseType, pairBaseType, fully, exprAtoms, anyString, number, ident, _kw}
+    import lexer.{baseType, exceptionType, pairBaseType, fully, exprAtoms, number, anyString, ident, funcIdent, _kw}
     import lexer.implicits.implicitLexeme
     import parsley.debug.{DebugCombinators, FullBreak}
-    import parsley.combinator.{
-        eof,
-        many,
-        manyUntil,
-        optional,
-        some,
-        sepBy,
-        sepBy1
-    }
+    import parsley.combinator.{eof, many, manyUntil, optional, some, sepBy, sepBy1}
     import parsley.expr.{precedence, Ops, InfixL, Prefix, Postfix, chain}
     import parsley.errors.combinator.{ErrorMethods, fail}
+    import scala.collection.mutable
 
     /** Entry point into parser */
     val parse = fully(program)
@@ -228,7 +213,7 @@ object syntax {
     lazy val func: Parsley[FuncNode] =
         FuncNode(
           anyType,
-          ident,
+          funcIdent,
           "(" ~> (sepBy(param, ",").label("function parameters") <~ ")"
               <|> _semiFunc),
           "is" ~> stat
@@ -250,8 +235,8 @@ object syntax {
 
     /** Function to ensure function bodies can exit
       *
-      * Either a return or exit statement must be present, or an if-else
-      * statement that both reaches a return or exit statement
+      * Either a return or exit statement must be present, or an if-else statement that both reaches a return or exit
+      * statement
       */
     lazy val verifyFuncExit: PartialFunction[StatNode, StatNode] = {
         case x if canExit(x) => x
@@ -268,8 +253,7 @@ object syntax {
 
     /** Function to ensure function bodies exits do not have statements after
       *
-      * If a function exits through an if-else statement, it is syntactically
-      * legal to have extra statements after it.
+      * If a function exits through an if-else statement, it is syntactically legal to have extra statements after it.
       */
     lazy val verifyCleanExit: PartialFunction[StatNode, StatNode] = {
         case x if cleanExit(x) => x
@@ -280,8 +264,7 @@ object syntax {
             case IfThenElseNode(_, s1, s2)   => cleanExit(s1) && cleanExit(s2)
             case StatListNode(s) =>
                 s.zipWithIndex.foreach {
-                    case (ReturnNode(_) | ExitNode(_), n)
-                        if n == s.length - 1 =>
+                    case (ReturnNode(_) | ExitNode(_), n) if n == s.length - 1 =>
                         return true
                     case (x: IfThenElseNode, _) if cleanExit(x) => return true
                     case _                                      => ()
@@ -291,8 +274,7 @@ object syntax {
         }
     }
     /* EXPRESSIONS */
-    /** expr := literal <|> identifier <|> array-elem <|> unary op <|> bin op
-      * <|> paren
+    /** expr := literal <|> identifier <|> array-elem <|> unary op <|> bin op <|> paren
       */
     lazy val expr: Parsley[ExprNode] =
         precedence[ExprNode](
@@ -364,7 +346,7 @@ object syntax {
     /** call := ‘call’ ⟨ident⟩ ‘(’ ⟨arg-list⟩? ‘)’ */
     lazy val call =
         CallNode(
-          "call".label("function call") *> ident.label("function name"),
+          "call".label("function call") *> funcIdent.label("function name"),
           "(".label("\"(\" <function arguments> \")\"") *> exprArgList.label(
             "function arguments"
           ) <* ")"
@@ -380,11 +362,15 @@ object syntax {
       ("[" *> sepBy(expr, ",") <* "]").label("array literal")
     )
 
-    /** assign-rhs := expr <|> array-liter <|> 'newpair' '(' expr ',' expr ')'
-      * <|> pairElem <|> 'call' ident '(' arg-list? ')'
+    lazy val mapHOF = MapNode("map" ~> funcIdent, expr)
+    lazy val foldHOF = FoldNode("fold" ~> funcIdent, expr, expr)
+    lazy val scanHOF = ScanNode("scan" ~> funcIdent, expr, expr)
+
+    /** assign-rhs := expr <|> array-liter <|> 'newpair' '(' expr ',' expr ')' <|> pairElem <|> 'call' ident '('
+      * arg-list? ')'
       */
     lazy val assignRHS =
-        (expr <|> arrayLiter <|> newPair <|> pairElem.hide <|> call)
+        (expr <|> arrayLiter <|> newPair <|> pairElem.hide <|> call <|> mapHOF <|> foldHOF <|> scanHOF)
             .label("RHS Assignment")
             .explain(
               """Valid RHS Assignments include: Expression, Array Literal, 
@@ -407,16 +393,42 @@ object syntax {
             .label("statement(s)")
 
     lazy val statAtoms: Parsley[StatNode] =
-        (skipStat <|> newAssignStat <|> lrAssignStat <|> readStat <|>
+        (skipStat <|> throwStat <|> tryCatchStat <|> newAssignStat <|>
+            lrAssignStat <|> readStat <|>
             freeStat <|> returnStat <|> exitStat <|> printStat <|>
             printlnStat <|> ifThenElseStat <|> whileDoStat <|> beginEndStat)
             .label("statement atoms")
             .explain(
-              """- Statement atoms include: 'skip', Assignment, Read, Free, 
+              """- Statement atoms include: Skip, Throw, Try-Catch, Assignment, Read, Free, 
 			  |Return, Exit, Print, Conditional or Begin-end statements
 			  |""".stripMargin.replaceAll("\n", " ")
             )
-
+    lazy val throwStat = ThrowNode("throw" ~> expr)
+    lazy val catchAtom =
+        CatchNode(
+          "catch" ~> "(" ~> (baseType <|> exceptionType),
+          ident <~ ")",
+          stat
+        )
+            .label("catch-block")
+    lazy val catchList = sepBy1(
+      catchAtom,
+      "or".hide
+    ).collectMsg(
+      "Catch types cannot be occur more than once"
+    ) { case x if catchesNoDupe(x) => x }
+    lazy val tryCatchStat = TryCatchNode(
+      "try" ~> stat,
+      catchList <~ "end"
+    ).label("try-catch-block")
+    def catchesNoDupe(base: List[CatchNode]): Boolean = {
+        val typeSet = mutable.Set[TypeNode]()
+        base.foreach { c =>
+            if (typeSet.contains(c.t)) return false
+            typeSet += c.t
+        }
+        true
+    }
     lazy val skipStat = SkipNode <# "skip".label("skip statement")
     lazy val newAssignStat =
         NewAssignNode(

@@ -1,0 +1,26 @@
+# Catch an Exception of every base type
+
+# Input:
+
+# Output:
+# #runtime_error#
+
+# Exit: 0
+
+# Program:
+
+begin
+  try
+  	int x = 5/0
+  catch (exception x)
+	println x
+  or catch (int x)
+	println x
+  or catch (char x)
+	println x
+  or catch (string x)
+	println x
+  or catch (bool x)
+	println x
+  end
+end
