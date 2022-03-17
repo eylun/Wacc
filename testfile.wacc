@@ -10,12 +10,8 @@
 
 
 begin
-  int a = 1;	
-  int b = 2;
-  if a == 3
-  then 
-    b = 4
-  else 
-    b = a + 1
-  fi
+
+  int b = 5;
+  int c = b
 end
+

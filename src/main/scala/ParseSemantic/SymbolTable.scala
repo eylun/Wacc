@@ -41,7 +41,7 @@ class SymbolTable(
         constantIntsMap = constantIntsMap + (name -> value)
     }
 
-    /** constant propogation test */
+    /** Given another map of constants, add it to the current map */
     def addConstants(constants: Map[String, Int]): Unit = {
         constantIntsMap = constantIntsMap ++ constants
     }
@@ -56,6 +56,7 @@ class SymbolTable(
         constantIntsMap = Map[String, Int]().empty
     }
 
+    /** Propogates up (checks parent symbol table for constant) */
     def containsConstant(name: String): Boolean = {
         var s: Option[SymbolTable] = Some(this)
         while (s != None) {

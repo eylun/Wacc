@@ -224,6 +224,7 @@ object transStatement {
             /** IF THEN ELSE STATEMENT: ‘if’ ⟨expr ⟩ ‘then’ ⟨stat⟩ ‘else’ ⟨stat⟩ ‘fi’
               */
             case ite @ IfThenElseNode(e, s1, s2) => {
+                println(" here")
 
                 /** Labels for True and False cases */
                 val labelFalse = s"ite_${collector.tickIte()}"
@@ -234,9 +235,9 @@ object transStatement {
                 val falseSF =
                     stackFrame.join(ite.falseST)
 
-                /** Add currST constant map to falseST and trueST constant map */
-                ite.trueST.addConstants(stackFrame.currST.constantIntsMap)
-                ite.falseST.addConstants(stackFrame.currST.constantIntsMap)
+                /* debug*/
+                trueSF.currST.dict.keys.foreach(k => print(k))
+                print(" here part 2")
 
                 /** Evaluate conditional expression and branch accordingly */
                 transExpression(e, stackFrame)
@@ -247,6 +248,10 @@ object transStatement {
                   ) ++ trueSF.head
                 )
                 transStatement(s1, trueSF)
+
+                /* debug*/
+                trueSF.currST.dict.keys.foreach(k => print(k))
+
                 collector.addStatement(
                   trueSF.tail ++
                       List(
@@ -257,6 +262,9 @@ object transStatement {
                 )
                 transStatement(s2, falseSF)
                 collector.addStatement(falseSF.tail ++ List(Label(labelTrue)))
+
+                /** Constant Propogation: remove variables that are being assigned in the loop body */
+                ite.trueST.dict.keys.foreach(ident => stackFrame.currST.removeConstantVar(ident))
             }
             /** BEGIN-END STATEMENT: ‘begin’ ⟨stat⟩ ‘end’ */
             case be @ BeginEndNode(s) => {

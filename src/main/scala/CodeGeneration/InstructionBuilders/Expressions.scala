@@ -12,18 +12,24 @@ object transExpression {
         exprNode match {
             /** IDENTIFIER */
             case IdentNode(s) =>
-                collector.addStatement(
-                  List(
-                    /** Adds a different load instruction depending on the identifier type
-                      */
-                    determineLoadInstr(
-                      stackFrame.currST.lookupAll(s).get.getType(),
-                      r0,
-                      sp,
-                      stackFrame.getOffset(s)
+                if (assignRHS & checkIfConstant(exprNode, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
+                    val const1 = (IntLiterNode(getConstantInt(exprNode, stackFrame))(0, 0))
+                    transExpression(const1, stackFrame, false)
+                } else {
+                    collector.addStatement(
+                      List(
+                        /** Adds a different load instruction depending on the identifier type
+                          */
+                        determineLoadInstr(
+                          stackFrame.currST.lookupAll(s).get.getType(),
+                          r0,
+                          sp,
+                          stackFrame.getOffset(s)
+                        )
+                      )
                     )
-                  )
-                )
+
+                }
 
             /** LITERALS: int, char, bool, string, pair, array-elem */
             /** Constant Propogation: If part of assignRHS statement, then the Int is associated with a constant
@@ -209,10 +215,13 @@ object transExpression {
                 if (checkIfConstant(e1, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
                     val const1 = (IntLiterNode(getConstantInt(e1, stackFrame))(0, 0))
                     if (checkIfConstant(e2, stackFrame)) {
+                        println(" before const2")
                         val const2 = (IntLiterNode(getConstantInt(e2, stackFrame))(0, 0))
                         transExpression(Add(const1, const2)(0, 0), stackFrame)
                         return
                     }
+                    println(" only const1")
+                    println(const1.i)
                     transExpression(Add(const1, e2)(0, 0), stackFrame)
                     return
                 }
@@ -388,6 +397,7 @@ object transExpression {
             }
             /** Greater-Than operator */
             case GT(e1, e2) => {
+
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
