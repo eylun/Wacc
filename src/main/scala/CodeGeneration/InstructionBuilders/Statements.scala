@@ -304,9 +304,12 @@ object transStatement {
                   wd.newScopeST
                 )
 
-                /** Constant Propogation: clear constants to avoid looping infinitely
+                /** to remove? : debugConstant Propogation: clear constants to avoid looping infinitely
                   */
                 wdSF.currST.clearAllConstants()
+
+                /** flag */
+                // wdSF.currST.setToRemove()
 
                 collector.addStatement(wdSF.head)
                 transStatement(s, wdSF)
@@ -317,7 +320,9 @@ object transStatement {
                 collector.addStatement(List(Label(labelCheck)))
 
                 /** TODO: remove variables in cond from constants */
+                stackFrame.currST.doNotPropogate()
                 transExpression(e, stackFrame)
+                stackFrame.currST.startPropogate()
 
                 collector.addStatement(
                   (

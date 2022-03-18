@@ -16,6 +16,18 @@ class SymbolTable(
         removeConstants = true
     }
 
+    /** TODO: do while propogate issue */
+    var propogate: Boolean = true
+
+    def doNotPropogate(): Unit = {
+        println(" donotpropoate debug")
+        propogate = false
+    }
+
+    def startPropogate(): Unit = {
+        propogate = true
+    }
+
     /** Sets the parent of this symbol table. */
     def setParent(parent: SymbolTable): Unit = encSymTable = Some(parent)
 
@@ -93,6 +105,10 @@ class SymbolTable(
         while (s != None) {
             var st = s.get
             if (constantMapType.contains(name)) {
+                if (!propogate) {
+                    removeConstantVar(name)
+                    return false
+                }
                 return true
             }
             s = st.encSymTable
@@ -102,6 +118,7 @@ class SymbolTable(
 
     /** Only called after containsConstant() check */
     def getConstant(name: String, identType: Type): AnyVal = {
+        println(" get constant debug")
         identType match {
             case IntType()  => constantIntsMap.get(name).get
             case BoolType() => constantBoolsMap.get(name).get
