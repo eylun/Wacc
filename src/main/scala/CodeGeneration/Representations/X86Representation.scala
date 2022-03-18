@@ -230,7 +230,19 @@ object X86Representation extends Representation {
         val sb: StringBuilder = new StringBuilder
         i match {
             case BranchInstr(label, Condition.AL) => s"\tjmp $label"
-            case BranchInstr(label, cond)         => s"\tj${generateCond(cond)} $label"
+            case BranchLinkInstr("p_throw_overflow_error", cond) => {
+                val idx = collector.tickGeneral()
+                sb.append(s"\tmov %rax, %rcx\n")
+                sb.append(s"\tsar $$31, %rcx\n")
+                sb.append(s"\tcmp $$0, %rcx\n")
+                sb.append(s"\tjne next_check_$idx\n")
+                sb.append(s"\tje overflow_check_end_$idx\n")
+                sb.append(s"next_check_$idx:\n")
+                sb.append(s"\tcmp $$0xFFFFFFFF, %ecx\n")
+                sb.append(s"overflow_check_end_$idx:\n")
+                sb.toString + s"\tjne p_throw_overflow_error"
+            }
+            case BranchInstr(label, cond) => s"\tj${generateCond(cond)} $label"
             // case BranchLinkInstr(label, Condition.AL) if externFunc1.contains(label) => {
             //     sb.append("\tmovl %eax, %edi\n")
             //     sb.append(opBody(i))
@@ -251,21 +263,10 @@ object X86Representation extends Representation {
     def generateCompare(i: Instruction)(implicit collector: WaccBuffer): String = {
         val sb: StringBuilder = new StringBuilder
         i match {
-            case CompareInstr(fst, ASRRegOp(snd, ShiftImm(31)), Condition.AL) => {
-                val idx = collector.tickGeneral()
-                sb.append(s"\tmov %rax, %rcx\n")
-                sb.append(s"\tsar $$32, %rcx\n")
-                sb.append(s"\tcmp $$0, %rcx\n")
-                sb.append(s"\tjne next_check_$idx\n")
-                sb.append(s"\tje mul_check_end_$idx\n")
-                sb.append(s"next_check_$idx:\n")
-                sb.append(s"\tcmp $$0xFFFFFFFF, %ecx\n")
-                sb.append(s"mul_check_end_$idx:")
-                sb.toString
-            }
-            case CompareInstr(fst, snd, Condition.AL) => opBody(i)
-            case CompareInstr(_, _, _)                => conditionalOp(i)
-            case _                                    => "TODO CMP"
+            case CompareInstr(fst, ASRRegOp(snd, ShiftImm(31)), Condition.AL) => ""
+            case CompareInstr(fst, snd, Condition.AL)                         => opBody(i)
+            case CompareInstr(_, _, _)                                        => conditionalOp(i)
+            case _                                                            => "TODO CMP"
         }
     }
 

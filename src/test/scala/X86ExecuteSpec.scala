@@ -38,7 +38,7 @@ class X86ExecuteSpec extends AnyFlatSpec {
     }
     behavior of "expression programs"
     it should "execute expressions" in {
-        //pending
+        pending
 
         waccProgramsInDir(new File("./programs/valid/expressions")).foreach(x86ExecuteAndCompare(_))
     }
@@ -79,22 +79,22 @@ class X86ExecuteSpec extends AnyFlatSpec {
     }
     behavior of "runtime error programs"
     it should "execute array out of bounds errors" in {
-        pending
+        // pending
 
         waccProgramsInDir(new File("./programs/valid/runtimeErr/arrayOutOfBounds")).foreach((x86ExecuteAndCompare(_)))
     }
     it should "execute divide by zero errors" in {
-        pending
+        // pending
 
         waccProgramsInDir(new File("./programs/valid/runtimeErr/divideByZero")).foreach((x86ExecuteAndCompare(_)))
     }
     it should "execute integer overflow errors" in {
-        pending
+        // pending
 
         waccProgramsInDir(new File("./programs/valid/runtimeErr/integerOverflow")).foreach((x86ExecuteAndCompare(_)))
     }
     it should "execute null dereference errors" in {
-        pending
+        // pending
 
         waccProgramsInDir(new File("./programs/valid/runtimeErr/nullDereference")).foreach((x86ExecuteAndCompare(_)))
     }
