@@ -193,33 +193,25 @@ object X86Representation extends Representation {
         }
     }
 
-    def generateMove(i: Instruction): String = {
+    def generateMove(i: Instruction)(implicit collector: WaccBuffer): String = {
         val sb: StringBuilder = new StringBuilder
         i match {
-            case MoveInstr(dst, src, Condition.AL) => {
-                sb.append(generateShift(src))
-                sb.append(s"\tmov ${generateOperand(src)}, $dst")
-                sb.toString
-            }
-            case MoveInstr(dst, src, cond) => {
-                sb.append(generateShift(src))
-                sb.append(s"\tcmov${generateCond(cond)} ${generateOperand(src)}, $dst")
-                sb.toString
-            }
+            case MoveInstr(dst, src, Condition.AL) => opBody(i)
+            case MoveInstr(_, _, _) => conditionalOp(i)
             case _ => "TODO MOV"
         }
     }
 
-    def generateLoad(i: Instruction): String = {
+    def generateLoad(i: Instruction)(implicit collector: WaccBuffer): String = {
         i match {
             case LoadLabelInstr(dst, label, Condition.AL)                => s"\tmov $$$label, $dst"
-            case LoadLabelInstr(dst, label, cond)                        => s"\tcmov${generateCond(cond)} $$$label, $dst"
+            case LoadLabelInstr(dst, label, cond)                        => conditionalOp(i)
             case LoadImmIntInstr(dst, imm, Condition.AL)                 => s"\tmov $$$imm, $dst"
-            case LoadImmIntInstr(dst, imm, cond)                         => s"\tcmov${generateCond(cond)} $$$imm, $dst"
-            case LoadInstr(dst, src, ImmOffset(0), Condition.AL)         => s"\tmov $src, $dst"
-            case LoadInstr(dst, src, ImmOffset(ofs), Condition.AL)       => s"\tlea $ofs($src), $dst"
-            case LoadRegSignedByte(dst, src, ImmOffset(0), Condition.AL) => s"\tlea ($src), $dst"
-            case LoadRegSignedByte(dst, src, ImmOffset(ofs), Condition.AL) => s"\tlea $ofs($src), $dst"
+            case LoadImmIntInstr(dst, imm, cond)                         => conditionalOp(MoveInstr(dst, ImmOffset(imm), cond))
+            case LoadInstr(dst, src, ImmOffset(0), Condition.AL)         => s"\tmov ($src), $dst"
+            case LoadInstr(dst, src, ImmOffset(ofs), Condition.AL)       => s"\tmov $ofs($src), $dst"
+            case LoadRegSignedByte(dst, src, ImmOffset(0), Condition.AL) => s"\tmov ($src), $dst"
+            case LoadRegSignedByte(dst, src, ImmOffset(ofs), Condition.AL) => s"\tmov $ofs($src), $dst"
             case _                                                         => s"TODO LOAD: $i"
         }
     }
@@ -309,6 +301,8 @@ object X86Representation extends Representation {
                 case XorInstr(_, _, _, _, c) => c
                 case CompareInstr(_, _, c)   => c
                 case BranchLinkInstr(_, c)   => c
+                case MoveInstr(_, _, c)      => c
+                case LoadLabelInstr(_, _, c) => c
                 case _                       => Condition.AL
             }
         }
@@ -317,18 +311,19 @@ object X86Representation extends Representation {
 
         val label: String = {
             i match {
-                case AndInstr(_, _, _, _, _) => s"and${cond}_${labelNo}:"
+                case AndInstr(_, _, _, _, _) => s"and${cond}_${labelNo}"
                 case OrInstr(_, _, _, _, _)  => s"or${cond}_${labelNo}"
-                case XorInstr(_, _, _, _, _) => s"xor${cond}_${labelNo}:"
-                case CompareInstr(_, _, _)   => s"cmp${cond}_${labelNo}:"
-                case BranchLinkInstr(_, _)   => s"bl${cond}_${labelNo}:"
+                case XorInstr(_, _, _, _, _) => s"xor${cond}_${labelNo}"
+                case CompareInstr(_, _, _)   => s"cmp${cond}_${labelNo}"
+                case BranchLinkInstr(_, _)   => s"bl${cond}_${labelNo}"
+                case MoveInstr(_, _, _) | LoadLabelInstr(_, _, _) => s"mov${cond}_${labelNo}"
                 case _                       => "TODO COND LABEL"
             }
         }
         sb.append(s"\tj${generateOppositeCond(cond)} $label\n")
         sb.append(opBody(i))
         sb.append("\n")
-        sb.append(s"\t$label:")
+        sb.append(s"$label:")
         sb.toString
     }
 
@@ -364,6 +359,14 @@ object X86Representation extends Representation {
             case BranchLinkInstr(label, _) => {
                 sb.append(s"\tcall $label")
                 sb.toString
+            }
+            case MoveInstr(dst, src, _) => {
+                sb.append(generateShift(src))
+                sb.append(s"\tmov ${generateOperand(src)}, $dst")
+                sb.toString
+            }
+            case LoadLabelInstr(dst, label, _) => {
+                s"\tmov $$$label, $dst"
             }
             case _ => "TODO OPBODY"
         }

@@ -10,9 +10,9 @@ class CodeGenSpec extends AnyFlatSpec {
     import parsley.{Success, Failure}
     import testUtils.{assertCodegenEquals}
 
+    implicit val repr: Representation = ARMRepresentation
     var sf: StackFrame = StackFrame(SymbolTable())
     implicit var wbuffer: WaccBuffer = new WaccBuffer
-    implicit val repr: Representation = ARMRepresentation
 
     /** Resets the stack frame and buffer */
     def reset(): Unit = {

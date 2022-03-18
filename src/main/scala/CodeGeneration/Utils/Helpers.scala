@@ -3,7 +3,12 @@ import transExpression._
 import constants.Register
 
 object Helpers {
-    val WORD_SIZE = 4
+    def WORD_SIZE(implicit repr: Representation) = {
+        repr match {
+            case ARMRepresentation => 4
+            case X86Representation => 8
+        }
+    }
     val BIT_SIZE = 1
     val ARRAY_LHS_OFFSET = 8
     val ARRAY_EXP_OFFSET = 4
@@ -13,7 +18,7 @@ object Helpers {
     val mainSetup = List(Directive("text"), GlobalDirective())
     
     /** Returns size of data associated with an identifier */
-    def getTypeSize(t: Identifier): Int = {
+    def getTypeSize(t: Identifier)(implicit repr: Representation): Int = {
         t match {
             case BoolType() | CharType() => BIT_SIZE
             case Variable(t)             => getTypeSize(t)
@@ -267,6 +272,7 @@ object Helpers {
             case X86Representation => List(
                 Label("p_print_bool"),
                 PushInstr(List(lr)),
+                MoveInstr(lr, RegOp(sp)),
                 CompareInstr(r0, ImmOffset(0), Condition.AL),
                 LoadLabelInstr(r0, s"msg_$idxTrue", Condition.NE),
                 LoadLabelInstr(r0, s"msg_$idxFalse", Condition.EQ),
@@ -278,7 +284,7 @@ object Helpers {
                 XorInstr(r4, r4, RegOp(r4)),
                 BranchLinkInstr("fflush"),
                 MoveInstr(lr, RegOp(sp)),
-                PopInstr(List(pc))
+                PopInstr(List(lr, pc))
             )
         }
     }
@@ -337,7 +343,7 @@ object Helpers {
                 Label("p_print_string"),
                 PushInstr(List(lr)),
                 MoveInstr(lr, RegOp(sp)),
-                LoadInstr(r1, r0, ImmOffset(0)),
+                MoveInstr(r1, RegOp(r0)),
                 LoadLabelInstr(r0, s"msg_$idx"),
                 MoveInstr(r4, RegOp(r0)),
                 MoveInstr(r3, RegOp(r1)),

@@ -11,23 +11,20 @@ object transExpression {
         exprNode match {
             /** IDENTIFIER */
             case IdentNode(s) => {
-                repr match {
-                    case ARMRepresentation => collector.addStatement(
-                        List(
-                            /** Adds a different load instruction depending on the
-                             * identifier type
-                             */
-                            determineLoadInstr(
-                                stackFrame.currST.lookupAll(s).get.getType(),
-                                r0,
-                                sp,
-                                stackFrame.getOffset(s)
-                            )
+                collector.addStatement(
+                    List(
+                        /** Adds a different load instruction depending on the
+                         * identifier type
+                         */
+                        determineLoadInstr(
+                            stackFrame.currST.lookupAll(s).get.getType(),
+                            r0,
+                            sp,
+                            stackFrame.getOffset(s)
                         )
                     )
-                    case X86Representation =>
-                }
-            }
+                )
+            } 
                 
             /** LITERALS: int, char, bool, string, pair, array-elem */
             case IntLiterNode(n) =>

@@ -123,14 +123,14 @@ object ARMRepresentation extends Representation {
         }
     }
 
-    def generateMove(i: Instruction): String = {
+    def generateMove(i: Instruction)(implicit collector: WaccBuffer): String = {
         i match {
             case MoveInstr(dst, src, cond) => s"\tMOV$cond $dst, ${generateOperand(src)}"
             case _ => ""
         }
     }
 
-    def generateLoad(i: Instruction): String = {
+    def generateLoad(i: Instruction)(implicit collector: WaccBuffer): String = {
         i match {
             case LoadLabelInstr(dst, label, cond) => s"\tLDR$cond $dst, =$label"
             case LoadImmIntInstr(dst, imm, cond)  => s"\tLDR$cond $dst, =$imm"

@@ -14,7 +14,7 @@ object transRHS {
             case e: ExprNode => transExpression(e, stackFrame)
             /** ARRAY-LITER NODE */
             case al @ ArrayLiterNode(es) => {
-                /** Add appriopriate move instruction based on the array type */
+                /** Add appropriate move instruction based on the array type */
                 al.typeId.get match {
                     case AnyType() => {
                         collector.addStatement(

@@ -156,15 +156,10 @@ object transStatement {
                 transRHS(r, stackFrame)
                 stackFrame.unlock(i.s)
 
-                repr match {
-                    case ARMRepresentation => {
-                        /** Store instruction generated via determineStoreInstr() */
-                        collector.addStatement(
-                            List(determineStoreInstr(t.typeId.get.getType(), r0, sp, stackFrame.getOffset(i.s)))
-                        )
-                    }
-                    case X86Representation => 
-                }
+                /** Store instruction generated via determineStoreInstr() */
+                collector.addStatement(
+                    List(determineStoreInstr(t.typeId.get.getType(), r0, sp, stackFrame.getOffset(i.s)))
+                )
             }
             /** LR ASSIGNMENT STATEMENT: <Assign-LHS> '=' <Assign-RHS> */
             case LRAssignNode(l, r) => {
@@ -174,19 +169,16 @@ object transStatement {
                         transRHS(r, stackFrame)
                         transLHS(l, stackFrame)
                         
-                        repr match {
-                            case ARMRepresentation => collector.addStatement(
-                                List(
-                                    determineStoreInstr(
-                                        stackFrame.currST.lookupAll(s).get.getType(),
-                                        r0,
-                                        sp,
-                                        stackFrame.getOffset(s)
-                                    )
+                        collector.addStatement(
+                            List(
+                                determineStoreInstr(
+                                    stackFrame.currST.lookupAll(s).get.getType(),
+                                    r0,
+                                    sp,
+                                    stackFrame.getOffset(s)
                                 )
                             )
-                            case X86Representation => 
-                        }
+                        )
                     }
                     case ae @ ArrayElemNode(IdentNode(s), es) => {
 
