@@ -102,33 +102,45 @@ object transLHS {
                         collector.addStatement(
                           List(
                             BranchLinkInstr("p_check_null_pointer"),
-                            AddInstr(
-                              r0,
-                              r0,
-                              ImmOffset(WORD_SIZE),
-                              false
-                            )
+                            AddInstr(r0, r0, ImmOffset(WORD_SIZE), false)
                           )
                         )
                     }
                 }
                 stackFrame.dropTempOffset(WORD_SIZE)
-                collector.addStatement(
-                  List(
-                    PushInstr(List(r0)),
-                    LoadInstr(r0, r0, ImmOffset(0)),
-                    BranchLinkInstr("free"),
-                    MoveInstr(
-                      r0,
-                      ImmOffset(getTypeSize(pe.typeId.get.getType()))
-                    ),
-                    BranchLinkInstr("malloc"),
-                    PopInstr(List(r1)),
-                    StoreInstr(r0, r1, ImmOffset(0)),
-                    MoveInstr(r1, RegOp(r0)),
-                    PopInstr(List(r0))
-                  )
-                )
+                repr match {
+                    case ARMRepresentation => collector.addStatement(
+                        List(
+                            PushInstr(List(r0)),
+                            LoadInstr(r0, r0, ImmOffset(0)),
+                            BranchLinkInstr("free"),
+                            MoveInstr(
+                            r0,
+                            ImmOffset(getTypeSize(pe.typeId.get.getType()))
+                            ),
+                            BranchLinkInstr("malloc"),
+                            PopInstr(List(r1)),
+                            StoreInstr(r0, r1, ImmOffset(0)),
+                            MoveInstr(r1, RegOp(r0)),
+                            PopInstr(List(r0))
+                        )
+                    )
+                    case X86Representation => collector.addStatement(
+                        List(
+                            PushInstr(List(r0)),
+                            LoadInstr(r0, r0, ImmOffset(0)),
+                            MoveInstr(r4, RegOp(r0)),
+                            BranchLinkInstr("free"),
+                            MoveInstr(r0, ImmOffset(getTypeSize(pe.typeId.get.getType()))),
+                            MoveInstr(r4, RegOp(r0)),
+                            BranchLinkInstr("malloc"),
+                            PopInstr(List(r1)),
+                            StoreInstr(r0, r1, ImmOffset(0)),
+                            MoveInstr(r1, RegOp(r0)),
+                            PopInstr(List(r0))
+                        )
+                    )
+                }
             }
         }
     }

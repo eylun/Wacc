@@ -121,14 +121,27 @@ object Helpers {
     ): Unit = {
         transExpression(e, stackFrame)
         val t = e.typeId.get
-        collector.addStatement(
-          List(
-            PushInstr(List(r0)),
-            MoveInstr(r0, ImmOffset(getTypeSize(t))),
-            BranchLinkInstr("malloc", Condition.AL),
-            PopInstr(List(r1))
-          )
-        )
+
+        repr match {
+            case ARMRepresentation => collector.addStatement(
+                List(
+                    PushInstr(List(r0)),
+                    MoveInstr(r0, ImmOffset(getTypeSize(t))),
+                    BranchLinkInstr("malloc", Condition.AL),
+                    PopInstr(List(r1))
+                )
+            )
+            case X86Representation => collector.addStatement(
+                List(
+                    PushInstr(List(r0)),
+                    MoveInstr(r0, ImmOffset(getTypeSize(t))),
+                    MoveInstr(r4, RegOp(r0)),
+                    BranchLinkInstr("malloc", Condition.AL),
+                    PopInstr(List(r1))
+                )
+            )
+        }
+        
         t match {
             case BoolType() | CharType() =>
                 collector.addStatement(
@@ -933,13 +946,12 @@ object Helpers {
                   MoveInstr(r4, RegOp(r0)),
                   BranchLinkInstr("free"),
                   MoveInstr(sp, RegOp(lr)),
-                  PopInstr(List(pc))
+                  PopInstr(List(lr, pc))
                 )
         }
     }
 
     def printFreePair(implicit collector: WaccBuffer, repr: Representation) = {
-
         /** Add DataMsg for FreePair Directive */
         val idx: Int = collector.tickDataMsg()
         collector.addDataMsg(printFreePairDirective(idx))

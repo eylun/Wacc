@@ -56,9 +56,7 @@ object transRHS {
                     MoveInstr(r3, RegOp(r0))
                   )
                 )
-
                 var ofs = WORD_SIZE
-
                 es.foreach { e =>
                     {
                         transExpression(e, stackFrame)
@@ -70,7 +68,6 @@ object transRHS {
                         ofs += getTypeSize(e.typeId.get.getType())
                     }
                 }
-
                 collector.addStatement(
                   List(
                     MoveInstr(r0, ImmOffset(es.length)),
@@ -79,27 +76,39 @@ object transRHS {
                   )
                 )
             }
+
             /** NEW PAIR NODE */
             case NewPairNode(e1, e2) => {
-
                 /** Evaluate the pair-elem expressions and stores it in the stack
                   */
                 addNewPairElem(e1, stackFrame)
                 addNewPairElem(e2, stackFrame)
-                collector.addStatement(
-                  List(
-                    MoveInstr(r0, ImmOffset(8)),
-                    BranchLinkInstr("malloc", AL),
-                    PopInstr(List(r1, r2)),
-                    StoreInstr(r2, r0, ImmOffset(0), false),
-                    StoreInstr(r1, r0, ImmOffset(4), false)
-                  )
-                )
+                repr match {
+                    case ARMRepresentation => collector.addStatement(
+                        List(
+                            MoveInstr(r0, ImmOffset(2 * WORD_SIZE)),
+                            BranchLinkInstr("malloc", AL),
+                            PopInstr(List(r1, r2)),
+                            StoreInstr(r2, r0, ImmOffset(0), false),
+                            StoreInstr(r1, r0, ImmOffset(WORD_SIZE), false)
+                        )
+                    )
+                    case X86Representation => collector.addStatement(
+                        List(
+                            MoveInstr(r0, ImmOffset(2 * WORD_SIZE)),
+                            MoveInstr(r4, RegOp(r0)),
+                            BranchLinkInstr("malloc", AL),
+                            PopInstr(List(r1, r2)),
+                            StoreInstr(r1, r0, ImmOffset(0), false),
+                            StoreInstr(r2, r0, ImmOffset(WORD_SIZE), false)
+                        )
+                    )
+                }
                 stackFrame.dropTempOffset(WORD_SIZE * 2)
             }
+
             /** (FUNCTION) CALL NODE */
             case CallNode(i, args) => {
-
                 /** Look up function Id from the stack frame */
                 val FunctionId(t, plist, _) = stackFrame.currST.lookupAll(i.s).get
                 var offset = 0

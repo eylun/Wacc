@@ -38,13 +38,13 @@ class X86ExecuteSpec extends AnyFlatSpec {
     }
     behavior of "expression programs"
     it should "execute expressions" in {
-        pending
+        //pending
 
         waccProgramsInDir(new File("./programs/valid/expressions")).foreach(x86ExecuteAndCompare(_))
     }
     behavior of "function programs"
     it should "execute simple functions" in {
-        pending
+        //pending
 
         waccProgramsInDir(new File("./programs/valid/function/simple_functions")).foreach(x86ExecuteAndCompare(_))
     }
@@ -59,21 +59,9 @@ class X86ExecuteSpec extends AnyFlatSpec {
 
         waccProgramsInDir(new File("./programs/valid/if")).foreach((x86ExecuteAndCompare(_)))
     }
-    behavior of "read programs"
-    it should "execute read statements" in {
-        pending
-
-        waccProgramsInDir(new File("./programs/valid/IO/read")).foreach(x86ExecuteAndCompare(_))
-    }
-    behavior of "IO programs"
-    it should "execute IO statements" in {
-        pending
-
-        waccProgramsInDir(new File("./programs/valid/IO")).foreach(x86ExecuteAndCompare(_))
-    }
     behavior of "pair programs"
     it should "execute pair programs" in {
-        pending
+        //pending
 
         waccProgramsInDir(new File("./programs/valid/pairs")).foreach(x86ExecuteAndCompare(_))
     }
@@ -118,7 +106,7 @@ class X86ExecuteSpec extends AnyFlatSpec {
     }
     behavior of "while programs"
     it should "execute while statement errors" in {
-        pending
+        //pending
 
         waccProgramsInDir(new File("./programs/valid/while")).foreach((x86ExecuteAndCompare(_)))
     }
