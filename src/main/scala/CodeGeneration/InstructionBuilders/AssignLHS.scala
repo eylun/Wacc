@@ -4,11 +4,12 @@ import constants._
 
 object transLHS {
 
-    /** Adds a list of instructions evaluating the LHS of an assignment to the
-      * Wacc Buffer collector
+    /** Adds a list of instructions evaluating the LHS of an assignment to the Wacc Buffer collector
       */
-    def apply(lhs: AssignLHSNode, stackFrame: StackFrame)
-        (implicit collector: WaccBuffer, repr: Representation): Unit = {
+    def apply(lhs: AssignLHSNode, stackFrame: StackFrame)(implicit
+        collector: WaccBuffer,
+        repr: Representation
+    ): Unit = {
         lhs match {
             /** IDENT NODE */
             case IdentNode(s) =>
@@ -41,14 +42,13 @@ object transLHS {
                             AddInstr(
                               r4,
                               r4,
-                              ImmOffset(4),
+                              ImmOffset(WORD_SIZE),
                               false
                             )
                           )
                         )
 
-                        /** Include a different add instruction depending on
-                          * array type
+                        /** Include a different add instruction depending on array type
                           */
                         collector.addStatement(
                           if (idx == es.length - 1) {
@@ -86,8 +86,7 @@ object transLHS {
                   )
                 )
                 pe match {
-                    /** Add Instructions take different offsets for first pair
-                      * element and second pair element
+                    /** Add Instructions take different offsets for first pair element and second pair element
                       */
                     case FirstPairElemNode(e) => {
                         transExpression(e, stackFrame)

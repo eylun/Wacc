@@ -1,6 +1,7 @@
 import java.io.{File, BufferedWriter, FileWriter}
 import constants._
 import scala.collection.immutable.Set
+import scala.collection.mutable.ListBuffer
 
 object X86Representation extends Representation {
     implicit val repr: Representation = this
@@ -31,7 +32,7 @@ object X86Representation extends Representation {
     def generateShiftValue(s: Shift): String = {
         s match {
             case ShiftReg(r) => s"$r"
-            case ShiftImm(i) => "$" + s"$i"
+            case ShiftImm(i) => "$" + s"${i + 1}"
         }
     }
 
@@ -47,13 +48,13 @@ object X86Representation extends Representation {
 
     def generateLine(instr: Instruction)(implicit collector: WaccBuffer, repr: Representation): String = {
         s"${instr match {
-            case Label(labelName)   => s"$labelName:"
+            case Label(labelName)     => s"$labelName:"
             case Directive(s"word$_") => ""
-            case Directive(name)    => s"\t.$name"
-            case GlobalDirective()  => "\t.globl _start"
-            case PushInstr(_)       => generatePush(instr)
-            case PopInstr(_)        => generatePop(instr)
-            case MoveInstr(_, _, _) => generateMove(instr)
+            case Directive(name)      => s"\t.$name"
+            case GlobalDirective()    => "\t.globl _start"
+            case PushInstr(_)         => generatePush(instr)
+            case PopInstr(_)          => generatePop(instr)
+            case MoveInstr(_, _, _)   => generateMove(instr)
 
             /* Logical Instructions */
             case AndInstr(_, _, _, _, _) | OrInstr(_, _, _, _, _) | XorInstr(_, _, _, _, _) =>
@@ -106,23 +107,18 @@ object X86Representation extends Representation {
     }
 
     def generatePop(i: Instruction): String = {
-        val sb: StringBuilder = new StringBuilder
+        val lb: ListBuffer[String] = ListBuffer()
         i match {
             case PopInstr(regs) => {
-                if (regs.head == pc) {
-                    sb.append(s"\tret")
-                } else {
-                    sb.append(s"\tpop ${regs.head}")
-                }
-                regs.drop(1)
-                    .foreach(r => {
-                        if (r == pc) {
-                            sb.append(s"\n\tret")
-                        } else {
-                            sb.append(s"\n\tpop $r")
-                        }
-                    })
-                sb.toString
+                regs.foreach(r => {
+                    if (r == pc) {
+                        lb += s"\n\tret"
+                        return lb.mkString
+                    } else {
+                        lb += s"\n\tpop $r"
+                    }
+                })
+                lb.reverse.mkString
             }
             case _ => "TODO POP"
         }
@@ -197,22 +193,25 @@ object X86Representation extends Representation {
         val sb: StringBuilder = new StringBuilder
         i match {
             case MoveInstr(dst, src, Condition.AL) => opBody(i)
-            case MoveInstr(_, _, _) => conditionalOp(i)
-            case _ => "TODO MOV"
+            case MoveInstr(_, _, _)                => conditionalOp(i)
+            case _                                 => "TODO MOV"
         }
     }
 
     def generateLoad(i: Instruction)(implicit collector: WaccBuffer): String = {
         i match {
-            case LoadLabelInstr(dst, label, Condition.AL)                => s"\tmov $$$label, $dst"
-            case LoadLabelInstr(dst, label, cond)                        => conditionalOp(i)
-            case LoadImmIntInstr(dst, imm, Condition.AL)                 => s"\tmov $$$imm, $dst"
-            case LoadImmIntInstr(dst, imm, cond)                         => conditionalOp(MoveInstr(dst, ImmOffset(imm), cond))
-            case LoadInstr(dst, src, ImmOffset(0), Condition.AL)         => s"\tmov ($src), $dst"
-            case LoadInstr(dst, src, ImmOffset(ofs), Condition.AL)       => s"\tmov $ofs($src), $dst"
-            case LoadRegSignedByte(dst, src, ImmOffset(0), Condition.AL) => s"\tmov ($src), $dst"
-            case LoadRegSignedByte(dst, src, ImmOffset(ofs), Condition.AL) => s"\tmov $ofs($src), $dst"
-            case _                                                         => s"TODO LOAD: $i"
+            case LoadLabelInstr(dst, label, Condition.AL)        => s"\tmov $$$label, $dst"
+            case LoadLabelInstr(dst, label, cond)                => conditionalOp(i)
+            case LoadImmIntInstr(dst, imm, Condition.AL)         => s"\tmov $$$imm, $dst"
+            case LoadImmIntInstr(dst, imm, cond)                 => conditionalOp(MoveInstr(dst, ImmOffset(imm), cond))
+            case LoadInstr(dst, src, ImmOffset(0), Condition.AL) => s"\tmov ($src), $dst"
+            case LoadInstr(dst, src, ImmOffset(ofs), Condition.AL) =>
+                s"\tmov ${ofs}($src), $dst"
+            case LoadRegSignedByte(dst, src, ImmOffset(0), Condition.AL) =>
+                s"\tmovb ($src), $dst"
+            case LoadRegSignedByte(dst, src, ImmOffset(ofs), Condition.AL) =>
+                s"\tmovb $ofs($src), $dst"
+            case _ => s"TODO LOAD: $i"
         }
     }
 
@@ -222,9 +221,9 @@ object X86Representation extends Representation {
             case StoreInstr(src, dst, ImmOffset(i), _) => s"\tmov $src, $i($dst)"
             case StoreInstr(src, dst, RegOp(r), _)     => s"\tmov $src, ($dst,$r)"
 
-            case StoreByteInstr(src, dst, ImmOffset(0), _) => s"\tmov $src, ($dst)"
-            case StoreByteInstr(src, dst, ImmOffset(i), _) => s"\tmov $src, $i($dst)"
-            case StoreByteInstr(src, dst, RegOp(r), _)     => s"\tmov $src, ($dst,$r)"
+            case StoreByteInstr(src, dst, ImmOffset(0), _) => s"\tmovb ${transByteReg(src.toString())}, ($dst)"
+            case StoreByteInstr(src, dst, ImmOffset(i), _) => s"\tmovb ${transByteReg(src.toString())}, $i($dst)"
+            case StoreByteInstr(src, dst, RegOp(r), _)     => s"\tmovb ${transByteReg(src.toString())}, ($dst,$r)"
             case _                                         => "TODO STORE"
         }
     }
@@ -232,8 +231,8 @@ object X86Representation extends Representation {
     def generateBranch(i: Instruction)(implicit collector: WaccBuffer): String = {
         val sb: StringBuilder = new StringBuilder
         i match {
-            case BranchInstr(label, Condition.AL)     => s"\tjmp $label"
-            case BranchInstr(label, cond)             => s"\tj${generateCond(cond)} $label"
+            case BranchInstr(label, Condition.AL) => s"\tjmp $label"
+            case BranchInstr(label, cond)         => s"\tj${generateCond(cond)} $label"
             // case BranchLinkInstr(label, Condition.AL) if externFunc1.contains(label) => {
             //     sb.append("\tmovl %eax, %edi\n")
             //     sb.append(opBody(i))
@@ -244,7 +243,7 @@ object X86Representation extends Representation {
             //     sb.append("\tmovl %ecx, %esi\n")
             //     sb.append(opBody(i))
             //     sb.toString
-            // } 
+            // }
             case BranchLinkInstr(label, Condition.AL) => opBody(i)
             case BranchLinkInstr(label, _)            => conditionalOp(i)
             case _                                    => s"TODO BRANCH: $i"
@@ -270,7 +269,7 @@ object X86Representation extends Representation {
             case Condition.LT => "l"
             case Condition.LE => "le"
             case Condition.VS => "o"
-            case Condition.CS => "c"
+            case Condition.CS => "ae"
             case Condition.AL => ""
             case _            => "TODO COND"
         }
@@ -286,7 +285,7 @@ object X86Representation extends Representation {
             case Condition.LT => "ge"
             case Condition.LE => "g"
             case Condition.VS => "no"
-            case Condition.CS => "nc"
+            case Condition.CS => "b"
             case Condition.AL => ""
             case _            => "TODO REV COND"
         }
@@ -313,13 +312,13 @@ object X86Representation extends Representation {
 
         val label: String = {
             i match {
-                case AndInstr(_, _, _, _, _) => s"and${cond}_${labelNo}"
-                case OrInstr(_, _, _, _, _)  => s"or${cond}_${labelNo}"
-                case XorInstr(_, _, _, _, _) => s"xor${cond}_${labelNo}"
-                case CompareInstr(_, _, _)   => s"cmp${cond}_${labelNo}"
-                case BranchLinkInstr(_, _)   => s"bl${cond}_${labelNo}"
+                case AndInstr(_, _, _, _, _)                      => s"and${cond}_${labelNo}"
+                case OrInstr(_, _, _, _, _)                       => s"or${cond}_${labelNo}"
+                case XorInstr(_, _, _, _, _)                      => s"xor${cond}_${labelNo}"
+                case CompareInstr(_, _, _)                        => s"cmp${cond}_${labelNo}"
+                case BranchLinkInstr(_, _)                        => s"bl${cond}_${labelNo}"
                 case MoveInstr(_, _, _) | LoadLabelInstr(_, _, _) => s"mov${cond}_${labelNo}"
-                case _                       => "TODO COND LABEL"
+                case _                                            => "TODO COND LABEL"
             }
         }
         sb.append(s"\tj${generateOppositeCond(cond)} $label\n")
@@ -373,6 +372,20 @@ object X86Representation extends Representation {
             case _ => "TODO OPBODY"
         }
     }
+
+    def transByteReg(rStr: String): String =
+        rStr match {
+            case "%rax" => "%al"
+            case "%rbx" => "%bl"
+            case "%rcx" => "%cl"
+            case "%rdx" => "%dl"
+            case "%rsi" => "%sil"
+            case "%rdi" => "%dil"
+            case "%rsp" => "%spl"
+            case "%rbp" => "%bpl"
+            case "%r8"  => "%r8b"
+            case "%r9"  => "%r9b"
+        }
 
     // /** Returns x86 register representation in n-bit mode (default toString is the 32-bit mode) */
     // def regWithLength(r: Register, bitLen: Int): String = {

@@ -2,30 +2,30 @@ import Helpers._
 import Helpers.UtilFlag._
 import constants._
 
-/** Adds the appropriate instructions for each expression into our Wacc Buffer
-  * collector
+/** Adds the appropriate instructions for each expression into our Wacc Buffer collector
   */
 object transExpression {
-    def apply(exprNode: ExprNode, stackFrame: StackFrame)
-            (implicit collector: WaccBuffer, repr: Representation): Unit = {
+    def apply(exprNode: ExprNode, stackFrame: StackFrame)(implicit
+        collector: WaccBuffer,
+        repr: Representation
+    ): Unit = {
         exprNode match {
             /** IDENTIFIER */
             case IdentNode(s) => {
                 collector.addStatement(
-                    List(
-                        /** Adds a different load instruction depending on the
-                         * identifier type
-                         */
-                        determineLoadInstr(
-                            stackFrame.currST.lookupAll(s).get.getType(),
-                            r0,
-                            sp,
-                            stackFrame.getOffset(s)
-                        )
+                  List(
+                    /** Adds a different load instruction depending on the identifier type
+                      */
+                    determineLoadInstr(
+                      stackFrame.currST.lookupAll(s).get.getType(),
+                      r0,
+                      sp,
+                      stackFrame.getOffset(s)
                     )
+                  )
                 )
-            } 
-                
+            }
+
             /** LITERALS: int, char, bool, string, pair, array-elem */
             case IntLiterNode(n) =>
                 collector.addStatement(List(LoadImmIntInstr(r0, n)))
@@ -60,31 +60,34 @@ object transExpression {
                 es.zipWithIndex.foreach {
                     case (e, idx) => {
                         transExpression(e, stackFrame)
-                        collector.addStatement(List(
+                        collector.addStatement(
+                          List(
                             BranchLinkInstr("p_check_array_bounds", Condition.AL),
                             AddInstr(r4, r4, ImmOffset(WORD_SIZE), false)
-                        ))
-                        
+                          )
+                        )
+
                         collector.addStatement(ae.typeId.get.getType() match {
-                            case CharType() | BoolType()
-                                if idx == es.length - 1 =>
+                            case CharType() | BoolType() if idx == es.length - 1 =>
                                 List(
                                   AddInstr(r4, r4, RegOp(r0), false),
                                   LoadRegSignedByte(r4, r4, ImmOffset(0))
                                 )
                             case _ => {
                                 repr match {
-                                    case ARMRepresentation => List(
-                                        AddInstr(r4, r4, LSLRegOp(r0, ShiftImm(2)), false),
-                                        LoadInstr(r4, r4, ImmOffset(0))
-                                    )
-                                    case X86Representation => List(
-                                        AddInstr(r4, r4, LSLRegOp(r0, ShiftImm(3)), false),
-                                        LoadInstr(r4, r4, ImmOffset(0))
-                                    )
+                                    case ARMRepresentation =>
+                                        List(
+                                          AddInstr(r4, r4, LSLRegOp(r0, ShiftImm(2)), false),
+                                          LoadInstr(r4, r4, ImmOffset(0))
+                                        )
+                                    case X86Representation =>
+                                        List(
+                                          AddInstr(r4, r4, LSLRegOp(r0, ShiftImm(2)), false),
+                                          LoadInstr(r4, r4, ImmOffset(0))
+                                        )
                                 }
-                            } 
-                                
+                            }
+
                         })
                     }
                 }

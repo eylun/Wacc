@@ -19,20 +19,20 @@ class X86ExecuteSpec extends AnyFlatSpec {
 
     behavior of "array programs"
     it should "execute array programs" in {
-        pending
+        // pending
 
         waccProgramsInDir(new File("./programs/valid/array")).foreach(x86ExecuteAndCompare(_))
     }
 
     behavior of "basic programs"
     it should "execute skip statements" in {
-        //pending
+        pending
 
         waccProgramsInDir(new File("./programs/valid/basic/skip")).foreach(x86ExecuteAndCompare(_))
     }
 
     it should "execute exit statements" in {
-        //pending
+        pending
 
         waccProgramsInDir(new File("./programs/valid/basic/exit")).foreach(x86ExecuteAndCompare(_))
     }
