@@ -132,6 +132,11 @@ object lexer {
               .label("string literal")
         )
 
+    val anyString = (lexer
+              .lexeme("\"" ~> many(character) <~ "\""))
+              .map(s => s.mkString)
+            
+
     /** expression atoms */
     val exprAtoms: Parsley[ExprNode] =
         (intLiter <|> boolLiter <|> charLiter <|> stringLiter <|> pairLiter <|>
@@ -173,7 +178,7 @@ object lexer {
   * Contains parsing for values that are that require other parsers
   */
 object syntax {
-    import lexer.{baseType, exceptionType, pairBaseType, fully, exprAtoms, number, ident, funcIdent, _kw}
+    import lexer.{baseType, exceptionType, pairBaseType, fully, exprAtoms, number, anyString, ident, funcIdent, _kw}
     import lexer.implicits.implicitLexeme
     import parsley.debug.{DebugCombinators, FullBreak}
     import parsley.combinator.{eof, many, manyUntil, optional, some, sepBy, sepBy1}
@@ -184,12 +189,17 @@ object syntax {
     /** Entry point into parser */
     val parse = fully(program)
 
+    // NOTE: currently only allows if last import does not have ";", 
+    // figure out how to make it even maybe
+    val importStat = ImportNode("import" ~> anyString) 
+
     /** program := 'begin' <func>* <stat> 'end' */
     lazy val program = ProgramNode(
       "begin".label(
         "'begin' in beginning of program"
       ) ~>
-          manyUntil(func, attempt(lookAhead(stat))).label(
+      sepBy(importStat, ";") ,
+      manyUntil(func, attempt(lookAhead(stat))).label(
             "function declarations or statement(s)"
           ),
       stat.label("statement(s)") <~ ("end".label("end of program") <|> _kw)
@@ -270,7 +280,7 @@ object syntax {
         precedence[ExprNode](
           ("(" *> expr <* ")").label("bracketed expressions")
               <|> attempt(arrayElem)
-              <|> exprAtoms
+              <|> exprAtoms <|> sCharAt
         )(
           Ops(Prefix)(
             Not <# "!".label("unary operator"),
@@ -341,6 +351,11 @@ object syntax {
             "function arguments"
           ) <* ")"
         )
+
+    lazy val sCharAt =
+        SCharAtNode(
+            "charAt" *> "(" *>  expr <* ",", expr <* ")"
+        )    
 
     /** array-liter := ‘[’ ( ⟨expr ⟩ (‘,’ ⟨expr ⟩)* )? ‘]’ */
     lazy val arrayLiter = ArrayLiterNode(
@@ -464,6 +479,8 @@ object syntax {
             "begin-end closing \"end\""
           )
         )
+
+
 
     lazy val statList: Parsley[StatNode] =
         StatListNode(

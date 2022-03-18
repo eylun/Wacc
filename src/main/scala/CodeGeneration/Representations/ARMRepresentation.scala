@@ -66,7 +66,8 @@ object ARMRepresentation extends Representation {
                 s"\tLDRSB$cond $dst, [$src]"
             case LoadRegSignedByte(dst, src, ImmOffset(offset), cond) =>
                 s"\tLDRSB$cond $dst, [$src, #$offset]"
-
+            case LoadRegSignedByte(dst, src, RegOp(r), cond) => 
+                s"\tLDRSB$cond $dst, [$src, $r]"
             /** Store Instructions */
             case StoreInstr(src, dst, ImmOffset(0), true) =>
                 s"\tSTR $src, [$dst]!"
@@ -97,6 +98,6 @@ object ARMRepresentation extends Representation {
 
             /** For unmatched cases, "temp" will be generated. Used for debugging.
               */
-            case _ => "Temp"
+            case _ => s"Missing: $instr"
         }}\n"
 }

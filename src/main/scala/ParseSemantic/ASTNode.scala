@@ -6,6 +6,9 @@ import parsley.errors.combinator.ErrorMethods
 import java.util.function.UnaryOperator
 import scala.collection.mutable.ListBuffer
 import Utility.{lrTypeCheck}
+import java.io.File
+import parsley.io.{ParseFromIO}
+import parsley.{Success, Failure}
 
 /** ASTNode trait which all other Nodes extend from */
 sealed trait ASTNode {
@@ -23,14 +26,42 @@ sealed trait ASTNode {
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit
 }
 
+
 /** Program Node */
-case class ProgramNode(flist: List[FuncNode], s: StatNode)(val pos: (Int, Int)) extends ASTNode {
+case class ProgramNode(imps: List[ImportNode], flist: List[FuncNode], s: StatNode)(val pos: (Int, Int))
+    extends ASTNode {
+
+    var funcList: List[FuncNode] = List() 
+    val stdLib: List[ImportNode] = 
+        List(
+        ImportNode("stdLib/charFuncs.wacc")(0,0),
+        ImportNode("stdLib/stringFuncs.wacc")(0,0),
+        ImportNode("stdLib/mathFuncs.wacc")(0,0)
+        ) 
+
+    def updatedNode(): ProgramNode = {
+        ProgramNode(imps, funcList, s)(0,0)
+    } 
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
 
-        /** Check all functions to prevent name clashes. Insert into top level symbol table upon completion, then call
-          * each function's check() to check the statements within each function
+        var importedFiles: Set[String] = Set()
+        val impList: List[ImportNode] = stdLib ++ imps 
+        impList.foreach {
+            case imp @ ImportNode(fn) => {
+                if (!importedFiles.contains(fn)){
+                    funcList = imp.getFuncs(st, importedFiles) ::: funcList
+                    importedFiles += fn
+                }
+            }
+        }
+
+        funcList = flist ::: funcList
+
+        /** Check all functions to prevent name clashes. Insert into top level
+          * symbol table upon completion, then call each function's check() to
+          * check the statements within each function
           */
-        flist.foreach {
+        funcList.foreach {
             case f @ FuncNode(t, i, plist, s) => {
                 val funcST = SymbolTable(st)
                 st.lookup(i.s) match {
@@ -73,7 +104,7 @@ case class ProgramNode(flist: List[FuncNode], s: StatNode)(val pos: (Int, Int)) 
                 }
             }
         }
-        flist.foreach { f =>
+        funcList.foreach { f =>
             {
                 f.typeId.get match {
                     case FunctionId(_, _, funcST) => f.check(funcST, errors)
@@ -94,11 +125,65 @@ case class ProgramNode(flist: List[FuncNode], s: StatNode)(val pos: (Int, Int)) 
 
 object ProgramNode {
     def apply(
+        imps: => Parsley[List[ImportNode]],
         flist: => Parsley[List[FuncNode]],
         s: => Parsley[StatNode]
     ): Parsley[ProgramNode] =
-        pos <**> (flist, s.label("program statements"))
-            .lazyZipped(ProgramNode(_, _) _)
+        pos <**> (imps, flist, s.label("program statements"))
+            .lazyZipped(ProgramNode(_, _, _) _)
+}
+
+case class ImportNode(fn: String)(val pos: (Int, Int)) extends ASTNode {
+    val stdLibFiles: Set[String] = 
+        Set("stdLib/charFuncs.wacc", "stdLib/stringFuncs.wacc", "stdLib/mathFuncs.wacc")
+    def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {}
+    
+    def getFuncs(st: SymbolTable, impSet: Set[String]): List[FuncNode] = {
+        var importedSet: Set[String] = impSet
+        val importFile = new File(fn)
+         /** Parse the given .wacc file */
+        val parseResult = syntax.parse.parseFromFile(importFile).get
+        parseResult match {
+            case Success(result@ProgramNode(imps, flist, stat)) => 
+                /** get functions for each nested imports */
+                var impsToProcess: List[ImportNode] = List()
+                imps.foreach{
+                    case imp@ImportNode(fn) => {
+                        if (!impSet.contains(fn)) {
+                            impsToProcess = imp :: impsToProcess
+                            importedSet += fn
+                        }
+                    }
+                }
+                val funclist: List[FuncNode] = impsToProcess.flatMap(imp => imp.getFuncs(st, impSet))
+                val errorLog = ListBuffer[WaccError]()
+                /** checks the correctness of import file body */
+                stdLibFiles.contains(fn) match {
+                    /* if a standard library file, no need to call check */
+                    case false => result.check(SymbolTable(), errorLog)
+                    case _ => 
+                }
+                if (errorLog.length == 0) {
+                    // println("adding functions")
+                    funclist ++ flist
+                } else {
+                    /** SEMANTIC ERROR */
+                    errorLog.foreach(e => e.render())
+                    null
+                }
+
+            case Failure(err) =>
+                /** SYNTAX ERROR */
+                // err.render()
+                System.exit(100)
+                null
+        }
+    }
+}
+
+object ImportNode {
+    def apply(f: => Parsley[String]): Parsley[ImportNode] =
+        pos <**> f.map(ImportNode(_) _)
 }
 
 /** Function Node */
@@ -1117,7 +1202,7 @@ case class Len(e: ExprNode)(val pos: (Int, Int)) extends UnaryOpNode {
           */
         if (e.typeId.isEmpty) return ()
         e.typeId.get.getType() match {
-            case ArrayType(_, _, _) =>
+            case ArrayType(_, _, _) | StringType() =>
                 this.typeId = Some(IntType())
             case _ =>
                 errors += WaccError(
@@ -1604,3 +1689,45 @@ object ArrayLiterNode {
     def apply(es: => Parsley[List[ExprNode]]): Parsley[ArrayLiterNode] =
         pos <**> es.map(ArrayLiterNode(_) _)
 }
+
+case class SCharAtNode(str: ExprNode, i: ExprNode)(val pos: (Int, Int))
+    extends ExprNode {
+        def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
+            str.check(st, errors)
+            i.check(st, errors)
+            if (str.typeId.isEmpty || i.typeId.isEmpty) return ()
+            (str.typeId.get.getType(), i.typeId.get.getType()) match {
+            case (StringType(), IntType()) => this.typeId = Some(CharType())
+            case (StringType(), _) =>
+                errors += WaccError(
+                  i.pos,
+                  s"""expression ${i.repr()}'s type is incompatible for
+					| charAt (Expected: INT, Actual:
+					| ${i.typeId.get.getType()}
+					|)""".stripMargin.replaceAll("\n", "")
+                )
+            case _ =>
+                errors += WaccError(
+                  str.pos,
+                  s"""expression ${str.repr()}'s type is incompatible for
+					| charAT (Expected: STRING, Actual:
+					| ${str.typeId.get.getType()}
+					|)""".stripMargin.replaceAll("\n", "")
+                )
+            }
+        }
+
+        def repr() =
+        s"charAt (${str.repr()}, ${i.repr()})"
+}
+
+object SCharAtNode {
+    def apply(
+        str: => Parsley[ExprNode],
+        i: => Parsley[ExprNode]
+    ): Parsley[SCharAtNode] =
+        pos <**> (str, i).lazyZipped(SCharAtNode(_, _) _)
+}
+
+
+

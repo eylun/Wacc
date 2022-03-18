@@ -27,12 +27,12 @@ object frontend {
             case Success(result) =>
                 val topLevelST = SymbolTable()
                 val errorLog = ListBuffer[WaccError]()
+                var length = errorLog.length
                 result.check(topLevelST, errorLog)
                 if (errorLog.length == 0) {
-
                     /** No syntax errors, move on to code generation */
                     ARMRepresentation(
-                      result,
+                      result.updatedNode(),
                       topLevelST,
                       cleanFilename(waccFile.getName()) + ".s", 
                       optFlag

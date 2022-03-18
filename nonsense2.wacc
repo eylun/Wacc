@@ -1,0 +1,6 @@
+begin
+    int f() is
+        return 0 
+    end
+    println "hello"
+end
