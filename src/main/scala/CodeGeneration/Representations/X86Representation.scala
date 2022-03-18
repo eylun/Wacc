@@ -208,9 +208,9 @@ object X86Representation extends Representation {
             case LoadInstr(dst, src, ImmOffset(ofs), Condition.AL) =>
                 s"\tmov ${ofs}($src), $dst"
             case LoadRegSignedByte(dst, src, ImmOffset(0), Condition.AL) =>
-                s"\tmovb ($src), $dst"
+                s"\tmovb ($src), ${transByteReg(dst.toString)}"
             case LoadRegSignedByte(dst, src, ImmOffset(ofs), Condition.AL) =>
-                s"\tmovb $ofs($src), $dst"
+                s"\tmovb $ofs($src), ${transByteReg(dst.toString)}"
             case _ => s"TODO LOAD: $i"
         }
     }
@@ -221,9 +221,9 @@ object X86Representation extends Representation {
             case StoreInstr(src, dst, ImmOffset(i), _) => s"\tmov $src, $i($dst)"
             case StoreInstr(src, dst, RegOp(r), _)     => s"\tmov $src, ($dst,$r)"
 
-            case StoreByteInstr(src, dst, ImmOffset(0), _) => s"\tmovb ${transByteReg(src.toString())}, ($dst)"
-            case StoreByteInstr(src, dst, ImmOffset(i), _) => s"\tmovb ${transByteReg(src.toString())}, $i($dst)"
-            case StoreByteInstr(src, dst, RegOp(r), _)     => s"\tmovb ${transByteReg(src.toString())}, ($dst,$r)"
+            case StoreByteInstr(src, dst, ImmOffset(0), _) => s"\tmovb ${transByteReg(src.toString)}, ($dst)"
+            case StoreByteInstr(src, dst, ImmOffset(i), _) => s"\tmovb ${transByteReg(src.toString)}, $i($dst)"
+            case StoreByteInstr(src, dst, RegOp(r), _)     => s"\tmovb ${transByteReg(src.toString)}, ($dst,$r)"
             case _                                         => "TODO STORE"
         }
     }

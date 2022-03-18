@@ -12,27 +12,27 @@ class X86ExecuteSpec extends AnyFlatSpec {
 
     behavior of "print programs"
     it should "execute print programs" in {
-        pending
+        //pending
 
         waccProgramsInDir(new File("./programs/valid/IO/print")).foreach(x86ExecuteAndCompare(_))
     }
 
     behavior of "array programs"
     it should "execute array programs" in {
-        // pending
+        //pending
 
         waccProgramsInDir(new File("./programs/valid/array")).foreach(x86ExecuteAndCompare(_))
     }
 
     behavior of "basic programs"
     it should "execute skip statements" in {
-        pending
+        //pending
 
         waccProgramsInDir(new File("./programs/valid/basic/skip")).foreach(x86ExecuteAndCompare(_))
     }
 
     it should "execute exit statements" in {
-        pending
+        //pending
 
         waccProgramsInDir(new File("./programs/valid/basic/exit")).foreach(x86ExecuteAndCompare(_))
     }
@@ -55,7 +55,7 @@ class X86ExecuteSpec extends AnyFlatSpec {
     }
     behavior of "if programs"
     it should "execute if statements" in {
-        pending
+        //pending
 
         waccProgramsInDir(new File("./programs/valid/if")).foreach((x86ExecuteAndCompare(_)))
     }
@@ -79,7 +79,7 @@ class X86ExecuteSpec extends AnyFlatSpec {
     }
     behavior of "runtime error programs"
     it should "execute array out of bounds errors" in {
-        pending
+        //pending
 
         waccProgramsInDir(new File("./programs/valid/runtimeErr/arrayOutOfBounds")).foreach((x86ExecuteAndCompare(_)))
     }
@@ -94,7 +94,7 @@ class X86ExecuteSpec extends AnyFlatSpec {
         waccProgramsInDir(new File("./programs/valid/runtimeErr/integerOverflow")).foreach((x86ExecuteAndCompare(_)))
     }
     it should "execute null dereference errors" in {
-        pending
+        //pending
 
         waccProgramsInDir(new File("./programs/valid/runtimeErr/nullDereference")).foreach((x86ExecuteAndCompare(_)))
     }
@@ -111,13 +111,13 @@ class X86ExecuteSpec extends AnyFlatSpec {
     }
     behavior of "sequence programs"
     it should "execute sequence programs" in {
-        pending
+        //pending
 
         waccProgramsInDir(new File("./programs/valid/sequence")).foreach((x86ExecuteAndCompare(_)))
     }
     behavior of "variable programs"
     it should "execute variable errors" in {
-        pending
+        //pending
 
         waccProgramsInDir(new File("./programs/valid/variables")).foreach((x86ExecuteAndCompare(_)))
     }
