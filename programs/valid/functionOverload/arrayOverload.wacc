@@ -1,0 +1,33 @@
+# two simple functions are declared, called with different params
+
+# Input:
+
+# Output:
+# the function with argument int[] produces: 600
+# Look, I'm printing from an overloaded char[] function! Hello!
+# The first character of the argument is: H
+
+# Exit: 0
+
+# Program:
+
+begin
+  int f(int[] x) is
+    return x[0] * 100
+  end
+  
+  char f(char[] x) is
+    print "Look, I\'m printing from an overloaded char[] function! ";
+    println x;
+    return x[0]
+  end
+  
+  int[] param1 = [6, 10, 20];
+  int amp = call f(param1);
+  print "the function with argument int[] produces: ";
+  println amp;
+  char[] param2 = ['H', 'e', 'l', 'l', 'o', '!'];
+  char fstChar = call f(param2);
+  print "The first character of the argument is: ";
+  println fstChar
+end

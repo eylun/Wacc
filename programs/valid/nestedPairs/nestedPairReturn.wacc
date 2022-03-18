@@ -1,0 +1,28 @@
+# Nested pair retrieved is not of matching type
+
+# Input:
+
+# Output:
+# true
+
+# Exit: 0
+
+# Program:
+
+begin
+  pair(pair(int, bool), int) func(pair(pair(int, int), pair(char, char)) param) is
+    pair(int, int) p = fst param;
+	int first = fst p;
+	pair(int, bool) retnest = newpair(first, first == 10);
+	pair(pair(int, bool), int) ret = newpair(retnest, first * 2);
+	return ret
+  end
+
+  pair(int, int) intp = newpair(10, 100);
+  pair(char, char) charp = newpair('c', 'b');
+  pair(pair(int,int), pair(char,char)) param = newpair(intp, charp);
+  pair(pair(int, bool), int) ret = call func(param);
+  pair(int, bool) newnest = fst ret;
+  bool retbool = snd newnest;
+  println retbool
+end

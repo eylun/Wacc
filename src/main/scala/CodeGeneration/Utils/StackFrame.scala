@@ -5,19 +5,18 @@ import scala.collection.immutable.Map
 
 /** Stack Frame
   *
-  * The stack frame contains two Maps, one Set and the corresponding SymbolTable
-  * of the scope that is meant for the stack frame.
+  * The stack frame contains two Maps, one Set and the corresponding SymbolTable of the scope that is meant for the
+  * stack frame.
   *
   * childOffsetMap: The map containing variables for the current scope.
   *
-  * parentOffsetMap: The map containing variables for parent scopes. Note that
-  * this would be an empty Map for the main scope
+  * parentOffsetMap: The map containing variables for parent scopes. Note that this would be an empty Map for the main
+  * scope
   *
-  * unlocked: The set contains identifier strings that tell the stackframe if a
-  * certain variable has been reached in the codegen
+  * unlocked: The set contains identifier strings that tell the stackframe if a certain variable has been reached in the
+  * codegen
   *
-  * currST: The symbol table that contains information about the variables and
-  * their types of the current scope.
+  * currST: The symbol table that contains information about the variables and their types of the current scope.
   *
   * returnOffset: Used purely for functional returns as a special case.
   */
@@ -29,19 +28,17 @@ class StackFrame(
 )(implicit repr: Representation) {
     var unlocked = mutable.Set[String]().empty
 
-    /** temporary offsets are used when something is pushed to the stackframe in
-      * order to implement a functionality. These are added to values retrieved
-      * from the offsetmaps
+    /** temporary offsets are used when something is pushed to the stackframe in order to implement a functionality.
+      * These are added to values retrieved from the offsetmaps
       */
     var tempOffset = 0;
 
-    /** varBytes contains the total bytes of the VARIABLES in the current
-      * offsetmap. These do not include function parameters
+    /** varBytes contains the total bytes of the VARIABLES in the current offsetmap. These do not include function
+      * parameters
       */
     val varBytes = StackFrame.varBytes(currST)
 
-    /** totalBytes contains the total bytes of all values in the current
-      * offsetmap. This includes function parameters
+    /** totalBytes contains the total bytes of all values in the current offsetmap. This includes function parameters
       */
     val totalBytes = StackFrame.totalBytes(currST)
 
@@ -111,12 +108,11 @@ class StackFrame(
 
     /** Get offset corresponding to an identifier existing in the stack frame
       *
-      * Attempt to retrieve an offset of an identifier from the child offset map
-      * if the identifier is unlocked. If not, attempt to retrieve it from the
-      * parent offset map
+      * Attempt to retrieve an offset of an identifier from the child offset map if the identifier is unlocked. If not,
+      * attempt to retrieve it from the parent offset map
       *
-      * It is expected that the identifier is inside at least one of the maps,
-      * if not it means that the semantic check did not work
+      * It is expected that the identifier is inside at least one of the maps, if not it means that the semantic check
+      * did not work
       */
     def getOffset(ident: String): Int = {
         if (unlocked.contains(ident)) {
@@ -132,8 +128,8 @@ class StackFrame(
         }
     }
 
-    /** Unlock an identifier for the stackframe. This should only be used when
-      * declaring a new variable or adding in function parameters
+    /** Unlock an identifier for the stackframe. This should only be used when declaring a new variable or adding in
+      * function parameters
       */
     def unlock(ident: String): Unit = unlocked.add(ident)
 }
@@ -181,8 +177,7 @@ object StackFrame {
                 val v = st.lookup(k).get
                 acc -= getTypeSize(v)
                 v match {
-                    /** Params have to be offset by 4 bytes due to LR being
-                      * pushed at the start of a function call
+                    /** Params have to be offset by 4 bytes due to LR being pushed at the start of a function call
                       */
                     case Param(t) => map += (k -> (acc + WORD_SIZE))
                     case _        => map += (k -> acc)

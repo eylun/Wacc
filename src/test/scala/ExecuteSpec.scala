@@ -128,4 +128,29 @@ class ExecuteSpec extends AnyFlatSpec {
         waccProgramsInDir(new File("./programs/valid/tryCatch"))
             .foreach((executeAndCompare(_)))
     }
+    behavior of "map programs"
+    it should "execute maps" in {
+        waccProgramsInDir(new File("./programs/valid/higherOrderFunctions/map"))
+            .foreach((executeAndCompare(_)))
+    }
+    behavior of "fold programs"
+    it should "execute folds" in {
+        waccProgramsInDir(new File("./programs/valid/higherOrderFunctions/fold"))
+            .foreach((executeAndCompare(_)))
+    }
+    behavior of "scan programs"
+    it should "execute scans" in {
+        waccProgramsInDir(new File("./programs/valid/higherOrderFunctions/scan"))
+            .foreach((executeAndCompare(_)))
+    }
+    behavior of "nested pairs"
+    it should "execute statements with nested pairs" in {
+        waccProgramsInDir(new File("./programs/valid/nestedPairs"))
+            .foreach((executeAndCompare(_)))
+    }
+    behavior of "function overloading"
+    it should "execute functions that are overloaded" in {
+        waccProgramsInDir(new File("./programs/valid/functionOverload"))
+            .foreach((executeAndCompare(_)))
+    }
 }

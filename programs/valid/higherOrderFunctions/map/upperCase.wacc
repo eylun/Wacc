@@ -1,0 +1,21 @@
+# Map empty array
+
+# Input:
+
+# Output:
+# HELLO
+
+# Exit: 0
+
+# Program:
+
+begin
+  char hof_toUpper(char x) is
+    int offset = ord 'a' - ord 'A';
+	return chr (ord x - offset)
+  end
+
+  char[] x = ['h','e','l','l','o'];
+  char[] y = map hof_toUpper x;
+  println y
+end

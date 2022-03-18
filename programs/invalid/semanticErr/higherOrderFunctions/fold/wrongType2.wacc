@@ -1,0 +1,18 @@
+# array element type does not match function argument type
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int plus2(int x, int y) is
+	return x + y
+  end
+
+  char[] x = ['a', 'b'];
+  int y = fold plus2 0 x
+end

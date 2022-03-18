@@ -1,6 +1,7 @@
 import Helpers._
 import Condition._
 import constants._
+import OptimisationFlag._
 
 object transLHS {
 

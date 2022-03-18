@@ -1,0 +1,28 @@
+# test removal of redundant load and store
+
+# Input:
+
+# Output:
+
+# Exit: 0
+
+# Program:
+
+
+# Program:
+
+
+
+# Exit: 0
+
+
+begin
+bool t = true;
+bool f = false;
+  bool b = ! ( ( t && f) || (t && f) );
+  if b == true then
+    println "Correct"
+  else
+    println "Wrong"
+  fi
+end

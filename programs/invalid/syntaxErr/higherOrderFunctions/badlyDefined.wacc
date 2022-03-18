@@ -1,0 +1,18 @@
+# map definition typo
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int plus2(int x) is
+	return x + 2
+  end
+
+  int[] x = [1, 2, 3];
+  int[] y = mapplus2 x
+end

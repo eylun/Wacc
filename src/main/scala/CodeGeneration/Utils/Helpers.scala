@@ -52,6 +52,54 @@ object Helpers {
         }
     }
 
+    /** Checks and get the constant if it exists. Otherwise, return original value */
+    def checkAndGetConstant(node: ExprNode, sf: StackFrame, assignRHS: Boolean, assignIdent: String): ExprNode = {
+        if (checkIfConstant(node, sf)) {
+            getAnyConstant(node, sf, assignRHS, assignIdent)
+        } else {
+            node
+        }
+    }
+
+    /** Checks if identifier is a constant (for Constant Propogation) */
+    def checkIfConstant(node: ExprNode, sf: StackFrame): Boolean = {
+        node match {
+            case IdentNode(s) => { sf.currST.containsConstant(s) }
+            case _            => false
+        }
+    }
+
+    /** Returns the literal Node associated with the constant variable */
+    /** Only called after checkIfConstant() */
+    def getAnyConstant(
+        ident: ExprNode,
+        sf: StackFrame,
+        assignRHS: Boolean,
+        assignIdent: String
+    ): ExprNode = {
+        ident match {
+            case IdentNode(s) => {
+                val identType = sf.currST.lookupAll(s).get.getType()
+                val constant = sf.currST.getConstant(s, identType)
+
+                /** If this constant is meant to reassign the identifier is is associated to, we remove the identifier
+                  * from the map
+                  */
+                if (assignRHS & s == assignIdent) {
+                    sf.currST.removeConstantVar(s)
+                }
+                constant match {
+                    case n: Int     => IntLiterNode(n)(0, 0)
+                    case n: Boolean => BoolLiterNode(n)(0, 0)
+                    case n: Char    => CharLiterNode(n)(0, 0)
+                    case _          => throw new RuntimeException("Constant should be of a literal type")
+                }
+            }
+            case _ => throw new RuntimeException("Expression node is expected to be an identifier")
+        }
+
+    }
+
     /** Generates data message for strings */
     def getStringDirective(s: String, idx: Int)(implicit repr: Representation): List[Instruction] = {
 
@@ -123,25 +171,27 @@ object Helpers {
         val t = e.typeId.get
 
         repr match {
-            case ARMRepresentation => collector.addStatement(
-                List(
+            case ARMRepresentation =>
+                collector.addStatement(
+                  List(
                     PushInstr(List(r0)),
                     MoveInstr(r0, ImmOffset(getTypeSize(t))),
                     BranchLinkInstr("malloc", Condition.AL),
                     PopInstr(List(r1))
+                  )
                 )
-            )
-            case X86Representation => collector.addStatement(
-                List(
+            case X86Representation =>
+                collector.addStatement(
+                  List(
                     PushInstr(List(r0)),
                     MoveInstr(r0, ImmOffset(getTypeSize(t))),
                     MoveInstr(r4, RegOp(r0)),
                     BranchLinkInstr("malloc", Condition.AL),
                     PopInstr(List(r1))
+                  )
                 )
-            )
         }
-        
+
         t match {
             case BoolType() | CharType() =>
                 collector.addStatement(
@@ -340,6 +390,7 @@ object Helpers {
     }
 
     def printBoolLiter(implicit collector: WaccBuffer, repr: Representation) = {
+
         /** Add DataMsg for Bool Literal true & false */
         val idxTrue: Int = collector.tickDataMsg()
         val idxFalse: Int = collector.tickDataMsg()
@@ -349,6 +400,7 @@ object Helpers {
         collector.addDataMsg(
           getPrintFalseDirective(idxFalse)
         )
+
         /** Add p_print_bool function */
         collector.addUtilStatement(
           printBoolLiterFunc(idxTrue, idxFalse)
@@ -778,6 +830,61 @@ object Helpers {
         collector.insertUtil(UtilFlag.PRuntimeError)
     }
 
+    /** Print Check String Overflow */
+    /** Print Check String Overflow */
+    def printCheckStringBoundsDirective(
+        largeIdx: Int,
+        negIdx: Int
+    )(implicit repr: Representation): List[Instruction] = {
+        List(
+          /** Negative Index Data Message */
+          Label(s"msg_$negIdx"),
+          Directive(s"word 45"),
+          Directive(
+            s"ascii \"StringIndexOutOfBoundsError: negative index\\n\\0\""
+          ),
+          /** Index Too Large Data Message */
+          Label(s"msg_$largeIdx"),
+          Directive(s"word 46"),
+          Directive(
+            s"ascii \"StringIndexOutOfBoundsError: index too large\\n\\0\""
+          )
+        )
+    }
+
+    def printCheckStringBoundsFunc(
+        largeIdx: Int,
+        negIdx: Int
+    )(implicit repr: Representation): List[Instruction] = {
+        List(
+          Label("p_check_string_bounds"),
+          LoadInstr(r3, sp, ImmOffset(0)),
+          PushInstr(List(lr)),
+          CompareInstr(r0, ImmOffset(0)),
+          LoadLabelInstr(r0, s"msg_$negIdx", Condition.LT),
+          BranchLinkInstr("p_throw_runtime_error", Condition.LT),
+          LoadInstr(r1, r3, ImmOffset(0)),
+          CompareInstr(r0, RegOp(r1)),
+          LoadLabelInstr(r0, s"msg_$largeIdx", Condition.CS),
+          BranchLinkInstr("p_throw_runtime_error", Condition.CS),
+          PopInstr(List(pc))
+        )
+    }
+
+    def printCheckStringBounds(implicit collector: WaccBuffer, repr: Representation) = {
+
+        /** Add DataMsg for index too large and negative index errors */
+        val negIdx: Int = collector.tickDataMsg()
+        val largeIdx: Int = collector.tickDataMsg()
+        collector.addDataMsg(printCheckStringBoundsDirective(largeIdx, negIdx))
+
+        /** Add p_check_string_bounds function */
+        collector.addUtilStatement(printCheckStringBoundsFunc(largeIdx, negIdx))
+
+        /** Add p_throw_runtime_error to the asm file */
+        collector.insertUtil(UtilFlag.PRuntimeError)
+    }
+
     /** Print Read Int */
     def printReadIntDirective(idx: Int)(implicit repr: Representation): List[Instruction] = {
         repr match {
@@ -950,6 +1057,7 @@ object Helpers {
     }
 
     def printFreePair(implicit collector: WaccBuffer, repr: Representation) = {
+
         /** Add DataMsg for FreePair Directive */
         val idx: Int = collector.tickDataMsg()
         collector.addDataMsg(printFreePairDirective(idx))
@@ -1061,8 +1169,8 @@ object Helpers {
     object UtilFlag extends Enumeration {
         type UtilFlag = Value
         val PPrintInt, PPrintBool, PPrintChar, PPrintString, PPrintRef, PPrintNewLine, PThrowOverflowError,
-            PRuntimeError, PCheckDivideByZero, PCheckArrayBounds, PReadChar, PReadInt, PFreePair, PCheckNullPointer,
-            PExceptionError = Value
+            PRuntimeError, PCheckDivideByZero, PCheckArrayBounds, PCheckStringBounds, PReadChar, PReadInt, PFreePair,
+            PCheckNullPointer, PExceptionError = Value
     }
 
     def cleanFilename(fn: String): String = fn.take(fn.lastIndexOf("."))

@@ -379,6 +379,10 @@ class CodeGenSpec extends AnyFlatSpec {
     it should "translate len expressions" in {
         reset()
         val st = SymbolTable()
+        // var node: AssignRHSNode = ArrayLiterNode(List())(0, 0)
+        // node.typeId = Some(AnyType())
+        var node: IdentNode = IdentNode("anArray")(0, 0)
+        node.typeId = Some(ArrayType(IntType(), List(3), 1))
         st.add(
           "anArray",
           Variable(ArrayType(IntType(), List(3), 1))
@@ -386,7 +390,7 @@ class CodeGenSpec extends AnyFlatSpec {
         sf = StackFrame(st)
         sf.unlock("anArray")
         testExpr(
-          Len(IdentNode("anArray")(0, 0))(0, 0),
+          Len(node)(0, 0),
           expectedBssSection ++:
               expectedTextSection(
                 List(

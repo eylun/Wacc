@@ -1,0 +1,18 @@
+# missing expression in scan call
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int plusTogether(int x, int y) is
+	return x + y
+  end
+
+  int[] x = [1, 2, 3];
+  int[] y = scan plusTogether 0
+end
