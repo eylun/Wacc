@@ -147,8 +147,7 @@ object testUtils {
         ARMRepresentation(
           result.get,
           topLevelST,
-          cleanFilename(f.getName()) + ".s",
-          OptimisationFlag.Oph
+          cleanFilename(f.getName()) + ".s"
         )
     }
 
