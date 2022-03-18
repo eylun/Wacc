@@ -104,13 +104,22 @@ object transExpression {
                 transExpression(e, stackFrame)
 
                 collector.insertUtil(PThrowOverflowError)
-
-                collector.addStatement(
-                  List(
-                    ReverseSubInstr(r0, r0, ImmOffset(0), true),
-                    BranchLinkInstr("p_throw_overflow_error", Condition.VS)
-                  )
-                )
+                
+                repr match {
+                    case ARMRepresentation => collector.addStatement(
+                        List(
+                            ReverseSubInstr(r0, r0, ImmOffset(0), true),
+                            BranchLinkInstr("p_throw_overflow_error", Condition.VS)
+                        )
+                    )
+                    case X86Representation => collector.addStatement(
+                        List(
+                            MoveInstr(r1, RegOp(r0)),
+                            ReverseSubInstr(r0, r1, ImmOffset(0), true),
+                            BranchLinkInstr("p_throw_overflow_error", Condition.VS)
+                        )
+                    )
+                }
             }
             case Len(e) => {
                 transExpression(e, stackFrame)

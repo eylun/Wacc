@@ -38,7 +38,7 @@ class X86ExecuteSpec extends AnyFlatSpec {
     }
     behavior of "expression programs"
     it should "execute expressions" in {
-        pending
+        //pending
 
         waccProgramsInDir(new File("./programs/valid/expressions")).foreach(x86ExecuteAndCompare(_))
     }
