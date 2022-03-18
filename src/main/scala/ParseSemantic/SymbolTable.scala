@@ -45,8 +45,13 @@ class SymbolTable(
     }
 
     /** Add a constant variable to the map for constant propogation */
-    def addConstantVar(name: String, value: Int): Unit = {
-        constantIntsMap = constantIntsMap + (name -> value)
+    def addConstantVar(name: String, value: AnyVal): Unit = {
+        value match {
+            case n: Int     => constantIntsMap = constantIntsMap + (name -> n)
+            case n: Boolean => constantBoolsMap = constantBoolsMap + (name -> n)
+            case _          =>
+        }
+
     }
 
     /** Given another map of constants, add it to the current map */
@@ -68,14 +73,25 @@ class SymbolTable(
     /** Clears all constants from the map */
     def clearAllConstants() = {
         constantIntsMap = Map[String, Int]()
+        constantBoolsMap = Map[String, Boolean]()
     }
 
     /** Propogates up (checks parent symbol table for constant) */
     def containsConstant(name: String): Boolean = {
+        if (lookupAll(name) == None) {
+            return false
+        }
+        val identType = lookupAll(name).get.getType()
+        val constantMapType = identType match {
+            case IntType()  => constantIntsMap
+            case BoolType() => constantBoolsMap
+            case _ => throw new RuntimeException("Identifier type does not correspond to type of constants stored")
+        }
+
         var s: Option[SymbolTable] = Some(this)
         while (s != None) {
             var st = s.get
-            if (constantIntsMap.contains(name)) {
+            if (constantMapType.contains(name)) {
                 return true
             }
             s = st.encSymTable

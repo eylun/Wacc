@@ -16,7 +16,7 @@
 # Exit: 0
 
 begin
-  int x = -5 ;
-  int y = 3 ;
-  println x % y
+  bool x = true;
+  bool y = false;
+  x = !y
 end

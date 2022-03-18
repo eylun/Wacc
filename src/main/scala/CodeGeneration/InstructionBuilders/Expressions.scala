@@ -46,10 +46,18 @@ object transExpression {
                 collector.addStatement(List(LoadImmIntInstr(r0, n)))
             case CharLiterNode(c) =>
                 collector.addStatement(List(MoveInstr(r0, ImmOffset(c))))
-            case BoolLiterNode(true) =>
+            case BoolLiterNode(true) => {
                 collector.addStatement(List(MoveInstr(r0, ImmOffset(1))))
-            case BoolLiterNode(false) =>
+                if (assignRHS & collector.optFlag == OptimisationFlag.Oph) {
+                    stackFrame.currST.addConstantVar(identString, true)
+                }
+            }
+            case BoolLiterNode(false) => {
                 collector.addStatement(List(MoveInstr(r0, ImmOffset(0))))
+                if (assignRHS & collector.optFlag == OptimisationFlag.Oph) {
+                    stackFrame.currST.addConstantVar(identString, true)
+                }
+            }
             case StringLiterNode(str) => {
                 val msgCount = collector.tickDataMsg()
                 collector.addDataMsg(
@@ -123,7 +131,13 @@ object transExpression {
 
             /** UNARY OPERATIONS */
             case Not(e) => {
-                transExpression(e, stackFrame)
+                if (checkIfConstant(e, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
+                    val const = getAnyConstant(e, stackFrame, assignRHS, identString)
+                    transExpression(const, stackFrame, assignRHS, identString)
+                } else {
+                    transExpression(e, stackFrame)
+                }
+
                 collector.addStatement(
                   List(
                     XorInstr(r0, r0, ImmOffset(1))
@@ -208,7 +222,6 @@ object transExpression {
                 else if (y > x & y > 0 & x > 0) {
                     transExpression((IntLiterNode(x)(0, 0)), stackFrame)
                 } else {
-                    println(" here")
                     println(x % y)
                     transExpression(
                       (IntLiterNode(x % y)(0, 0)),
