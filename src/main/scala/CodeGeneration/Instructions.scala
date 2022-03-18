@@ -72,6 +72,11 @@ case class SMullInstr(
     setFlags: Boolean = false
 ) extends Instruction
 
+/** Addition for X86: divides %rax (r0) by the signed value in src,
+ *  storing the quotient in %rax (r0) and remainder in %rdx (r2)
+ */
+case class SDivInstr(src: Register) extends Instruction
+
 /** LOAD AND STORE INSTRUCTIONS */
 /** Loads value from memory address stored in src into dst register */
 case class LoadInstr(

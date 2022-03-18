@@ -32,7 +32,7 @@ object X86Representation extends Representation {
     def generateShiftValue(s: Shift): String = {
         s match {
             case ShiftReg(r) => s"$r"
-            case ShiftImm(i) => "$" + s"${i + 1}"
+            case ShiftImm(i) => s"$$$i"
         }
     }
 
@@ -64,6 +64,7 @@ object X86Representation extends Representation {
             case AddInstr(_, _, _, _)                               => generateAdd(instr)
             case SubInstr(_, _, _, _) | ReverseSubInstr(_, _, _, _) => generateSub(instr)
             case SMullInstr(_, _, _, _, _)                          => generateMultiply(instr)
+            case SDivInstr(src)                                      => s"\tcqto\n\tidiv $src"
 
             case BranchInstr(_, _) | BranchLinkInstr(_, _) => generateBranch(instr)
 
@@ -179,8 +180,8 @@ object X86Representation extends Representation {
         i match {
             case SMullInstr(rdLo, rdHi, fst, snd, false) => {
                 sb.append(s"\tmov $fst, $rdLo\n")
-                sb.append(s"\timul $snd, $rdLo}\n")
                 sb.append(s"\tmov $fst, $rdHi\n")
+                sb.append(s"\timul $snd, $rdLo\n")
                 sb.append(s"\timul $snd, $rdHi\n")
                 sb.append(s"\tshr 32, $rdHi")
                 sb.toString

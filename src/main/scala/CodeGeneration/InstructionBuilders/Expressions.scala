@@ -74,20 +74,11 @@ object transExpression {
                                   LoadRegSignedByte(r4, r4, ImmOffset(0))
                                 )
                             case _ => {
-                                repr match {
-                                    case ARMRepresentation =>
-                                        List(
-                                          AddInstr(r4, r4, LSLRegOp(r0, ShiftImm(2)), false),
-                                          LoadInstr(r4, r4, ImmOffset(0))
-                                        )
-                                    case X86Representation =>
-                                        List(
-                                          AddInstr(r4, r4, LSLRegOp(r0, ShiftImm(2)), false),
-                                          LoadInstr(r4, r4, ImmOffset(0))
-                                        )
-                                }
+                                List(
+                                    AddInstr(r4, r4, LSLRegOp(r0, ShiftImm(TYPE_SHIFT)), false),
+                                    LoadInstr(r4, r4, ImmOffset(0))
+                                )
                             }
-
                         })
                     }
                 }
@@ -196,14 +187,25 @@ object transExpression {
 
                 collector.insertUtil(PCheckDivideByZero)
 
-                collector.addStatement(
-                  List(
-                    MoveInstr(r1, RegOp(r0)),
-                    PopInstr(List(r0)),
-                    BranchLinkInstr("p_check_divide_by_zero"),
-                    BranchLinkInstr("__aeabi_idiv")
-                  )
-                )
+                repr match {
+                    case ARMRepresentation => collector.addStatement(
+                        List(
+                            MoveInstr(r1, RegOp(r0)),
+                            PopInstr(List(r0)),
+                            BranchLinkInstr("p_check_divide_by_zero"),
+                            BranchLinkInstr("__aeabi_idiv")
+                        )
+                    )
+                    case X86Representation => collector.addStatement(
+                        List(
+                            MoveInstr(r1, RegOp(r0)),
+                            PopInstr(List(r0)),
+                            BranchLinkInstr("p_check_divide_by_zero"),
+                            XorInstr(r2, r2, RegOp(r2)),
+                            SDivInstr(r1)
+                        )
+                    )
+                }
                 stackFrame.dropTempOffset(WORD_SIZE)
             }
             case Mod(e1, e2) => {
@@ -214,15 +216,27 @@ object transExpression {
 
                 collector.insertUtil(PCheckDivideByZero)
 
-                collector.addStatement(
-                  List(
-                    MoveInstr(r1, RegOp(r0)),
-                    PopInstr(List(r0)),
-                    BranchLinkInstr("p_check_divide_by_zero"),
-                    BranchLinkInstr("__aeabi_idivmod"),
-                    MoveInstr(r0, RegOp(r1))
-                  )
-                )
+                repr match {
+                    case ARMRepresentation => collector.addStatement(
+                        List(
+                            MoveInstr(r1, RegOp(r0)),
+                            PopInstr(List(r0)),
+                            BranchLinkInstr("p_check_divide_by_zero"),
+                            BranchLinkInstr("__aeabi_idivmod"),
+                            MoveInstr(r0, RegOp(r1))
+                        )
+                    )
+                    case X86Representation => collector.addStatement(
+                        List(
+                            MoveInstr(r1, RegOp(r0)),
+                            PopInstr(List(r0)),
+                            BranchLinkInstr("p_check_divide_by_zero"),
+                            XorInstr(r2, r2, RegOp(r2)),
+                            SDivInstr(r1),
+                            MoveInstr(r0, RegOp(r2))
+                        )
+                    )
+                }
                 stackFrame.dropTempOffset(WORD_SIZE)
             }
             case And(e1, e2) => {

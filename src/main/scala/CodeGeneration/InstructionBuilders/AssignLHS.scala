@@ -56,12 +56,12 @@ object transLHS {
                                 ae.typeId.get.getType() match {
                                     case CharType() | BoolType() =>
                                         AddInstr(r4, r4, RegOp(r0), false)
-                                    case _ => AddInstr(r4, r4, LSLRegOp(r0, ShiftImm(2)), false)
+                                    case _ => AddInstr(r4, r4, LSLRegOp(r0, ShiftImm(TYPE_SHIFT)), false)
                                 }
                               )
                           } else {
                               List(
-                                AddInstr(r4, r4, LSLRegOp(r0, ShiftImm(2)), false),
+                                AddInstr(r4, r4, LSLRegOp(r0, ShiftImm(TYPE_SHIFT)), false),
                                 LoadInstr(r4, r4, ImmOffset(0))
                               )
                           }

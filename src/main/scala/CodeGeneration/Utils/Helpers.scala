@@ -22,6 +22,12 @@ object Helpers {
             case X86Representation => 8
         }
     }
+    def TYPE_SHIFT(implicit repr: Representation) = {
+        repr match {
+            case ARMRepresentation => 2
+            case X86Representation => 3
+        }
+    }
     val OFFSET_MAX = 1024
 
     /** .text and .global main directives */
