@@ -1,0 +1,32 @@
+# two simple functions are declared, called with different params
+
+# Input:
+
+# Output:
+# the function with argument Pair(Int, Char) produces: 1234
+# the function with argument Pair(Char, Int) produces: z
+
+# Exit: 0
+
+# Program:
+
+begin
+  int f(pair(int, char) x) is
+    int p = fst x;
+    return p
+  end
+  
+  char f(pair(char, int) x) is
+    char c = fst x;
+    return c
+  end
+  
+  pair(int, char) param1 = newpair(1234, 'a');
+  int q = call f(param1);
+  print "the function with argument Pair(Int, Char) produces: ";
+  println q;
+  pair(char, int) param2 = newpair('z', 0);
+  char p = call f(param2);
+  print "the function with argument Pair(Char, Int) produces: ";
+  println p
+end

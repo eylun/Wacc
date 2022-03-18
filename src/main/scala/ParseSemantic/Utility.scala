@@ -2,26 +2,28 @@ object Utility {
 
     /** Recursively type checks two types
       *
-      * Recursive checking is required due to Pair, Null Pair and Nested Pair
-      * being the same type. The only exception is for two Pairs with different
-      * inner types
+      * Recursive checking is required due to Pair, Null Pair and Nested Pair being the same type. The only exception is
+      * for two Pairs with different inner types
       */
     def lrTypeCheck(l: Type, r: Type): Boolean = {
         (l, r) match {
             case (_, AnyType()) => true
             case (ArrayType(t1, l1, n1), ArrayType(t2, l2, n2)) =>
                 n1 == n2 && lrTypeCheck(t1, t2)
-            case (PairType(_, _), NullPairType()) |
-                (PairType(_, _), NestedPairType()) |
-                (NullPairType(), PairType(_, _)) |
-                (NestedPairType(), PairType(_, _)) |
-                (NullPairType(), NestedPairType()) |
-                (NestedPairType(), NullPairType()) =>
+            case (PairType(_, _), NullPairType()) | (PairType(_, _), NestedPairType()) |
+                (NullPairType(), PairType(_, _)) | (NestedPairType(), PairType(_, _)) |
+                (NullPairType(), NestedPairType()) | (NestedPairType(), NullPairType()) =>
                 true
             case (PairType(pair1L, pair1R), PairType(pair2L, pair2R)) =>
                 lrTypeCheck(pair1L, pair2L) && lrTypeCheck(pair1R, pair2R)
             case (l, r) => l == r
         }
+    }
+
+    def overloadSyntax(t: Type): String = t match {
+        case ArrayType(elemType, length, dimension) => s"$elemType$dimension"
+        case PairType(fst, snd)                     => s"PAIR${overloadSyntax(fst)}.${overloadSyntax(snd)}"
+        case _                                      => s"$t"
     }
 
     val keywords = Set(

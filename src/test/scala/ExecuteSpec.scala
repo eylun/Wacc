@@ -148,4 +148,9 @@ class ExecuteSpec extends AnyFlatSpec {
         waccProgramsInDir(new File("./programs/valid/nestedPairs"))
             .foreach((executeAndCompare(_)))
     }
+    behavior of "function overloading"
+    it should "execute functions that are overloaded" in {
+        waccProgramsInDir(new File("./programs/valid/functionOverload"))
+            .foreach((executeAndCompare(_)))
+    }
 }
