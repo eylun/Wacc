@@ -315,7 +315,10 @@ object transStatement {
                 /** Branches to loop body instructions if condition is true
                   */
                 collector.addStatement(List(Label(labelCheck)))
+
+                /** TODO: remove variables in cond from constants */
                 transExpression(e, stackFrame)
+
                 collector.addStatement(
                   (
                     List(

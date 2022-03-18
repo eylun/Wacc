@@ -15,8 +15,12 @@
 
 # Exit: 0
 
+
 begin
-  bool x = true;
-  bool y = false;
-  x = !y
+	int n = 0 ;
+	while n != 1 do
+		n = 1 ;
+		println "Change n"
+	done ;
+	println "Should print \"Change n\" once before."
 end

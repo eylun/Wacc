@@ -55,7 +55,7 @@ object transExpression {
             case BoolLiterNode(false) => {
                 collector.addStatement(List(MoveInstr(r0, ImmOffset(0))))
                 if (assignRHS & collector.optFlag == OptimisationFlag.Oph) {
-                    stackFrame.currST.addConstantVar(identString, true)
+                    stackFrame.currST.addConstantVar(identString, false)
                 }
             }
             case StringLiterNode(str) => {
@@ -131,12 +131,7 @@ object transExpression {
 
             /** UNARY OPERATIONS */
             case Not(e) => {
-                if (checkIfConstant(e, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
-                    val const = getAnyConstant(e, stackFrame, assignRHS, identString)
-                    transExpression(const, stackFrame, assignRHS, identString)
-                } else {
-                    transExpression(e, stackFrame)
-                }
+                transExpression(e, stackFrame)
 
                 collector.addStatement(
                   List(
@@ -231,6 +226,8 @@ object transExpression {
             }
 
             case Add(e1, e2) => {
+
+                /** TODO Factor out this function */
                 if (checkIfConstant(e1, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
                     val const1 = getAnyConstant(e1, stackFrame, assignRHS, identString)
                     if (checkIfConstant(e2, stackFrame)) {
@@ -241,6 +238,12 @@ object transExpression {
                     transExpression(Add(const1, e2)(0, 0), stackFrame)
                     return
                 }
+
+                /** if (checkIfConstant(e1, stackFrame) & collector.optFlag == OptimisationFlag.Oph) { val const1 =
+                  * getAnyConstant(e1, stackFrame, assignRHS, identString) if (checkIfConstant(e2, stackFrame)) { val
+                  * const2 = getAnyConstant(e2, stackFrame, assignRHS, identString) transExpression(Add(const1,
+                  * const2)(0, 0), stackFrame) return } transExpression(Add(const1, e2)(0, 0), stackFrame) return }
+                  */
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
@@ -257,6 +260,7 @@ object transExpression {
                   )
                 )
                 stackFrame.dropTempOffset(WORD_SIZE)
+
             }
 
             case Sub(e1, e2) => {
@@ -448,6 +452,7 @@ object transExpression {
             }
             /** Less-Than operator */
             case LT(e1, e2) => {
+
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
@@ -480,7 +485,23 @@ object transExpression {
                 )
                 stackFrame.dropTempOffset(WORD_SIZE)
             }
+            /** Constant Propogation Case */
+            case Equal(BoolLiterNode(x), BoolLiterNode(y)) if collector.optFlag == OptimisationFlag.Oph => {
+                transExpression(BoolLiterNode(x == y)(0, 0), stackFrame)
+            }
             case Equal(e1, e2) => {
+                if (checkIfConstant(e1, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
+                    val const1 = getAnyConstant(e1, stackFrame, assignRHS, identString)
+                    if (checkIfConstant(e2, stackFrame)) {
+                        val const2 = getAnyConstant(e2, stackFrame, assignRHS, identString)
+                        transExpression(Equal(const1, const2)(0, 0), stackFrame)
+
+                        return
+                    }
+                    transExpression(Equal(const1, e2)(0, 0), stackFrame)
+                    return
+                }
+
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
@@ -496,7 +517,20 @@ object transExpression {
                 )
                 stackFrame.dropTempOffset(WORD_SIZE)
             }
+            case NotEqual(BoolLiterNode(x), BoolLiterNode(y)) if collector.optFlag == OptimisationFlag.Oph => {
+                transExpression(BoolLiterNode(x != y)(0, 0), stackFrame)
+            }
             case NotEqual(e1, e2) => {
+                if (checkIfConstant(e1, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
+                    val const1 = getAnyConstant(e1, stackFrame, assignRHS, identString)
+                    if (checkIfConstant(e2, stackFrame)) {
+                        val const2 = getAnyConstant(e2, stackFrame, assignRHS, identString)
+                        transExpression(NotEqual(const1, const2)(0, 0), stackFrame)
+                        return
+                    }
+                    transExpression(NotEqual(const1, e2)(0, 0), stackFrame)
+                    return
+                }
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)

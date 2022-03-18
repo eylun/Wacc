@@ -10,6 +10,7 @@ class SymbolTable(
     var constantBoolsMap: Map[String, Boolean] = Map[String, Boolean]().empty
 
     /** TODO: removeConstants is a flag that when true, will cause */
+    /** do we need this lol */
     var removeConstants: Boolean = false
     def setToRemove(): Unit = {
         removeConstants = true
@@ -85,7 +86,7 @@ class SymbolTable(
         val constantMapType = identType match {
             case IntType()  => constantIntsMap
             case BoolType() => constantBoolsMap
-            case _ => throw new RuntimeException("Identifier type does not correspond to type of constants stored")
+            case _          => return false
         }
 
         var s: Option[SymbolTable] = Some(this)
