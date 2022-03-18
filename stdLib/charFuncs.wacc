@@ -16,7 +16,7 @@ begin
     end
 
     bool isSpace(char c) is
-        return ord c == 32
+        return ord c == ord ' '
 
     end
 
@@ -33,18 +33,20 @@ begin
     end
 
     char toLower(char c) is
+        int offset = ord 'a' - ord 'A';
         bool b = call isUpperCase(c);
         if b then 
-            return chr (ord c + 32)
+            return chr (ord c + offset)
         else
             return c
         fi        
     end
 
     char toUpper(char c) is
+        int offset = ord 'a' - ord 'A';
         bool b = call isLowerCase(c);
         if b then 
-            return chr (ord c - 32)
+            return chr (ord c - offset)
         else
             return c
         fi    
