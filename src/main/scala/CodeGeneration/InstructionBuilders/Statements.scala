@@ -376,7 +376,7 @@ object transStatement {
                         stackFrame.returnTail ++ List(PopInstr(List(pc)))
                     )
                     case X86Representation => collector.addStatement(
-                        stackFrame.returnTail ++ List(MoveInstr(sp, RegOp(lr)), PopInstr(List(lr, pc)))
+                        stackFrame.returnTail ++ List(MoveInstr(sp, RegOp(lr)), PopInstr(List(pc)))
                     )
                 }
             }

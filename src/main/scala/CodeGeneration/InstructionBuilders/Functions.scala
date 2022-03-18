@@ -14,16 +14,19 @@ object transFunction {
                 List(Label(s"f_${i.s}"), PushInstr(List(lr))) ++ stackFrame.head
             )
             case X86Representation => collector.addStatement(
-                List(Label(s"f_${i.s}"), PushInstr(List(lr)), MoveInstr(lr, RegOp(sp))) ++ stackFrame.head
+                List(Label(s"f_${i.s}"), MoveInstr(lr, RegOp(sp))) ++ stackFrame.head
             )
         }
         
         transStatement(s, stackFrame)
 
-        collector.addStatement(
-          List(
-            Directive("ltorg")
-          )
-        )
+        repr match {
+            case ARMRepresentation => collector.addStatement(
+                List(
+                    Directive("ltorg")
+                )
+            )
+            case X86Representation => 
+        }
     }
 }

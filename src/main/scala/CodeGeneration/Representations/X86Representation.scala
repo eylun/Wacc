@@ -216,12 +216,17 @@ object X86Representation extends Representation {
     def generateStore(i: Instruction): String = {
         i match {
             case StoreInstr(src, dst, ImmOffset(0), _) => s"\tmov $src, ($dst)"
-            case StoreInstr(src, dst, ImmOffset(i), _) => s"\tmov $src, $i($dst)"
-            case StoreInstr(src, dst, RegOp(r), _)     => s"\tmov $src, ($dst,$r)"
+            case StoreInstr(src, dst, ImmOffset(i), false) => s"\tmov $src, $i($dst)"
+            case StoreInstr(src, dst, ImmOffset(i), true) => s"\tmov $src, $i($dst)\n\tlea $i($dst), $sp"
+            
+            case StoreInstr(src, dst, RegOp(r), false)     => s"\tmov $src, ($dst,$r)"
+            case StoreInstr(src, dst, RegOp(r), true)     =>  s"\tmov $src, ($dst,$r)\n\tlea ($dst,$r), $sp"
 
-            case StoreByteInstr(src, dst, ImmOffset(0), _) => s"\tmovb ${transByteReg(src.toString)}, ($dst)"
-            case StoreByteInstr(src, dst, ImmOffset(i), _) => s"\tmovb ${transByteReg(src.toString)}, $i($dst)"
-            case StoreByteInstr(src, dst, RegOp(r), _)     => s"\tmovb ${transByteReg(src.toString)}, ($dst,$r)"
+            case StoreByteInstr(src, dst, ImmOffset(0), false) => s"\tmovb ${transByteReg(src.toString)}, ($dst)"
+            case StoreByteInstr(src, dst, ImmOffset(i), false) => s"\tmovb ${transByteReg(src.toString)}, $i($dst)"
+            case StoreByteInstr(src, dst, ImmOffset(i), true) => s"\tmovb ${transByteReg(src.toString)}, $i($dst)\n\tlea $i($dst), $sp"
+            case StoreByteInstr(src, dst, RegOp(r), false)     => s"\tmovb ${transByteReg(src.toString)}, ($dst,$r)"
+            case StoreByteInstr(src, dst, RegOp(r), true)     => s"\tmovb ${transByteReg(src.toString)}, ($dst,$r)\n\tlea ($dst,$r), $sp"
             case _                                         => "TODO STORE"
         }
     }
