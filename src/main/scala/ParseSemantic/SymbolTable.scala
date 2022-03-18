@@ -2,12 +2,14 @@ import scala.collection.immutable.Map
 
 class SymbolTable(
     var encSymTable: Option[SymbolTable],
-    var dict: Map[String, Identifier],
-    var constantIntsMap: Map[String, Int]
+    var dict: Map[String, Identifier]
 ) {
 
     var order: List[String] = List.empty
+    var constantIntsMap: Map[String, Int] = Map[String, Int]().empty
+    var constantBoolsMap: Map[String, Boolean] = Map[String, Boolean]().empty
 
+    /** TODO: removeConstants is a flag that when true, will cause */
     var removeConstants: Boolean = false
     def setToRemove(): Unit = {
         removeConstants = true
@@ -82,14 +84,19 @@ class SymbolTable(
     }
 
     /** Only called after containsConstant() check */
-    def getConstant(name: String): Int = {
-        constantIntsMap.get(name).get
+    def getConstant(name: String, identType: Type): AnyVal = {
+        identType match {
+            case IntType()  => constantIntsMap.get(name).get
+            case BoolType() => constantBoolsMap.get(name).get
+            case _          =>
+        }
+
     }
 }
 
 object SymbolTable {
-    def apply(): SymbolTable = new SymbolTable(None, Map[String, Identifier](), Map[String, Int]())
+    def apply(): SymbolTable = new SymbolTable(None, Map[String, Identifier]())
 
     def apply(encSymTable: SymbolTable): SymbolTable =
-        new SymbolTable(Some(encSymTable), Map[String, Identifier](), Map[String, Int]())
+        new SymbolTable(Some(encSymTable), Map[String, Identifier]())
 }
