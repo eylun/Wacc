@@ -340,7 +340,6 @@ object Helpers {
     }
 
     def printBoolLiter(implicit collector: WaccBuffer, repr: Representation) = {
-
         /** Add DataMsg for Bool Literal true & false */
         val idxTrue: Int = collector.tickDataMsg()
         val idxFalse: Int = collector.tickDataMsg()
@@ -350,7 +349,6 @@ object Helpers {
         collector.addDataMsg(
           getPrintFalseDirective(idxFalse)
         )
-
         /** Add p_print_bool function */
         collector.addUtilStatement(
           printBoolLiterFunc(idxTrue, idxFalse)

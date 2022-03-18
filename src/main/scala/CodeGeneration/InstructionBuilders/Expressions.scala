@@ -60,13 +60,14 @@ object transExpression {
                 es.zipWithIndex.foreach {
                     case (e, idx) => {
                         transExpression(e, stackFrame)
+
                         collector.addStatement(
                           List(
                             BranchLinkInstr("p_check_array_bounds", Condition.AL),
                             AddInstr(r4, r4, ImmOffset(WORD_SIZE), false)
                           )
                         )
-
+                        
                         collector.addStatement(ae.typeId.get.getType() match {
                             case CharType() | BoolType() if idx == es.length - 1 =>
                                 List(
