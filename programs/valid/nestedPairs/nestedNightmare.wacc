@@ -1,0 +1,25 @@
+# First element of variable is a full pair
+
+# Input:
+
+# Output:
+# true
+
+# Exit: 0
+
+# Program:
+
+begin
+  int zero = 0;
+  pair(int, int) one = newpair (zero, 1);
+  pair(pair(int, int), int) two = newpair (one, 2);
+  pair(pair(pair(int, int), int),int) three = newpair (two, 3);
+  pair(pair(pair(pair(int, int), int),int), int) four = newpair (three, 4);
+  pair(pair(pair(pair(pair(int, int), int),int), int), int) five = newpair (four, 5);
+  pair(pair(pair(pair(int, int), int),int), int) _four = fst five;
+  pair(pair(pair(int, int), int),int) _three = fst _four;
+  pair(pair(int, int), int) _two = fst _three;
+  pair(int, int) _one = fst _two;
+  int _zero = fst _one;
+  println zero == _zero
+end

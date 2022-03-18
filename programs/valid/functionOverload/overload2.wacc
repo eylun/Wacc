@@ -1,0 +1,36 @@
+# two simple functions are declared, called with different params
+
+# Input:
+
+# Output:
+# the function with no arguments produces: 0
+# the function with an argument produces: 100
+# the function with two arguments produces: 174
+
+# Exit: 0
+
+# Program:
+
+begin
+  int f() is
+    return 0 
+  end
+  
+  int f(int x) is
+    return x
+  end
+
+  int f(int x, int y) is
+    return x + y
+  end
+
+  int q = call f();
+  print "the function with no arguments produces: ";
+  println q;
+  int p = call f(100);
+  print "the function with an argument produces: ";
+  println p;
+  int o = call f(100, 74);
+  print "the function with two arguments produces: ";
+  println o
+end

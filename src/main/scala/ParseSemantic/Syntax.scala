@@ -506,7 +506,7 @@ object syntax {
 
     /** pair-elem-type := <base-type> | <array-type> | 'pair' */
     lazy val pairElemType: Parsley[PairElemTypeNode] =
-        (attempt(arrayType) <|> baseType <|> pairBaseType)
+        (attempt(arrayType) <|> baseType <|> attempt(pairType) <|> pairBaseType)
             .label("Pair Element Type: any valid type")
 
     /** pair-type := 'pair' '(' <pair-elem-type> ',' <pair-elem-type> ')' */

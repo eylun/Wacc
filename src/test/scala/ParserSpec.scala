@@ -621,13 +621,6 @@ class ParserSpec extends AnyFlatSpec {
 
     }
 
-    it should "fail on nested pair types" in {
-        assertResultEquals(
-          Failure(""),
-          syntax.anyType.parse("pair(int, pair(char, char))")
-        )
-    }
-
     behavior of "<basic-type> parsing"
     it should "parse all basic types" in {
         assertResultEquals(

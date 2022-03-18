@@ -1,0 +1,18 @@
+# Nested pair retrieved is not of matching type
+
+# Input:
+
+# Output:
+# 1
+
+# Exit: 0
+
+# Program:
+
+begin
+  pair(int, int) base = newpair (1, 1);
+  pair(pair(int, int), int) new = newpair(base, 5);	
+  pair(char, int) basecopy = fst new;
+  int value = fst basecopy;
+  println value
+end
