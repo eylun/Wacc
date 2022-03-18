@@ -206,7 +206,7 @@ object Helpers {
                 MoveInstr(r4, RegOp(r0)),
                 XorInstr(r4, r4, RegOp(r4)),
                 BranchLinkInstr("fflush"),
-                MoveInstr(lr, RegOp(sp)),
+                MoveInstr(sp, RegOp(lr)),
                 PopInstr(List(lr, pc))
             )
         }
@@ -283,7 +283,7 @@ object Helpers {
                 MoveInstr(r4, RegOp(r0)),
                 XorInstr(r4, r4, RegOp(r4)),
                 BranchLinkInstr("fflush"),
-                MoveInstr(lr, RegOp(sp)),
+                MoveInstr(sp, RegOp(lr)),
                 PopInstr(List(lr, pc))
             )
         }
@@ -353,7 +353,7 @@ object Helpers {
                 MoveInstr(r4, RegOp(r0)),
                 XorInstr(r4, r4, RegOp(r4)),
                 BranchLinkInstr("fflush"),
-                MoveInstr(lr, RegOp(sp)),
+                MoveInstr(sp, RegOp(lr)),
                 PopInstr(List(lr, pc))
             )
         }
@@ -404,12 +404,14 @@ object Helpers {
             case X86Representation => List(
                 Label("p_print_reference"),
                 PushInstr(List(lr)),
+                MoveInstr(lr, RegOp(sp)),
                 MoveInstr(r3, RegOp(r0)),
                 LoadLabelInstr(r4, s"msg_$idx"),
                 BranchLinkInstr("printf"),
                 MoveInstr(r4, ImmOffset(0)),
                 BranchLinkInstr("fflush"),
-                PopInstr(List(pc))
+                MoveInstr(sp, RegOp(lr)),
+                PopInstr(List(lr, pc))
             )
         }
     }
@@ -465,7 +467,7 @@ object Helpers {
                 MoveInstr(r4, RegOp(r0)),
                 XorInstr(r4, r4, RegOp(r4)),
                 BranchLinkInstr("fflush"),
-                MoveInstr(lr, RegOp(sp)),
+                MoveInstr(sp, RegOp(lr)),
                 PopInstr(List(lr, pc))
             )
         }
@@ -537,13 +539,8 @@ object Helpers {
             )
             case X86Representation => List(
                 Label("p_throw_runtime_error"),
-                /** Check if there is a catch_address active first */
-                LoadImmIntInstr(r7, 5),
-                LoadLabelInstr(r2, "catch_address"),
-                LoadInstr(r2, r2, ImmOffset(0)),
-                CompareInstr(r2, ImmOffset(0)),
-                MoveInstr(pc, RegOp(r2), Condition.NE),
-                /** Continue on to exit if catch_address is null */
+                PushInstr(List(lr)),
+                MoveInstr(lr, RegOp(sp)),
                 BranchLinkInstr("p_print_string"),
                 MoveInstr(r0, ImmOffset(-1)),
                 MoveInstr(r4, RegOp(r0)),
@@ -576,14 +573,26 @@ object Helpers {
     }
 
     def printCheckDivideByZeroFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label("p_check_divide_by_zero"),
-          PushInstr(List(lr)),
-          CompareInstr(r1, ImmOffset(0)),
-          LoadLabelInstr(r0, s"msg_$idx", Condition.EQ),
-          BranchLinkInstr("p_throw_runtime_error", Condition.EQ),
-          PopInstr(List(pc))
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label("p_check_divide_by_zero"),
+                PushInstr(List(lr)),
+                CompareInstr(r1, ImmOffset(0)),
+                LoadLabelInstr(r0, s"msg_$idx", Condition.EQ),
+                BranchLinkInstr("p_throw_runtime_error", Condition.EQ),
+                PopInstr(List(pc))
+            )
+            case X86Representation => List(
+                Label("p_check_divide_by_zero"),
+                PushInstr(List(lr)),
+                MoveInstr(lr, RegOp(sp)),
+                CompareInstr(r1, ImmOffset(0)),
+                LoadLabelInstr(r0, s"msg_$idx", Condition.EQ),
+                BranchLinkInstr("p_throw_runtime_error", Condition.EQ),
+                MoveInstr(sp, RegOp(lr)),
+                PopInstr(List(lr, pc))
+            )
+        }
     }
 
     def printCheckDivideByZero(implicit collector: WaccBuffer, repr: Representation) = {
@@ -625,18 +634,34 @@ object Helpers {
     }
 
     def printCheckArrayBoundsFunc(largeIdx: Int, negIdx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label("p_check_array_bounds"),
-          PushInstr(List(lr)),
-          CompareInstr(r0, ImmOffset(0)),
-          LoadLabelInstr(r0, s"msg_$negIdx", Condition.LT),
-          BranchLinkInstr("p_throw_runtime_error", Condition.LT),
-          LoadInstr(r1, r4, ImmOffset(0)),
-          CompareInstr(r0, RegOp(r1)),
-          LoadLabelInstr(r0, s"msg_$largeIdx", Condition.CS),
-          BranchLinkInstr("p_throw_runtime_error", Condition.CS),
-          PopInstr(List(pc))
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label("p_check_array_bounds"),
+                PushInstr(List(lr)),
+                CompareInstr(r0, ImmOffset(0)),
+                LoadLabelInstr(r0, s"msg_$negIdx", Condition.LT),
+                BranchLinkInstr("p_throw_runtime_error", Condition.LT),
+                LoadInstr(r1, r4, ImmOffset(0)),
+                CompareInstr(r0, RegOp(r1)),
+                LoadLabelInstr(r0, s"msg_$largeIdx", Condition.CS),
+                BranchLinkInstr("p_throw_runtime_error", Condition.CS),
+                PopInstr(List(pc))
+            )
+            case X86Representation => List(
+                Label("p_check_array_bounds"),
+                PushInstr(List(lr)),
+                MoveInstr(lr, RegOp(sp)),
+                CompareInstr(r0, ImmOffset(0)),
+                LoadLabelInstr(r0, s"msg_$negIdx", Condition.LT),
+                BranchLinkInstr("p_throw_runtime_error", Condition.LT),
+                LoadInstr(r1, r4, ImmOffset(0)),
+                CompareInstr(r0, RegOp(r1)),
+                LoadLabelInstr(r0, s"msg_$largeIdx", Condition.CS),
+                BranchLinkInstr("p_throw_runtime_error", Condition.CS),
+                MoveInstr(lr, RegOp(sp)),
+                PopInstr(List(lr, pc))
+            )
+        }
     }
 
     def printCheckArrayBounds(implicit collector: WaccBuffer, repr: Representation) = {
@@ -681,10 +706,12 @@ object Helpers {
             case X86Representation => List(
                 Label("p_read_int"),
                 PushInstr(List(lr)),
+                MoveInstr(lr, RegOp(sp)),
                 MoveInstr(r3, RegOp(r0)),
                 LoadLabelInstr(r4, s"msg_$idx"),
                 BranchLinkInstr("scanf"),
-                PopInstr(List(pc))
+                MoveInstr(sp, RegOp(lr)),
+                PopInstr(List(lr, pc))
             )
         }
     }
@@ -727,10 +754,12 @@ object Helpers {
             case X86Representation => List(
                 Label("p_read_char"),
                 PushInstr(List(lr)),
+                MoveInstr(lr, RegOp(sp)),
                 MoveInstr(r3, RegOp(r0)),
                 LoadLabelInstr(r4, s"msg_$idx"),
                 BranchLinkInstr("scanf"),
-                PopInstr(List(pc))
+                MoveInstr(sp, RegOp(lr)),
+                PopInstr(List(lr, pc))
             )
         }
     }
@@ -760,22 +789,46 @@ object Helpers {
     }
 
     def printFreePairFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label("p_free_pair"),
-          PushInstr(List(lr)),
-          CompareInstr(r0, ImmOffset(0)),
-          LoadLabelInstr(r0, s"msg_$idx", Condition.EQ),
-          BranchInstr("p_throw_runtime_error", Condition.EQ),
-          PushInstr(List(r0)),
-          LoadInstr(r0, r0, ImmOffset(0)),
-          BranchLinkInstr("free"),
-          LoadInstr(r0, sp, ImmOffset(0)),
-          LoadInstr(r0, r0, ImmOffset(WORD_SIZE)),
-          BranchLinkInstr("free"),
-          PopInstr(List(r0)),
-          BranchLinkInstr("free"),
-          PopInstr(List(pc))
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label("p_free_pair"),
+                PushInstr(List(lr)),
+                CompareInstr(r0, ImmOffset(0)),
+                LoadLabelInstr(r0, s"msg_$idx", Condition.EQ),
+                BranchInstr("p_throw_runtime_error", Condition.EQ),
+                PushInstr(List(r0)),
+                LoadInstr(r0, r0, ImmOffset(0)),
+                BranchLinkInstr("free"),
+                LoadInstr(r0, sp, ImmOffset(0)),
+                LoadInstr(r0, r0, ImmOffset(WORD_SIZE)),
+                BranchLinkInstr("free"),
+                PopInstr(List(r0)),
+                BranchLinkInstr("free"),
+                PopInstr(List(pc))
+            )
+            case X86Representation => List(
+                Label("p_free_pair"),
+                PushInstr(List(lr)),
+                MoveInstr(lr, RegOp(sp)),
+                CompareInstr(r0, ImmOffset(0)),
+                LoadLabelInstr(r0, s"msg_$idx", Condition.EQ),
+                MoveInstr(r4, RegOp(r0), Condition.EQ),
+                BranchInstr("p_throw_runtime_error", Condition.EQ),
+                PushInstr(List(r0)),
+                LoadInstr(r0, r0, ImmOffset(0)),
+                MoveInstr(r4, RegOp(r0)),
+                BranchLinkInstr("free"),
+                LoadInstr(r0, sp, ImmOffset(0)),
+                LoadInstr(r0, r0, ImmOffset(WORD_SIZE)),
+                MoveInstr(r4, RegOp(r0)),
+                BranchLinkInstr("free"),
+                PopInstr(List(r0)),
+                MoveInstr(r4, RegOp(r0)),
+                BranchLinkInstr("free"),
+                MoveInstr(sp, RegOp(lr)),
+                PopInstr(List(pc))
+            )
+        }
     }
 
     def printFreePair(implicit collector: WaccBuffer, repr: Representation) = {
@@ -806,14 +859,27 @@ object Helpers {
     }
 
     def printCheckNullPointerFunc(idx: Int)(implicit repr: Representation): List[Instruction] = {
-        List(
-          Label("p_check_null_pointer"),
-          PushInstr(List(lr)),
-          CompareInstr(r0, ImmOffset(0)),
-          LoadLabelInstr(r0, s"msg_$idx", Condition.EQ),
-          BranchLinkInstr("p_throw_runtime_error", Condition.EQ),
-          PopInstr(List(pc))
-        )
+        repr match {
+            case ARMRepresentation => List(
+                Label("p_check_null_pointer"),
+                PushInstr(List(lr)),
+                CompareInstr(r0, ImmOffset(0)),
+                LoadLabelInstr(r0, s"msg_$idx", Condition.EQ),
+                BranchLinkInstr("p_throw_runtime_error", Condition.EQ),
+                PopInstr(List(pc))
+            )
+            case X86Representation => List(
+                Label("p_check_null_pointer"),
+                PushInstr(List(lr)),
+                MoveInstr(lr, RegOp(sp)),
+                CompareInstr(r0, ImmOffset(0)),
+                LoadLabelInstr(r0, s"msg_$idx", Condition.EQ),
+                MoveInstr(r4, RegOp(r0), Condition.EQ),
+                BranchLinkInstr("p_throw_runtime_error", Condition.EQ),
+                MoveInstr(sp, RegOp(lr)),
+                PopInstr(List(lr, pc))
+            )
+        }
     }
 
     def printCheckNullPointer(implicit collector: WaccBuffer, repr: Representation) = {

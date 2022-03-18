@@ -270,6 +270,7 @@ object X86Representation extends Representation {
             case Condition.LT => "l"
             case Condition.LE => "le"
             case Condition.VS => "o"
+            case Condition.CS => "c"
             case Condition.AL => ""
             case _            => "TODO COND"
         }
@@ -285,6 +286,7 @@ object X86Representation extends Representation {
             case Condition.LT => "ge"
             case Condition.LE => "g"
             case Condition.VS => "no"
+            case Condition.CS => "nc"
             case Condition.AL => ""
             case _            => "TODO REV COND"
         }

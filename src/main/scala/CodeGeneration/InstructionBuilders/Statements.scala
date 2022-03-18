@@ -372,9 +372,14 @@ object transStatement {
             /** RETURN STATEMENT: ‘return’ ⟨expr ⟩ */
             case ReturnNode(e) => {
                 transExpression(e, stackFrame)
-                collector.addStatement(
-                  stackFrame.returnTail ++ List(PopInstr(List(pc)))
-                )
+                repr match {
+                    case ARMRepresentation => collector.addStatement(
+                        stackFrame.returnTail ++ List(PopInstr(List(pc)))
+                    )
+                    case X86Representation => collector.addStatement(
+                        stackFrame.returnTail ++ List(MoveInstr(sp, RegOp(lr)), PopInstr(List(lr, pc)))
+                    )
+                }
             }
             /** READ STATEMENT: ‘read’ ⟨assign-lhs⟩ */
             case ReadNode(l) => {
