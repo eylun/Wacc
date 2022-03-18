@@ -24,7 +24,6 @@ object PeepholeOptimisation {
                               LoadImmIntInstr(`loadDst1`, _, _),
                               StoreInstr(`storeSrc1`, `storeDst1`, `offset1`, false)
                             ) => {
-                            print(" HERERERERERERERER")
                             instrList.remove(i)
                             instrList.remove(i)
                             removeUnnecessaryLoadAndStore(i)
