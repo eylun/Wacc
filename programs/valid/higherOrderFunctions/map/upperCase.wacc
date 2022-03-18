@@ -16,6 +16,6 @@ begin
   end
 
   char[] x = ['h','e','l','l','o'];
-  char[] y = map toUpper x;
+  char[] y = map hof_toUpper x;
   println y
 end
