@@ -15,13 +15,14 @@
 
 # Exit: 0
 
-begin
-  int a = 1;
-  int b = 2;
-  int c = b + a;
-    println(c);
-  b = 4 / 1;
 
-  b = 10;
-  println(b)
+begin
+bool t = true;
+bool f = false;
+  bool b = ! ( ( t && f) || (t && f) );
+  if b == true then
+    println "Correct"
+  else
+    println "Wrong"
+  fi
 end

@@ -2,15 +2,19 @@ import scala.collection.immutable.Map
 
 class SymbolTable(
     var encSymTable: Option[SymbolTable],
-    var dict: Map[String, Identifier],
-    var constantIntsMap: Map[String, Int]
+    var dict: Map[String, Identifier]
 ) {
 
     var order: List[String] = List.empty
+    var constantIntsMap: Map[String, Int] = Map[String, Int]().empty
+    var constantBoolsMap: Map[String, Boolean] = Map[String, Boolean]().empty
 
-    var removeConstants: Boolean = false
-    def setToRemove(): Unit = {
-        removeConstants = true
+    /** Constant Propogation: If rmParentConst is set, then attempting to reassign a constant will cause that constant
+      * to be removed from the parent ST
+      */
+    var rmParentConst: Boolean = false
+    def removeConstFromParent(): Unit = {
+        rmParentConst = true
     }
 
     /** Sets the parent of this symbol table. */
@@ -43,16 +47,16 @@ class SymbolTable(
     }
 
     /** Add a constant variable to the map for constant propogation */
-    def addConstantVar(name: String, value: Int): Unit = {
-        constantIntsMap = constantIntsMap + (name -> value)
+    def addConstantVar(name: String, value: AnyVal): Unit = {
+        value match {
+            case n: Int     => constantIntsMap = constantIntsMap + (name -> n)
+            case n: Boolean => constantBoolsMap = constantBoolsMap + (name -> n)
+            case _          =>
+        }
+
     }
 
-    /** Given another map of constants, add it to the current map */
-    def addConstants(constants: Map[String, Int]): Unit = {
-        constantIntsMap = constantIntsMap ++ constants
-    }
-
-    /** To remove variables that are in the loop condition or loop body from constant map */
+    /** To remove variables from the constant map */
     def removeConstantVar(name: String): Unit = {
         var s: Option[SymbolTable] = Some(this)
         while (s != None) {
@@ -63,17 +67,22 @@ class SymbolTable(
         }
     }
 
-    /** Clears all constants from the map */
-    def clearAllConstants() = {
-        constantIntsMap = Map[String, Int]()
-    }
-
-    /** Propogates up (checks parent symbol table for constant) */
+    /** Propogates up (checks parent symbol table for constant) and checks for constant */
     def containsConstant(name: String): Boolean = {
+        if (lookupAll(name) == None) {
+            return false
+        }
+        val identType = lookupAll(name).get.getType()
+        val constantMapType = identType match {
+            case IntType()  => constantIntsMap
+            case BoolType() => constantBoolsMap
+            case _          => return false
+        }
+
         var s: Option[SymbolTable] = Some(this)
         while (s != None) {
             var st = s.get
-            if (constantIntsMap.contains(name)) {
+            if (constantMapType.contains(name)) {
                 return true
             }
             s = st.encSymTable
@@ -82,14 +91,19 @@ class SymbolTable(
     }
 
     /** Only called after containsConstant() check */
-    def getConstant(name: String): Int = {
-        constantIntsMap.get(name).get
+    def getConstant(name: String, identType: Type): AnyVal = {
+        identType match {
+            case IntType()  => constantIntsMap.get(name).get
+            case BoolType() => constantBoolsMap.get(name).get
+            case _          =>
+        }
+
     }
 }
 
 object SymbolTable {
-    def apply(): SymbolTable = new SymbolTable(None, Map[String, Identifier](), Map[String, Int]())
+    def apply(): SymbolTable = new SymbolTable(None, Map[String, Identifier]())
 
     def apply(encSymTable: SymbolTable): SymbolTable =
-        new SymbolTable(Some(encSymTable), Map[String, Identifier](), Map[String, Int]())
+        new SymbolTable(Some(encSymTable), Map[String, Identifier]())
 }

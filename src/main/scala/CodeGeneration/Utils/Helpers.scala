@@ -26,6 +26,15 @@ object Helpers {
         }
     }
 
+    /** Checks and get the constant if it exists. Otherwise, return original value */
+    def checkAndGetConstant(node: ExprNode, sf: StackFrame, assignRHS: Boolean, assignIdent: String): ExprNode = {
+        if (checkIfConstant(node, sf)) {
+            getAnyConstant(node, sf, assignRHS, assignIdent)
+        } else {
+            node
+        }
+    }
+
     /** Checks if identifier is a constant (for Constant Propogation) */
     def checkIfConstant(node: ExprNode, sf: StackFrame): Boolean = {
         node match {
@@ -34,16 +43,31 @@ object Helpers {
         }
     }
 
-    /** Returns the integer value associated with the constant variable */
+    /** Returns the literal Node associated with the constant variable */
     /** Only called after checkIfConstant() */
-    def getConstantInt(ident: ExprNode, sf: StackFrame, assignRHS: Boolean, assignIdent: String): Int = {
+    def getAnyConstant(
+        ident: ExprNode,
+        sf: StackFrame,
+        assignRHS: Boolean,
+        assignIdent: String
+    ): ExprNode = {
         ident match {
             case IdentNode(s) => {
-                val constant = sf.currST.getConstant(s)
+                val identType = sf.currST.lookupAll(s).get.getType()
+                val constant = sf.currST.getConstant(s, identType)
+
+                /** If this constant is meant to reassign the identifier is is associated to, we remove the identifier
+                  * from the map
+                  */
                 if (assignRHS & s == assignIdent) {
                     sf.currST.removeConstantVar(s)
                 }
-                constant
+                constant match {
+                    case n: Int     => IntLiterNode(n)(0, 0)
+                    case n: Boolean => BoolLiterNode(n)(0, 0)
+                    case n: Char    => CharLiterNode(n)(0, 0)
+                    case _          => throw new RuntimeException("Constant should be of a literal type")
+                }
             }
             case _ => throw new RuntimeException("Expression node is expected to be an identifier")
         }

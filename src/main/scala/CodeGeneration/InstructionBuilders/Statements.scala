@@ -173,7 +173,7 @@ object transStatement {
                     case IdentNode(s) => {
 
                         /** Removes identifier from (parent)constant map if removeConstants flag is set */
-                        if (collector.optFlag == OptimisationFlag.Oph & stackFrame.currST.removeConstants) {
+                        if (collector.optFlag == OptimisationFlag.Oph & stackFrame.currST.rmParentConst) {
                             stackFrame.currST.encSymTable.get.removeConstantVar(s)
                         }
 
@@ -235,8 +235,8 @@ object transStatement {
                 val labelTrue = s"ite_${collector.tickIte()}"
 
                 /** Constant prop: clear constants */
-                ite.trueST.setToRemove()
-                ite.falseST.setToRemove()
+                ite.trueST.removeConstFromParent()
+                ite.falseST.removeConstFromParent()
 
                 /** Stack frames */
                 val trueSF = stackFrame.join(ite.trueST)
@@ -278,7 +278,7 @@ object transStatement {
                 /** Constant Propogation: set flag so any assigned identifier in scope will be removed from the map of
                   * constants
                   */
-                beSF.currST.setToRemove()
+                beSF.currST.removeConstFromParent()
 
                 collector.addStatement(beSF.head)
                 transStatement(s, beSF)
@@ -304,9 +304,8 @@ object transStatement {
                   wd.newScopeST
                 )
 
-                /** Constant Propogation: clear constants to avoid looping infinitely
-                  */
-                wdSF.currST.clearAllConstants()
+                /** Constant Propogation: if a constant was assigned, remove it from the parent ST */
+                wdSF.currST.removeConstFromParent()
 
                 collector.addStatement(wdSF.head)
                 transStatement(s, wdSF)
@@ -315,7 +314,9 @@ object transStatement {
                 /** Branches to loop body instructions if condition is true
                   */
                 collector.addStatement(List(Label(labelCheck)))
+
                 transExpression(e, stackFrame)
+
                 collector.addStatement(
                   (
                     List(
