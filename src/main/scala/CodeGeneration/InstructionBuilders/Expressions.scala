@@ -60,41 +60,31 @@ object transExpression {
                 es.zipWithIndex.foreach {
                     case (e, idx) => {
                         transExpression(e, stackFrame)
-                        collector.addStatement(
-                          List(
-                            BranchLinkInstr(
-                              "p_check_array_bounds",
-                              Condition.AL
-                            ),
-                            AddInstr(r4, r4, ImmOffset(4), false)
-                          )
-                        )
+                        collector.addStatement(List(
+                            BranchLinkInstr("p_check_array_bounds", Condition.AL),
+                            AddInstr(r4, r4, ImmOffset(WORD_SIZE), false)
+                        ))
+                        
                         collector.addStatement(ae.typeId.get.getType() match {
                             case CharType() | BoolType()
                                 if idx == es.length - 1 =>
                                 List(
-                                  AddInstr(
-                                    r4,
-                                    r4,
-                                    RegOp(r0),
-                                    false
-                                  ),
-                                  LoadRegSignedByte(
-                                    r4,
-                                    r4,
-                                    ImmOffset(0)
-                                  )
+                                  AddInstr(r4, r4, RegOp(r0), false),
+                                  LoadRegSignedByte(r4, r4, ImmOffset(0))
                                 )
-                            case _ =>
-                                List(
-                                  AddInstr(
-                                    r4,
-                                    r4,
-                                    LSLRegOp(r0, ShiftImm(2)),
-                                    false
-                                  ),
-                                  LoadInstr(r4, r4, ImmOffset(0))
-                                )
+                            case _ => {
+                                repr match {
+                                    case ARMRepresentation => List(
+                                        AddInstr(r4, r4, LSLRegOp(r0, ShiftImm(2)), false),
+                                        LoadInstr(r4, r4, ImmOffset(0))
+                                    )
+                                    case X86Representation => List(
+                                        AddInstr(r4, r4, LSLRegOp(r0, ShiftImm(3)), false),
+                                        LoadInstr(r4, r4, ImmOffset(0))
+                                    )
+                                }
+                            } 
+                                
                         })
                     }
                 }

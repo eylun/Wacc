@@ -311,7 +311,6 @@ object transStatement {
             case SkipNode() =>
             /** EXIT STATEMENT: ‘exit’ ⟨expr ⟩ */
             case ExitNode(e) => {
-
                 /** Evaluates expression and Branches */
                 transExpression(e, stackFrame)
                 repr match {

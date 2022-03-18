@@ -3,7 +3,6 @@ import Condition._
 import constants._
 
 object transRHS {
-
     /** Adds a list of instructions evaluating the RHS of an assignment to the
       * Wacc Buffer collector
       */
@@ -44,31 +43,22 @@ object transRHS {
                 ))
 
                 var ofs = WORD_SIZE
-                repr match {
-                    case X86Representation => ofs = 0
-                    case _ => 
-                }
 
                 es.foreach { e => {
                     transExpression(e, stackFrame)
                     collector.addStatement(
                         List(
-                        determineStoreInstr(e.typeId.get.getType(), r0, r3, ofs)
+                            determineStoreInstr(e.typeId.get.getType(), r0, r3, ofs)
                         )
                     )
                     ofs += getTypeSize(e.typeId.get.getType())
                 }}
 
-                repr match {
-                    case ARMRepresentation => collector.addStatement(List(
-                        MoveInstr(r0, ImmOffset(es.length)),
-                        StoreInstr(r0, r3, ImmOffset(0)),
-                        MoveInstr(r0, RegOp(r3))
-                    ))
-                    case X86Representation => collector.addStatement(List(
-                        MoveInstr(r0, RegOp(r3))
-                    ))
-                }
+                collector.addStatement(List(
+                    MoveInstr(r0, ImmOffset(es.length)),
+                    StoreInstr(r0, r3, ImmOffset(0)),
+                    MoveInstr(r0, RegOp(r3))
+                ))
             }
             /** NEW PAIR NODE */
             case NewPairNode(e1, e2) => {

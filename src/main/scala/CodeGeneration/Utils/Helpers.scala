@@ -11,7 +11,12 @@ object Helpers {
     }
     val BIT_SIZE = 1
     val ARRAY_LHS_OFFSET = 8
-    val ARRAY_EXP_OFFSET = 4
+    def ARRAY_EXP_OFFSET(implicit repr: Representation) = {
+        repr match {
+            case ARMRepresentation => 4
+            case X86Representation => 8
+        }
+    }
     val OFFSET_MAX = 1024
 
     /** .text and .global main directives */
@@ -50,6 +55,7 @@ object Helpers {
 
             case X86Representation => List(
                 Label(s"msg_$idx"),
+                Directive(s"quad ${s.length()}"),
                 formatStringDirective(string)
             )
         }
@@ -83,11 +89,11 @@ object Helpers {
         (t, d) match {
             case (BoolType(), 1) | (CharType(), 1) => repr match {
                 case ARMRepresentation => BIT_SIZE * size + WORD_SIZE
-                case X86Representation => BIT_SIZE * size
+                case X86Representation => BIT_SIZE * size + WORD_SIZE
             }
             case _ => repr match {
                 case ARMRepresentation => WORD_SIZE * size + WORD_SIZE
-                case X86Representation => WORD_SIZE * size
+                case X86Representation => WORD_SIZE * size + WORD_SIZE
             }
         }
     }
@@ -174,6 +180,7 @@ object Helpers {
                 
             case X86Representation => List(
                 Label(s"msg_$idx"),
+                Directive(s"quad 3"),
                 formatStringDirective("%d\\0")
             )
         }
@@ -199,7 +206,9 @@ object Helpers {
                 PushInstr(List(lr)),
                 MoveInstr(lr, RegOp(sp)),
                 MoveInstr(r3, RegOp(r0)),
-                LoadLabelInstr(r4, s"msg_$idx"),
+                LoadLabelInstr(r0, s"msg_$idx"),
+                AddInstr(r0, r0, ImmOffset(WORD_SIZE), false),
+                MoveInstr(r4, RegOp(r0)),
                 XorInstr(r0, r0, RegOp(r0)),
                 BranchLinkInstr("printf"),
                 MoveInstr(r0, ImmOffset(0)),
@@ -234,6 +243,7 @@ object Helpers {
             )
             case X86Representation => List(
                 Label(s"msg_$idx"),
+                Directive(s"quad 5"),
                 formatStringDirective("true\\0")
             )
         }
@@ -249,6 +259,7 @@ object Helpers {
             )
             case X86Representation => List(
                 Label(s"msg_$idx"),
+                Directive(s"quad 6"),
                 formatStringDirective("false\\0")
             )
         }
@@ -276,6 +287,7 @@ object Helpers {
                 CompareInstr(r0, ImmOffset(0), Condition.AL),
                 LoadLabelInstr(r0, s"msg_$idxTrue", Condition.NE),
                 LoadLabelInstr(r0, s"msg_$idxFalse", Condition.EQ),
+                AddInstr(r0, r0, ImmOffset(WORD_SIZE), false),
                 MoveInstr(r4, RegOp(r0)),
                 XorInstr(r0, r0, RegOp(r0)),
                 BranchLinkInstr("printf"),
@@ -319,6 +331,7 @@ object Helpers {
 
             case X86Representation => List(
                 Label(s"msg_$idx"),
+                Directive(s"quad 5"),
                 formatStringDirective("%s\\0")
             )
         }
@@ -345,6 +358,7 @@ object Helpers {
                 MoveInstr(lr, RegOp(sp)),
                 MoveInstr(r1, RegOp(r0)),
                 LoadLabelInstr(r0, s"msg_$idx"),
+                AddInstr(r0, r0, ImmOffset(WORD_SIZE), false),
                 MoveInstr(r4, RegOp(r0)),
                 MoveInstr(r3, RegOp(r1)),
                 XorInstr(r0, r0, RegOp(r0)),
@@ -382,6 +396,7 @@ object Helpers {
             )
             case X86Representation => List(
                 Label(s"msg_$idx"),
+                Directive(s"quad 3"),
                 formatStringDirective("%p\\0")
             )
         }
@@ -405,10 +420,16 @@ object Helpers {
                 Label("p_print_reference"),
                 PushInstr(List(lr)),
                 MoveInstr(lr, RegOp(sp)),
-                MoveInstr(r3, RegOp(r0)),
-                LoadLabelInstr(r4, s"msg_$idx"),
+                MoveInstr(r1, RegOp(r0)),
+                LoadLabelInstr(r0, s"msg_$idx"),
+                AddInstr(r0, r0, ImmOffset(WORD_SIZE), false),
+                MoveInstr(r4, RegOp(r0)),
+                MoveInstr(r3, RegOp(r1)),
+                XorInstr(r0, r0, RegOp(r0)),
                 BranchLinkInstr("printf"),
-                MoveInstr(r4, ImmOffset(0)),
+                MoveInstr(r0, ImmOffset(0)),
+                MoveInstr(r4, RegOp(r0)),
+                XorInstr(r4, r4, RegOp(r4)),
                 BranchLinkInstr("fflush"),
                 MoveInstr(sp, RegOp(lr)),
                 PopInstr(List(lr, pc))
@@ -439,6 +460,7 @@ object Helpers {
             )
             case X86Representation => List(
                 Label(s"msg_$idx"),
+                Directive(s"quad 1"),
                 formatStringDirective("\\0")
             )
         }
@@ -461,7 +483,9 @@ object Helpers {
                 Label("p_print_ln"),
                 PushInstr(List(lr)),
                 MoveInstr(lr, RegOp(sp)),
-                LoadLabelInstr(r4, s"msg_$idx"),
+                LoadLabelInstr(r0, s"msg_$idx"),
+                AddInstr(r0, r0, ImmOffset(WORD_SIZE), false),
+                MoveInstr(r4, RegOp(r0)),
                 BranchLinkInstr("puts"),
                 MoveInstr(r0, ImmOffset(0)),
                 MoveInstr(r4, RegOp(r0)),
@@ -494,6 +518,7 @@ object Helpers {
             )
             case X86Representation => List(
                 Label(s"msg_$idx"),
+                Directive(s"quad 83"),
                 formatStringDirective("OverflowError: the result is too small/large to store in a 4-byte signed-integer.\\n\\0")
             )
         }
@@ -567,6 +592,7 @@ object Helpers {
             )
             case X86Representation => List(
                 Label(s"msg_$idx"),
+                Directive(s"quad 45"),
                 formatStringDirective("DivideByZeroError: divide or modulo by zero\\n\\0")
             ) 
         }
@@ -625,9 +651,11 @@ object Helpers {
             case X86Representation => List(
                 /** Negative Index Data Message */
                 Label(s"msg_$negIdx"),
+                Directive(s"quad 44"),
                 formatStringDirective("ArrayIndexOutOfBoundsError: negative index\\n\\0"),
                 /** Index Too Large Data Message */
                 Label(s"msg_$largeIdx"),
+                Directive(s"quad 45"),
                 formatStringDirective("ArrayIndexOutOfBoundsError: index too large\\n\\0")
             )
         }
@@ -658,7 +686,7 @@ object Helpers {
                 CompareInstr(r0, RegOp(r1)),
                 LoadLabelInstr(r0, s"msg_$largeIdx", Condition.CS),
                 BranchLinkInstr("p_throw_runtime_error", Condition.CS),
-                MoveInstr(lr, RegOp(sp)),
+                MoveInstr(sp, RegOp(lr)),
                 PopInstr(List(lr, pc))
             )
         }
@@ -687,6 +715,7 @@ object Helpers {
             )
             case X86Representation => List(
                 Label(s"msg_$idx"),
+                Directive(s"quad 3"),
                 formatStringDirective("%d\\0")
             )
         }
@@ -735,6 +764,7 @@ object Helpers {
             )
             case X86Representation => List(
                 Label(s"msg_$idx"),
+                Directive(s"quad 4"),
                 formatStringDirective(" %c\\0")
             )
         }
@@ -783,6 +813,7 @@ object Helpers {
             )
             case X86Representation => List(
                 Label(s"msg_$idx"),
+                Directive(s"quad 50"),
                 formatStringDirective("NullReferenceError: dereference a null reference\\n\\0")
             )
         }
@@ -853,6 +884,7 @@ object Helpers {
             )
             case X86Representation => List(
                 Label(s"msg_$idx"),
+                Directive(s"quad 50"),
                 formatStringDirective("NullReferenceError: dereference a null reference\\n\\0")
             )
         }
@@ -904,6 +936,7 @@ object Helpers {
             )
             case X86Representation => List(
                 Label(s"msg_$idx"),
+                Directive(s"quad 58"),
                 formatStringDirective("ExceptionError: no appropriate catch for throw statement\\n\\0")
             )
         }

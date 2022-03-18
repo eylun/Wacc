@@ -12,7 +12,7 @@ class X86ExecuteSpec extends AnyFlatSpec {
 
     behavior of "print programs"
     it should "execute print programs" in {
-        //pending
+        pending
 
         waccProgramsInDir(new File("./programs/valid/IO/print")).foreach(x86ExecuteAndCompare(_))
     }
