@@ -1,32 +1,47 @@
 import Helpers._
 import Helpers.UtilFlag._
 import constants._
+import OptimisationFlag._
 
-/** Adds the appropriate instructions for each expression into our Wacc Buffer
-  * collector
+/** Adds the appropriate instructions for each expression into our Wacc Buffer collector
   */
 object transExpression {
-    def apply(exprNode: ExprNode, stackFrame: StackFrame)(implicit
+    def apply(exprNode: ExprNode, stackFrame: StackFrame, assignRHS: Boolean = false, identString: String = "")(implicit
         collector: WaccBuffer
     ): Unit =
         exprNode match {
             /** IDENTIFIER */
             case IdentNode(s) =>
-                collector.addStatement(
-                  List(
-                    /** Adds a different load instruction depending on the
-                      * identifier type
-                      */
-                    determineLoadInstr(
-                      stackFrame.currST.lookupAll(s).get.getType(),
-                      r0,
-                      sp,
-                      stackFrame.getOffset(s)
+                if (assignRHS & checkIfConstant(exprNode, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
+
+                    /** Constant Propogation */
+                    val const1 = (IntLiterNode(getConstantInt(exprNode, stackFrame, assignRHS, identString))(0, 0))
+                    stackFrame.currST.removeConstantVar(s)
+                    transExpression(const1, stackFrame, false)
+                } else {
+                    collector.addStatement(
+                      List(
+                        /** Adds a different load instruction depending on the identifier type
+                          */
+                        determineLoadInstr(
+                          stackFrame.currST.lookupAll(s).get.getType(),
+                          r0,
+                          sp,
+                          stackFrame.getOffset(s)
+                        )
+                      )
                     )
-                  )
-                )
+
+                }
 
             /** LITERALS: int, char, bool, string, pair, array-elem */
+            /** Constant Propogation: If part of assignRHS statement, then the Int is associated with a constant
+              * variable
+              */
+            case IntLiterNode(n) if assignRHS & collector.optFlag == OptimisationFlag.Oph => {
+                collector.addStatement(List(LoadImmIntInstr(r0, n)))
+                stackFrame.currST.addConstantVar(identString, n)
+            }
             case IntLiterNode(n) =>
                 collector.addStatement(List(LoadImmIntInstr(r0, n)))
             case CharLiterNode(c) =>
@@ -70,8 +85,7 @@ object transExpression {
                           )
                         )
                         collector.addStatement(ae.typeId.get.getType() match {
-                            case CharType() | BoolType()
-                                if idx == es.length - 1 =>
+                            case CharType() | BoolType() if idx == es.length - 1 =>
                                 List(
                                   AddInstr(
                                     r4,
@@ -140,7 +154,78 @@ object transExpression {
             }
 
             /* * BINARY OPERATIONS */
+
+            /** Optimisation Cases for binary operations involving only integer literals */
+            case Add(IntLiterNode(x), IntLiterNode(y)) if collector.optFlag == OptimisationFlag.Oph => {
+                val z: Long = x.toLong + y.toLong
+                if (z.toInt == z) {
+                    transExpression(
+                      (IntLiterNode(x + y)(0, 0)),
+                      stackFrame
+                    )
+                } else {
+                    throw new RuntimeException("Integer Overflow at addition")
+                }
+
+            }
+
+            case Sub(IntLiterNode(x), IntLiterNode(y)) if collector.optFlag == OptimisationFlag.Oph => {
+                val z: Long = x.toLong - y.toLong
+                if (z.toInt == z) {
+                    transExpression(
+                      (IntLiterNode(x - y)(0, 0)),
+                      stackFrame
+                    )
+                } else {
+                    throw new RuntimeException("Integer Overflow at subtraction")
+                }
+            }
+
+            case Mult(IntLiterNode(x), IntLiterNode(y)) if collector.optFlag == OptimisationFlag.Oph => {
+                val z: Long = x.toLong * y.toLong
+                if (z.toInt == z) {
+                    transExpression(
+                      (IntLiterNode(x * y)(0, 0)),
+                      stackFrame
+                    )
+                } else {
+                    throw new RuntimeException("Integer Overflow at multiplication")
+                }
+            }
+
+            case Div(IntLiterNode(x), IntLiterNode(y)) if collector.optFlag == OptimisationFlag.Oph => {
+                if (y == 0) { throw new RuntimeException("Divide by zero error at division") }
+                else if (y == 1) { transExpression((IntLiterNode(x)(0, 0)), stackFrame) }
+                else {
+                    transExpression(
+                      (IntLiterNode(x / y)(0, 0)),
+                      stackFrame
+                    )
+                }
+            }
+            case Mod(IntLiterNode(x), IntLiterNode(y)) if collector.optFlag == OptimisationFlag.Oph => {
+                if (y == 0) { throw new RuntimeException("Divide by zero error at modulus") }
+                else if (y > x & y > 0 & x > 0) {
+                    transExpression((IntLiterNode(x)(0, 0)), stackFrame)
+                } else {
+                    transExpression(
+                      (IntLiterNode(x % y)(0, 0)),
+                      stackFrame
+                    )
+                }
+            }
+
             case Add(e1, e2) => {
+                if (checkIfConstant(e1, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
+                    val const1 = (IntLiterNode(getConstantInt(e1, stackFrame, assignRHS, identString))(0, 0))
+                    if (checkIfConstant(e2, stackFrame)) {
+                        val const2 = (IntLiterNode(getConstantInt(e2, stackFrame, assignRHS, identString))(0, 0))
+                        transExpression(Add(const1, const2)(0, 0), stackFrame)
+                        return
+                    }
+                    transExpression(Add(const1, e2)(0, 0), stackFrame)
+                    return
+                }
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
@@ -158,7 +243,18 @@ object transExpression {
                 )
                 stackFrame.dropTempOffset(WORD_SIZE)
             }
+
             case Sub(e1, e2) => {
+                if (checkIfConstant(e1, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
+                    val const1 = (IntLiterNode(getConstantInt(e1, stackFrame, assignRHS, identString))(0, 0))
+                    if (checkIfConstant(e2, stackFrame)) {
+                        val const2 = (IntLiterNode(getConstantInt(e2, stackFrame, assignRHS, identString))(0, 0))
+                        transExpression(Sub(const1, const2)(0, 0), stackFrame)
+                        return
+                    }
+                    transExpression(Sub(const1, e2)(0, 0), stackFrame)
+                    return
+                }
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
@@ -177,6 +273,16 @@ object transExpression {
                 stackFrame.dropTempOffset(WORD_SIZE)
             }
             case Mult(e1, e2) => {
+                if (checkIfConstant(e1, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
+                    val const1 = (IntLiterNode(getConstantInt(e1, stackFrame, assignRHS, identString))(0, 0))
+                    if (checkIfConstant(e2, stackFrame)) {
+                        val const2 = (IntLiterNode(getConstantInt(e2, stackFrame, assignRHS, identString))(0, 0))
+                        transExpression(Mult(const1, const2)(0, 0), stackFrame)
+                        return
+                    }
+                    transExpression(Mult(const1, e2)(0, 0), stackFrame)
+                    return
+                }
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
@@ -196,6 +302,16 @@ object transExpression {
                 stackFrame.dropTempOffset(WORD_SIZE)
             }
             case Div(e1, e2) => {
+                if (checkIfConstant(e1, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
+                    val const1 = (IntLiterNode(getConstantInt(e1, stackFrame, assignRHS, identString))(0, 0))
+                    if (checkIfConstant(e2, stackFrame)) {
+                        val const2 = (IntLiterNode(getConstantInt(e2, stackFrame, assignRHS, identString))(0, 0))
+                        transExpression(Div(const1, const2)(0, 0), stackFrame)
+                        return
+                    }
+                    transExpression(Div(const1, e2)(0, 0), stackFrame)
+                    return
+                }
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
@@ -214,6 +330,16 @@ object transExpression {
                 stackFrame.dropTempOffset(WORD_SIZE)
             }
             case Mod(e1, e2) => {
+                if (checkIfConstant(e1, stackFrame) & collector.optFlag == OptimisationFlag.Oph) {
+                    val const1 = (IntLiterNode(getConstantInt(e1, stackFrame, assignRHS, identString))(0, 0))
+                    if (checkIfConstant(e2, stackFrame)) {
+                        val const2 = (IntLiterNode(getConstantInt(e2, stackFrame, assignRHS, identString))(0, 0))
+                        transExpression(Mod(const1, const2)(0, 0), stackFrame)
+                        return
+                    }
+                    transExpression(Mod(const1, e2)(0, 0), stackFrame)
+                    return
+                }
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)
@@ -272,6 +398,7 @@ object transExpression {
             }
             /** Greater-Than operator */
             case GT(e1, e2) => {
+
                 transExpression(e1, stackFrame)
                 collector.addStatement(List(PushInstr(List(r0))))
                 stackFrame.addTempOffset(WORD_SIZE)

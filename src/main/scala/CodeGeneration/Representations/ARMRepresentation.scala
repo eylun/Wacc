@@ -1,21 +1,22 @@
 import java.io.{File, BufferedWriter, FileWriter}
+import OptimisationFlag._
 
 object ARMRepresentation extends Representation {
 
     def apply(
         progNode: ProgramNode,
         st: SymbolTable,
-        filename: String
+        filename: String,
+        optFlag: OptimisationFlag = OptimisationFlag.O0
     ): Unit = {
-        implicit val collector: WaccBuffer = new WaccBuffer
+        implicit val collector: WaccBuffer = new WaccBuffer(optFlag)
         collector.setupMain()
         val bw = new BufferedWriter(new FileWriter(new File(filename)))
         CodeGenerator(progNode, st).foreach(l => bw.write(generateLine(l)))
         bw.close()
     }
 
-    /** generateLine() matches an instruction to its relevant assembly code
-      * representation
+    /** generateLine() matches an instruction to its relevant assembly code representation
       */
     def generateLine(instr: Instruction): String =
         s"${instr match {
@@ -94,8 +95,7 @@ object ARMRepresentation extends Representation {
             case CompareInstr(fstOp, sndOp, condition) =>
                 s"\tCMP$condition $fstOp, $sndOp"
 
-            /** For unmatched cases, "temp" will be generated. Used for
-              * debugging.
+            /** For unmatched cases, "temp" will be generated. Used for debugging.
               */
             case _ => "Temp"
         }}\n"
