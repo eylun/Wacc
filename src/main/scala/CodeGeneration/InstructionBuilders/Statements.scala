@@ -304,7 +304,7 @@ object transStatement {
                   wd.newScopeST
                 )
 
-                /** flag */
+                /** Constant Propogation: if a constant was assigned, remove it from the parent ST */
                 wdSF.currST.removeConstFromParent()
 
                 collector.addStatement(wdSF.head)
@@ -315,10 +315,7 @@ object transStatement {
                   */
                 collector.addStatement(List(Label(labelCheck)))
 
-                /** TODO: remove variables in cond from constants */
-                //stackFrame.currST.doNotPropogate()
                 transExpression(e, stackFrame)
-                //stackFrame.currST.startPropogate()
 
                 collector.addStatement(
                   (

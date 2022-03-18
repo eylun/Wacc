@@ -17,20 +17,6 @@ class SymbolTable(
         rmParentConst = true
     }
 
-    /** Constant Propogation: if propogate is set to false, then attempting to access a constant will remove it from the
-      * currST
-      */
-    var propogate: Boolean = true
-
-    def doNotPropogate(): Unit = {
-        println(" donotpropoate debug")
-        propogate = false
-    }
-
-    def startPropogate(): Unit = {
-        propogate = true
-    }
-
     /** Sets the parent of this symbol table. */
     def setParent(parent: SymbolTable): Unit = encSymTable = Some(parent)
 
@@ -70,12 +56,7 @@ class SymbolTable(
 
     }
 
-    /** Given another map of constants, add it to the current map */
-    def addConstants(constants: Map[String, Int]): Unit = {
-        constantIntsMap = constantIntsMap ++ constants
-    }
-
-    /** To remove variables that are in the loop condition or loop body from constant map */
+    /** To remove variables from the constant map */
     def removeConstantVar(name: String): Unit = {
         var s: Option[SymbolTable] = Some(this)
         while (s != None) {
@@ -86,7 +67,7 @@ class SymbolTable(
         }
     }
 
-    /** Propogates up (checks parent symbol table for constant) */
+    /** Propogates up (checks parent symbol table for constant) and checks for constant */
     def containsConstant(name: String): Boolean = {
         if (lookupAll(name) == None) {
             return false
@@ -102,10 +83,6 @@ class SymbolTable(
         while (s != None) {
             var st = s.get
             if (constantMapType.contains(name)) {
-                if (!propogate) {
-                    removeConstantVar(name)
-                    return false
-                }
                 return true
             }
             s = st.encSymTable
