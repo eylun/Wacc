@@ -79,7 +79,7 @@ class X86ExecuteSpec extends AnyFlatSpec {
     }
     behavior of "runtime error programs"
     it should "execute array out of bounds errors" in {
-        //pending
+        pending
 
         waccProgramsInDir(new File("./programs/valid/runtimeErr/arrayOutOfBounds")).foreach((x86ExecuteAndCompare(_)))
     }
@@ -94,14 +94,9 @@ class X86ExecuteSpec extends AnyFlatSpec {
         waccProgramsInDir(new File("./programs/valid/runtimeErr/integerOverflow")).foreach((x86ExecuteAndCompare(_)))
     }
     it should "execute null dereference errors" in {
-        //pending
-
-        waccProgramsInDir(new File("./programs/valid/runtimeErr/nullDereference")).foreach((x86ExecuteAndCompare(_)))
-    }
-    it should "execute uncaught exception errors" in {
         pending
 
-        waccProgramsInDir(new File("./programs/valid/runtimeErr/uncaughtException")).foreach((x86ExecuteAndCompare(_)))
+        waccProgramsInDir(new File("./programs/valid/runtimeErr/nullDereference")).foreach((x86ExecuteAndCompare(_)))
     }
     behavior of "scope programs"
     it should "execute scope statements" in {

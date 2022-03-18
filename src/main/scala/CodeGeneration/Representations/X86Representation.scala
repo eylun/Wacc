@@ -64,7 +64,7 @@ object X86Representation extends Representation {
             case AddInstr(_, _, _, _)                               => generateAdd(instr)
             case SubInstr(_, _, _, _) | ReverseSubInstr(_, _, _, _) => generateSub(instr)
             case SMullInstr(_, _, _, _, _)                          => generateMultiply(instr)
-            case SDivInstr(src)                                      => s"\tcqto\n\tidiv $src"
+            case SDivInstr(src)                                     => s"\tcqto\n\tidiv $src"
 
             case BranchInstr(_, _) | BranchLinkInstr(_, _) => generateBranch(instr)
 
@@ -180,10 +180,7 @@ object X86Representation extends Representation {
         i match {
             case SMullInstr(rdLo, rdHi, fst, snd, false) => {
                 sb.append(s"\tmov $fst, $rdLo\n")
-                sb.append(s"\tmov $fst, $rdHi\n")
                 sb.append(s"\timul $snd, $rdLo\n")
-                sb.append(s"\timul $snd, $rdHi\n")
-                sb.append(s"\tshr 32, $rdHi")
                 sb.toString
             }
             case _ => "TODO MUL"
@@ -254,6 +251,18 @@ object X86Representation extends Representation {
     def generateCompare(i: Instruction)(implicit collector: WaccBuffer): String = {
         val sb: StringBuilder = new StringBuilder
         i match {
+            case CompareInstr(fst, ASRRegOp(snd, ShiftImm(31)), Condition.AL) => {
+                val idx = collector.tickGeneral()
+                sb.append(s"\tmov %rax, %rcx\n")
+                sb.append(s"\tsar $$32, %rcx\n")
+                sb.append(s"\tcmp $$0, %rcx\n")
+                sb.append(s"\tjne next_check_$idx\n")
+                sb.append(s"\tje mul_check_end_$idx\n")
+                sb.append(s"next_check_$idx:\n")
+                sb.append(s"\tcmp $$0xFFFFFFFF, %ecx\n")
+                sb.append(s"mul_check_end_$idx:")
+                sb.toString
+            }
             case CompareInstr(fst, snd, Condition.AL) => opBody(i)
             case CompareInstr(_, _, _)                => conditionalOp(i)
             case _                                    => "TODO CMP"
