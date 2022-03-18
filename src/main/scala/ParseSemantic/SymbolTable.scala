@@ -9,14 +9,17 @@ class SymbolTable(
     var constantIntsMap: Map[String, Int] = Map[String, Int]().empty
     var constantBoolsMap: Map[String, Boolean] = Map[String, Boolean]().empty
 
-    /** TODO: removeConstants is a flag that when true, will cause */
-    /** do we need this lol */
-    var removeConstants: Boolean = false
-    def setToRemove(): Unit = {
-        removeConstants = true
+    /** Constant Propogation: If rmParentConst is set, then attempting to reassign a constant will cause that constant
+      * to be removed from the parent ST
+      */
+    var rmParentConst: Boolean = false
+    def removeConstFromParent(): Unit = {
+        rmParentConst = true
     }
 
-    /** TODO: do while propogate issue */
+    /** Constant Propogation: if propogate is set to false, then attempting to access a constant will remove it from the
+      * currST
+      */
     var propogate: Boolean = true
 
     def doNotPropogate(): Unit = {
@@ -83,12 +86,6 @@ class SymbolTable(
         }
     }
 
-    /** Clears all constants from the map */
-    def clearAllConstants() = {
-        constantIntsMap = Map[String, Int]()
-        constantBoolsMap = Map[String, Boolean]()
-    }
-
     /** Propogates up (checks parent symbol table for constant) */
     def containsConstant(name: String): Boolean = {
         if (lookupAll(name) == None) {
@@ -118,7 +115,6 @@ class SymbolTable(
 
     /** Only called after containsConstant() check */
     def getConstant(name: String, identType: Type): AnyVal = {
-        println(" get constant debug")
         identType match {
             case IntType()  => constantIntsMap.get(name).get
             case BoolType() => constantBoolsMap.get(name).get

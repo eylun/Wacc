@@ -100,7 +100,8 @@ class StackFrame(
 
         /** Constant Propogation: Upon a join, add the constants from the current symbol table to the new ST */
         /** Removal of the constants will be done in each corresponding statement case */
-        currST.constantIntsMap.foreach(constant => st.addConstantVar(constant._1, constant._2))
+        /** debug: not needed bc when we get constants we look up */
+        //currST.constantIntsMap.foreach(constant => st.addConstantVar(constant._1, constant._2))
 
         StackFrame(
           newChildMap,
