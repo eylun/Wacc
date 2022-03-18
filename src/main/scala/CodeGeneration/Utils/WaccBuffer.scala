@@ -75,6 +75,7 @@ class WaccBuffer(val optFlag: OptimisationFlag = OptimisationFlag.O0) {
             case PRuntimeError       => printRuntimeError(this)
             case PCheckDivideByZero  => printCheckDivideByZero(this)
             case PCheckArrayBounds   => printCheckArrayBounds(this)
+            case PCheckStringBounds  => printCheckStringBounds(this)
             case PCheckNullPointer   => printCheckNullPointer(this)
             case PExceptionError     => printExceptionError(this)
         }

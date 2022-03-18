@@ -497,6 +497,27 @@ object transExpression {
                 )
                 stackFrame.dropTempOffset(WORD_SIZE)
             }
+
+            case SCharAtNode(str, i) => {
+                collector.insertUtil(UtilFlag.PCheckStringBounds)
+                transExpression(str, stackFrame) 
+                stackFrame.addTempOffset(WORD_SIZE)
+                collector.addStatement(
+                    List(
+                        PushInstr(List(r0))
+                    )
+                )
+                transExpression(i, stackFrame) 
+                collector.addStatement(
+                    List(
+                        BranchLinkInstr("p_check_string_bounds", Condition.AL),
+                        PopInstr(List(r1)),
+                        AddInstr(r0, r0, ImmOffset(4)),
+                        LoadRegSignedByte(r0, r1, RegOp(r0))
+                    )
+                )
+                stackFrame.dropTempOffset(WORD_SIZE)
+            }
             case _ => List[Instruction]().empty
         }
 }

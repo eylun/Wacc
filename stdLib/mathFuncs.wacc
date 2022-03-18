@@ -1,0 +1,52 @@
+begin
+    
+    int signum(int i) is
+        if i < 0 then
+            return -1
+        else
+            if i == 0 then
+                return 0
+            else
+                return 1
+            fi
+        fi         
+    end
+
+    int abs(int i) is
+        if i < 0 then
+            return i * -1
+        else
+            return i
+        fi         
+    end
+
+    int pow(int i, int p) is
+        int count = p;
+        int ret = 1;
+        while (count > 0) do
+            ret = ret * i;
+            count = count - 1
+        done;
+        return ret
+    end
+
+    int max(int i1, int i2) is
+        if i1 > i2 then
+            return i1
+        else
+            return i2
+        fi
+    end
+
+    int min(int i1, int i2) is
+        if i1 < i2 then
+            return i1
+        else
+            return i2
+        fi
+    end
+    
+    int a = 2;
+    int ret = call pow(a, 3);
+    println ret
+end

@@ -488,7 +488,7 @@ object transStatement {
                   List(BranchLinkInstr("p_print_bool"))
                 )
             }
-            case CharLiterNode(_) | Chr(_) => {
+            case CharLiterNode(_) | Chr(_) | SCharAtNode(_, _) => {
                 collector.addStatement(
                   List(BranchLinkInstr("putchar"))
                 )
