@@ -8,7 +8,8 @@ object transRHS {
     /** Adds a list of instructions evaluating the RHS of an assignment to the Wacc Buffer collector
       */
     def apply(rhs: AssignRHSNode, stackFrame: StackFrame, identString: String = "")(implicit
-        collector: WaccBuffer
+        collector: WaccBuffer,
+        repr: Representation
     ): Unit = {
         rhs match {
             /** EXPRESSION NODE */
@@ -17,30 +18,40 @@ object transRHS {
             /** ARRAY-LITER NODE */
             case al @ ArrayLiterNode(es) => {
 
-                /** Add appriopriate move instruction based on the array type */
-                al.typeId.get match {
-                    case AnyType() => {
+                /** Add appropriate move instruction based on the array type */
+                (al.typeId.get, repr) match {
+                    case (AnyType(), ARMRepresentation) => {
                         collector.addStatement(
                           List(
-                            MoveInstr(
-                              r0,
-                              ImmOffset(WORD_SIZE)
-                            )
+                            MoveInstr(r0, ImmOffset(WORD_SIZE))
                           )
                         )
                     }
-                    case a @ ArrayType(_, _, _) => {
+                    case (AnyType(), X86Representation) => {
                         collector.addStatement(
                           List(
-                            MoveInstr(
-                              r0,
-                              ImmOffset(getArraySize(a, es.length))
-                            )
+                            MoveInstr(r0, ImmOffset(WORD_SIZE)),
+                            MoveInstr(r4, RegOp(r0))
+                          )
+                        )
+                    }
+                    case (a @ ArrayType(_, _, _), ARMRepresentation) => {
+                        collector.addStatement(
+                          MoveInstr(r0, ImmOffset(getArraySize(a, es.length)))
+                        )
+
+                    }
+                    case (a @ ArrayType(_, _, _), X86Representation) => {
+                        collector.addStatement(
+                          List(
+                            MoveInstr(r0, ImmOffset(getArraySize(a, es.length))),
+                            MoveInstr(r4, RegOp(r0))
                           )
                         )
                     }
                     case _ =>
                 }
+
                 collector.addStatement(
                   List(
                     BranchLinkInstr("malloc", Condition.AL),
@@ -53,12 +64,7 @@ object transRHS {
                         transExpression(e, stackFrame)
                         collector.addStatement(
                           List(
-                            determineStoreInstr(
-                              e.typeId.get.getType(),
-                              r0,
-                              r3,
-                              ofs
-                            )
+                            determineStoreInstr(e.typeId.get.getType(), r0, r3, ofs)
                           )
                         )
                         ofs += getTypeSize(e.typeId.get.getType())
@@ -66,24 +72,13 @@ object transRHS {
                 }
                 collector.addStatement(
                   List(
-                    MoveInstr(
-                      r0,
-                      ImmOffset(es.length)
-                    ),
-                    StoreInstr(
-                      r0,
-                      r3,
-                      ImmOffset(0)
-                    ),
-                    MoveInstr(
-                      r0,
-                      RegOp(
-                        r3
-                      )
-                    )
+                    MoveInstr(r0, ImmOffset(es.length)),
+                    StoreInstr(r0, r3, ImmOffset(0)),
+                    MoveInstr(r0, RegOp(r3))
                   )
                 )
             }
+
             /** NEW PAIR NODE */
             case NewPairNode(e1, e2) => {
 
@@ -91,23 +86,37 @@ object transRHS {
                   */
                 addNewPairElem(e1, stackFrame)
                 addNewPairElem(e2, stackFrame)
-                collector.addStatement(
-                  List(
-                    MoveInstr(r0, ImmOffset(8)),
-                    BranchLinkInstr("malloc", AL),
-                    PopInstr(List(r1, r2)),
-                    StoreInstr(r2, r0, ImmOffset(0), false),
-                    StoreInstr(r1, r0, ImmOffset(4), false)
-                  )
-                )
+                repr match {
+                    case ARMRepresentation =>
+                        collector.addStatement(
+                          List(
+                            MoveInstr(r0, ImmOffset(2 * WORD_SIZE)),
+                            BranchLinkInstr("malloc", AL),
+                            PopInstr(List(r1, r2)),
+                            StoreInstr(r2, r0, ImmOffset(0), false),
+                            StoreInstr(r1, r0, ImmOffset(WORD_SIZE), false)
+                          )
+                        )
+                    case X86Representation =>
+                        collector.addStatement(
+                          List(
+                            MoveInstr(r0, ImmOffset(2 * WORD_SIZE)),
+                            MoveInstr(r4, RegOp(r0)),
+                            BranchLinkInstr("malloc", AL),
+                            PopInstr(List(r1, r2)),
+                            StoreInstr(r1, r0, ImmOffset(0), false),
+                            StoreInstr(r2, r0, ImmOffset(WORD_SIZE), false)
+                          )
+                        )
+                }
                 stackFrame.dropTempOffset(WORD_SIZE * 2)
             }
+
             /** (FUNCTION) CALL NODE */
             case CallNode(i, args) => {
 
                 /** Look up function Id from the stack frame */
-                val FunctionId(t, plist, _) =
-                    stackFrame.currST.lookupAll(i.s).get
+                val FunctionId(t, plist, _) = stackFrame.currST.lookupAll(i.s).get
                 var offset = 0
 
                 /** Push params into stack */
@@ -118,12 +127,7 @@ object transRHS {
                             case Param(CharType()) | Param(BoolType()) => {
                                 offset += BIT_SIZE
                                 stackFrame.addTempOffset(BIT_SIZE)
-                                StoreByteInstr(
-                                  r0,
-                                  sp,
-                                  ImmOffset(-BIT_SIZE),
-                                  true
-                                )
+                                StoreByteInstr(r0, sp, ImmOffset(-BIT_SIZE), true)
                             }
                             case _ => {
                                 offset += WORD_SIZE
@@ -208,7 +212,7 @@ object transRHS {
                   )
                 )
                 elemSize match {
-                    case WORD_SIZE =>
+                    case 4 =>
                         collector.addStatement(
                           List(
                             StoreInstr(r0, sp, ImmOffset(-4), true),
@@ -271,7 +275,7 @@ object transRHS {
                   )
                 )
                 elemSize match {
-                    case WORD_SIZE =>
+                    case 4 =>
                         collector.addStatement(
                           List(
                             LoadInstr(r0, r3, ImmOffset(0)),
@@ -348,7 +352,7 @@ object transRHS {
                   )
                 )
                 elemSize match {
-                    case WORD_SIZE =>
+                    case 4 =>
                         collector.addStatement(
                           List(
                             LoadInstr(r0, r2, ImmOffset(0)),

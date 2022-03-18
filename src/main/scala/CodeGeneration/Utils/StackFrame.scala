@@ -25,7 +25,7 @@ class StackFrame(
     val parentOffsetMap: Map[String, Int],
     val currST: SymbolTable,
     val returnOffset: Int
-) {
+)(implicit repr: Representation) {
     var unlocked = mutable.Set[String]().empty
 
     /** temporary offsets are used when something is pushed to the stackframe in order to implement a functionality.
@@ -61,7 +61,7 @@ class StackFrame(
     }
 
     /** Increment stack pointer by all allocated variables in a function */
-    val returnTail: List[Instruction] = returnOffset match {
+    def returnTail(implicit repr: Representation): List[Instruction] = returnOffset match {
         case 0 => List.empty
         case _ =>
             StackFrame
@@ -134,34 +134,20 @@ class StackFrame(
     def unlock(ident: String): Unit = unlocked.add(ident)
 }
 object StackFrame {
-
     /** Used for declaring a new main stackframe */
-    def apply(st: SymbolTable) = {
+    def apply(st: SymbolTable)(implicit repr: Representation) = {
         val offsetMap = generateOffsetMap(st)
-        new StackFrame(
-          offsetMap,
-          Map.empty,
-          st,
-          varBytes(st)
-        )
+        new StackFrame(offsetMap, Map.empty, st, varBytes(st))
     }
 
     /** Used for declaring a child stackframe */
-    def apply(
-        childOffsetMap: Map[String, Int],
-        parentOffsetMap: Map[String, Int],
-        st: SymbolTable,
-        varBytes: Int
-    ) =
-        new StackFrame(
-          childOffsetMap,
-          parentOffsetMap,
-          st,
-          varBytes
-        )
-
+    def apply(childOffsetMap: Map[String, Int], parentOffsetMap: Map[String, Int], st: SymbolTable, varBytes: Int)
+        (implicit repr: Representation) = {
+        new StackFrame(childOffsetMap, parentOffsetMap, st, varBytes)
+    }
+        
     /** Total bytes of symbol table */
-    private def totalBytes(st: SymbolTable) = {
+    private def totalBytes(st: SymbolTable)(implicit repr: Representation) = {
         var sum = 0
         st.dict.foreach {
             case ("return", _) => 0
@@ -171,7 +157,7 @@ object StackFrame {
     }
 
     /** Total bytes of variables in a symbol table */
-    private def varBytes(st: SymbolTable): Int = {
+    private def varBytes(st: SymbolTable)(implicit repr: Representation): Int = {
         var sum = 0
         st.dict.foreach {
             case (_, Variable(t)) => sum += getTypeSize(t)
@@ -181,7 +167,7 @@ object StackFrame {
     }
 
     /** Generates an offset map based on the provided symbol table */
-    private def generateOffsetMap(st: SymbolTable): Map[String, Int] = {
+    private def generateOffsetMap(st: SymbolTable)(implicit repr: Representation): Map[String, Int] = {
         var acc = totalBytes(st)
         val map = mutable.Map[String, Int]()
         st.order.foreach {
@@ -196,10 +182,8 @@ object StackFrame {
                     case Param(t) => map += (k -> (acc + WORD_SIZE))
                     case _        => map += (k -> acc)
                 }
-
             }
         }
-
         /** Convert to immutable map */
         map.toMap
     }
@@ -216,5 +200,4 @@ object StackFrame {
         lb += rem
         lb.toList
     }
-
 }

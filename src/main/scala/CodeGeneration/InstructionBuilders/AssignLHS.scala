@@ -8,7 +8,8 @@ object transLHS {
     /** Adds a list of instructions evaluating the LHS of an assignment to the Wacc Buffer collector
       */
     def apply(lhs: AssignLHSNode, stackFrame: StackFrame)(implicit
-        collector: WaccBuffer
+        collector: WaccBuffer,
+        repr: Representation
     ): Unit = {
         lhs match {
             /** IDENT NODE */
@@ -42,7 +43,7 @@ object transLHS {
                             AddInstr(
                               r4,
                               r4,
-                              ImmOffset(4),
+                              ImmOffset(WORD_SIZE),
                               false
                             )
                           )
@@ -55,29 +56,13 @@ object transLHS {
                               List(
                                 ae.typeId.get.getType() match {
                                     case CharType() | BoolType() =>
-                                        AddInstr(
-                                          r4,
-                                          r4,
-                                          RegOp(r0),
-                                          false
-                                        )
-                                    case _ =>
-                                        AddInstr(
-                                          r4,
-                                          r4,
-                                          LSLRegOp(r0, ShiftImm(2)),
-                                          false
-                                        )
+                                        AddInstr(r4, r4, RegOp(r0), false)
+                                    case _ => AddInstr(r4, r4, LSLRegOp(r0, ShiftImm(TYPE_SHIFT)), false)
                                 }
                               )
                           } else {
                               List(
-                                AddInstr(
-                                  r4,
-                                  r4,
-                                  LSLRegOp(r0, ShiftImm(2)),
-                                  false
-                                ),
+                                AddInstr(r4, r4, LSLRegOp(r0, ShiftImm(TYPE_SHIFT)), false),
                                 LoadInstr(r4, r4, ImmOffset(0))
                               )
                           }
@@ -118,33 +103,45 @@ object transLHS {
                         collector.addStatement(
                           List(
                             BranchLinkInstr("p_check_null_pointer"),
-                            AddInstr(
-                              r0,
-                              r0,
-                              ImmOffset(WORD_SIZE),
-                              false
-                            )
+                            AddInstr(r0, r0, ImmOffset(WORD_SIZE), false)
                           )
                         )
                     }
                 }
                 stackFrame.dropTempOffset(WORD_SIZE)
-                collector.addStatement(
-                  List(
-                    PushInstr(List(r0)),
-                    LoadInstr(r0, r0, ImmOffset(0)),
-                    BranchLinkInstr("free"),
-                    MoveInstr(
-                      r0,
-                      ImmOffset(getTypeSize(pe.typeId.get.getType()))
-                    ),
-                    BranchLinkInstr("malloc"),
-                    PopInstr(List(r1)),
-                    StoreInstr(r0, r1, ImmOffset(0)),
-                    MoveInstr(r1, RegOp(r0)),
-                    PopInstr(List(r0))
-                  )
-                )
+                repr match {
+                    case ARMRepresentation => collector.addStatement(
+                        List(
+                            PushInstr(List(r0)),
+                            LoadInstr(r0, r0, ImmOffset(0)),
+                            BranchLinkInstr("free"),
+                            MoveInstr(
+                            r0,
+                            ImmOffset(getTypeSize(pe.typeId.get.getType()))
+                            ),
+                            BranchLinkInstr("malloc"),
+                            PopInstr(List(r1)),
+                            StoreInstr(r0, r1, ImmOffset(0)),
+                            MoveInstr(r1, RegOp(r0)),
+                            PopInstr(List(r0))
+                        )
+                    )
+                    case X86Representation => collector.addStatement(
+                        List(
+                            PushInstr(List(r0)),
+                            LoadInstr(r0, r0, ImmOffset(0)),
+                            MoveInstr(r4, RegOp(r0)),
+                            BranchLinkInstr("free"),
+                            MoveInstr(r0, ImmOffset(getTypeSize(pe.typeId.get.getType()))),
+                            MoveInstr(r4, RegOp(r0)),
+                            BranchLinkInstr("malloc"),
+                            PopInstr(List(r1)),
+                            StoreInstr(r0, r1, ImmOffset(0)),
+                            MoveInstr(r1, RegOp(r0)),
+                            PopInstr(List(r0))
+                        )
+                    )
+                }
             }
         }
     }

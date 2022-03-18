@@ -10,6 +10,7 @@ class CodeGenSpec extends AnyFlatSpec {
     import parsley.{Success, Failure}
     import testUtils.{assertCodegenEquals}
 
+    implicit val repr: Representation = ARMRepresentation
     var sf: StackFrame = StackFrame(SymbolTable())
     implicit var wbuffer: WaccBuffer = new WaccBuffer
 
@@ -156,7 +157,7 @@ class CodeGenSpec extends AnyFlatSpec {
     /** Expected instruction output for overflow errors */
     def expectedOverflowText(msgNo: Int): List[Instruction] = List(
       Label("p_throw_overflow_error"),
-      LoadLabelInstr(Reg(0), s"msg_$msgNo"),
+      LoadLabelInstr(r0, s"msg_$msgNo"),
       BranchLinkInstr("p_throw_runtime_error")
     )
 
@@ -169,22 +170,22 @@ class CodeGenSpec extends AnyFlatSpec {
       CompareInstr(r2, ImmOffset(0)),
       MoveInstr(pc, RegOp(r2), Condition.NE),
       BranchLinkInstr("p_print_string"),
-      MoveInstr(Reg(0), ImmOffset(-1)),
+      MoveInstr(r0, ImmOffset(-1)),
       BranchLinkInstr("exit")
     )
 
     /** Expected instruction output for print string */
     def expectedPrintStrText(msgNo: Int): List[Instruction] = List(
       Label("p_print_string"),
-      PushInstr(List(LinkReg())),
-      LoadInstr(Reg(1), Reg(0), ImmOffset(0)),
-      AddInstr(Reg(2), Reg(0), ImmOffset(4)),
-      LoadLabelInstr(Reg(0), s"msg_$msgNo"),
-      AddInstr(Reg(0), Reg(0), ImmOffset(4)),
+      PushInstr(List(lr)),
+      LoadInstr(r1, r0, ImmOffset(0)),
+      AddInstr(r2, r0, ImmOffset(4)),
+      LoadLabelInstr(r0, s"msg_$msgNo"),
+      AddInstr(r0, r0, ImmOffset(4)),
       BranchLinkInstr("printf"),
-      MoveInstr(Reg(0), ImmOffset(0)),
+      MoveInstr(r0, ImmOffset(0)),
       BranchLinkInstr("fflush"),
-      PopInstr(List(PCReg()))
+      PopInstr(List(pc))
     )
 
     def expectedFreePairText(msgNo: Int): List[Instruction] = {
@@ -208,11 +209,11 @@ class CodeGenSpec extends AnyFlatSpec {
     def expectedPrintIntText(msgNo: Int): List[Instruction] = List(
       Label("p_print_int"),
       PushInstr(List(lr)),
-      MoveInstr(Reg(1), RegOp(Reg(0))),
-      LoadLabelInstr(Reg(0), s"msg_$msgNo"),
-      AddInstr(Reg(0), Reg(0), ImmOffset(4), false),
+      MoveInstr(r1, RegOp(r0)),
+      LoadLabelInstr(r0, s"msg_$msgNo"),
+      AddInstr(r0, r0, ImmOffset(4), false),
       BranchLinkInstr("printf"),
-      MoveInstr(Reg(0), ImmOffset(0)),
+      MoveInstr(r0, ImmOffset(0)),
       BranchLinkInstr("fflush"),
       PopInstr(List(pc))
     )
@@ -221,11 +222,11 @@ class CodeGenSpec extends AnyFlatSpec {
         List(
           Label("p_print_reference"),
           PushInstr(List(lr)),
-          MoveInstr(Reg(1), RegOp(Reg(0))),
-          LoadLabelInstr(Reg(0), s"msg_$msgNo"),
-          AddInstr(Reg(0), Reg(0), ImmOffset(4), false),
+          MoveInstr(r1, RegOp(r0)),
+          LoadLabelInstr(r0, s"msg_$msgNo"),
+          AddInstr(r0, r0, ImmOffset(4), false),
           BranchLinkInstr("printf"),
-          MoveInstr(Reg(0), ImmOffset(0)),
+          MoveInstr(r0, ImmOffset(0)),
           BranchLinkInstr("fflush"),
           PopInstr(List(pc))
         )
@@ -234,10 +235,10 @@ class CodeGenSpec extends AnyFlatSpec {
         List(
           Label("p_print_ln"),
           PushInstr(List(lr)),
-          LoadLabelInstr(Reg(0), s"msg_$msgNo"),
-          AddInstr(Reg(0), Reg(0), ImmOffset(4), false),
+          LoadLabelInstr(r0, s"msg_$msgNo"),
+          AddInstr(r0, r0, ImmOffset(4), false),
           BranchLinkInstr("puts"),
-          MoveInstr(Reg(0), ImmOffset(0)),
+          MoveInstr(r0, ImmOffset(0)),
           BranchLinkInstr("fflush"),
           PopInstr(List(pc))
         )
@@ -282,38 +283,38 @@ class CodeGenSpec extends AnyFlatSpec {
         reset()
         testExpr(
           IntLiterNode(1)(0, 0),
-          expectedBssSection ++: List(LoadImmIntInstr(Reg(0), 1))
+          expectedBssSection ++: List(LoadImmIntInstr(r0, 1))
         )
         reset()
         testExpr(
           IntLiterNode(-23)(0, 0),
-          expectedBssSection ++: List(LoadImmIntInstr(Reg(0), -23))
+          expectedBssSection ++: List(LoadImmIntInstr(r0, -23))
         )
     }
     it should "translate character literals" in {
         reset()
         testExpr(
           CharLiterNode('d')(0, 0),
-          expectedBssSection ++: List(MoveInstr(Reg(0), ImmOffset('d')))
+          expectedBssSection ++: List(MoveInstr(r0, ImmOffset('d')))
         )
     }
     it should "translate boolean literals" in {
         reset()
         testExpr(
           BoolLiterNode(true)(0, 0),
-          expectedBssSection ++: List(MoveInstr(Reg(0), ImmOffset(1)))
+          expectedBssSection ++: List(MoveInstr(r0, ImmOffset(1)))
         )
         reset()
         testExpr(
           BoolLiterNode(false)(0, 0),
-          expectedBssSection ++: List(MoveInstr(Reg(0), ImmOffset(0)))
+          expectedBssSection ++: List(MoveInstr(r0, ImmOffset(0)))
         )
     }
     it should "translate pair literals" in {
         reset()
         testExpr(
           new PairLiterNode()(0, 0),
-          expectedBssSection ++: List(MoveInstr(Reg(0), ImmOffset(0)))
+          expectedBssSection ++: List(MoveInstr(r0, ImmOffset(0)))
         )
     }
     it should "translate string literals" in {
@@ -444,12 +445,12 @@ class CodeGenSpec extends AnyFlatSpec {
               expectedTextSection(
                 List(
                   List(
-                    LoadImmIntInstr(Reg(0), 4),
-                    PushInstr(List(Reg(0))),
-                    LoadImmIntInstr(Reg(0), 12),
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
-                    AddInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
+                    LoadImmIntInstr(r0, 4),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 12),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    AddInstr(r0, r0, RegOp(r1), true),
                     BranchLinkInstr("p_throw_overflow_error", Condition.VS)
                   ),
                   expectedOverflowText(0),
@@ -542,12 +543,12 @@ class CodeGenSpec extends AnyFlatSpec {
               expectedTextSection(
                 List(
                   List(
-                    LoadImmIntInstr(Reg(0), 10),
-                    PushInstr(List(Reg(0))),
-                    LoadImmIntInstr(Reg(0), 25),
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
-                    SubInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
+                    LoadImmIntInstr(r0, 10),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, 25),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    SubInstr(r0, r0, RegOp(r1), true),
                     BranchLinkInstr("p_throw_overflow_error", Condition.VS)
                   ),
                   expectedOverflowText(0),
@@ -585,31 +586,31 @@ class CodeGenSpec extends AnyFlatSpec {
                     LoadImmIntInstr(r0, 31),
                     PushInstr(List(r0)),
                     LoadImmIntInstr(r0, 4),
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
-                    SubInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    SubInstr(r0, r0, RegOp(r1), true),
                     BranchLinkInstr("p_throw_overflow_error", Condition.VS),
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
-                    SubInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    SubInstr(r0, r0, RegOp(r1), true),
                     BranchLinkInstr("p_throw_overflow_error", Condition.VS),
                     PushInstr(List(r0)),
                     LoadImmIntInstr(r0, -10),
                     PushInstr(List(r0)),
                     LoadImmIntInstr(r0, 5),
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
-                    SubInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    SubInstr(r0, r0, RegOp(r1), true),
                     BranchLinkInstr("p_throw_overflow_error", Condition.VS),
                     PushInstr(List(r0)),
                     LoadImmIntInstr(r0, 6),
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
-                    SubInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    SubInstr(r0, r0, RegOp(r1), true),
                     BranchLinkInstr("p_throw_overflow_error", Condition.VS),
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
-                    SubInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    SubInstr(r0, r0, RegOp(r1), true),
                     BranchLinkInstr("p_throw_overflow_error", Condition.VS)
                   ),
                   expectedOverflowText(0),
@@ -637,8 +638,8 @@ class CodeGenSpec extends AnyFlatSpec {
                     LoadImmIntInstr(r0, 5),
                     PushInstr(List(r0)),
                     LoadImmIntInstr(r0, 7),
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
                     SMullInstr(r0, r1, r0, r1),
                     CompareInstr(r1, ASRRegOp(r0, ShiftImm(31))),
                     BranchLinkInstr("p_throw_overflow_error", Condition.NE)
@@ -670,8 +671,8 @@ class CodeGenSpec extends AnyFlatSpec {
                     LoadImmIntInstr(r0, 4),
                     PushInstr(List(r0)),
                     LoadImmIntInstr(r0, 2),
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
                     SMullInstr(r0, r1, r0, r1),
                     CompareInstr(r1, ASRRegOp(r0, ShiftImm(31))),
                     BranchLinkInstr("p_throw_overflow_error", Condition.NE),
@@ -679,13 +680,13 @@ class CodeGenSpec extends AnyFlatSpec {
                     LoadImmIntInstr(r0, -5),
                     PushInstr(List(r0)),
                     LoadImmIntInstr(r0, 10),
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
                     SMullInstr(r0, r1, r0, r1),
                     CompareInstr(r1, ASRRegOp(r0, ShiftImm(31))),
                     BranchLinkInstr("p_throw_overflow_error", Condition.NE),
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
                     SMullInstr(r0, r1, r0, r1),
                     CompareInstr(r1, ASRRegOp(r0, ShiftImm(31))),
                     BranchLinkInstr("p_throw_overflow_error", Condition.NE)
@@ -1124,7 +1125,7 @@ class CodeGenSpec extends AnyFlatSpec {
         reset()
         testRHS(
           IntLiterNode(-10)(0, 0),
-          expectedBssSection ++: List(LoadImmIntInstr(Reg(0), -10))
+          expectedBssSection ++: List(LoadImmIntInstr(r0, -10))
         )
         reset()
         testRHS(
@@ -1139,12 +1140,12 @@ class CodeGenSpec extends AnyFlatSpec {
               expectedTextSection(
                 List(
                   List(
-                    LoadImmIntInstr(Reg(0), 3),
-                    PushInstr(List(Reg(0))),
-                    LoadImmIntInstr(Reg(0), -4),
-                    MoveInstr(Reg(1), RegOp(Reg(0))),
-                    PopInstr(List(Reg(0))),
-                    AddInstr(Reg(0), Reg(0), RegOp(Reg(1)), true),
+                    LoadImmIntInstr(r0, 3),
+                    PushInstr(List(r0)),
+                    LoadImmIntInstr(r0, -4),
+                    MoveInstr(r1, RegOp(r0)),
+                    PopInstr(List(r0)),
+                    AddInstr(r0, r0, RegOp(r1), true),
                     BranchLinkInstr("p_throw_overflow_error", Condition.VS)
                   ),
                   expectedOverflowText(0),
@@ -1156,7 +1157,7 @@ class CodeGenSpec extends AnyFlatSpec {
         reset()
         testRHS(
           new PairLiterNode()(0, 0),
-          expectedBssSection ++: List(MoveInstr(Reg(0), ImmOffset(0)))
+          expectedBssSection ++: List(MoveInstr(r0, ImmOffset(0)))
         )
     }
 
@@ -1168,12 +1169,12 @@ class CodeGenSpec extends AnyFlatSpec {
           node,
           expectedBssSection ++:
               List(
-                MoveInstr(Reg(0), ImmOffset(WORD_SIZE)),
+                MoveInstr(r0, ImmOffset(WORD_SIZE)),
                 BranchLinkInstr("malloc", Condition.AL),
-                MoveInstr(Reg(3), RegOp(Reg(0))),
-                MoveInstr(Reg(0), ImmOffset(0)),
-                StoreInstr(Reg(0), Reg(3), ImmOffset(0)),
-                MoveInstr(Reg(0), RegOp(Reg(3)))
+                MoveInstr(r3, RegOp(r0)),
+                MoveInstr(r0, ImmOffset(0)),
+                StoreInstr(r0, r3, ImmOffset(0)),
+                MoveInstr(r0, RegOp(r3))
               )
         )
         reset()
@@ -1183,14 +1184,14 @@ class CodeGenSpec extends AnyFlatSpec {
           node,
           expectedBssSection ++:
               List(
-                MoveInstr(Reg(0), ImmOffset(8)),
+                MoveInstr(r0, ImmOffset(8)),
                 BranchLinkInstr("malloc", Condition.AL),
-                MoveInstr(Reg(3), RegOp(Reg(0))),
-                LoadImmIntInstr(Reg(0), 3),
-                StoreInstr(Reg(0), Reg(3), ImmOffset(4)),
-                MoveInstr(Reg(0), ImmOffset(1)),
-                StoreInstr(Reg(0), Reg(3), ImmOffset(0)),
-                MoveInstr(Reg(0), RegOp(Reg(3)))
+                MoveInstr(r3, RegOp(r0)),
+                LoadImmIntInstr(r0, 3),
+                StoreInstr(r0, r3, ImmOffset(4)),
+                MoveInstr(r0, ImmOffset(1)),
+                StoreInstr(r0, r3, ImmOffset(0)),
+                MoveInstr(r0, RegOp(r3))
               )
         )
         reset()
@@ -1202,16 +1203,16 @@ class CodeGenSpec extends AnyFlatSpec {
           node,
           expectedBssSection ++:
               List(
-                MoveInstr(Reg(0), ImmOffset(6)),
+                MoveInstr(r0, ImmOffset(6)),
                 BranchLinkInstr("malloc", Condition.AL),
-                MoveInstr(Reg(3), RegOp(Reg(0))),
-                MoveInstr(Reg(0), ImmOffset('a')),
-                StoreByteInstr(Reg(0), Reg(3), ImmOffset(4)),
-                MoveInstr(Reg(0), ImmOffset('b')),
-                StoreByteInstr(Reg(0), Reg(3), ImmOffset(5)),
-                MoveInstr(Reg(0), ImmOffset(2)),
-                StoreInstr(Reg(0), Reg(3), ImmOffset(0)),
-                MoveInstr(Reg(0), RegOp(Reg(3)))
+                MoveInstr(r3, RegOp(r0)),
+                MoveInstr(r0, ImmOffset('a')),
+                StoreByteInstr(r0, r3, ImmOffset(4)),
+                MoveInstr(r0, ImmOffset('b')),
+                StoreByteInstr(r0, r3, ImmOffset(5)),
+                MoveInstr(r0, ImmOffset(2)),
+                StoreInstr(r0, r3, ImmOffset(0)),
+                MoveInstr(r0, RegOp(r3))
               )
         )
     }
@@ -1221,25 +1222,25 @@ class CodeGenSpec extends AnyFlatSpec {
           NewPairNode(IntLiterNode(1)(0, 0), IntLiterNode(2)(0, 0))(0, 0),
           expectedBssSection ++:
               List(
-                LoadImmIntInstr(Reg(0), 1),
-                PushInstr(List(Reg(0))),
-                MoveInstr(Reg(0), ImmOffset(4)),
+                LoadImmIntInstr(r0, 1),
+                PushInstr(List(r0)),
+                MoveInstr(r0, ImmOffset(4)),
                 BranchLinkInstr("malloc", Condition.AL),
-                PopInstr(List(Reg(1))),
-                StoreInstr(Reg(1), Reg(0), ImmOffset(0)),
-                PushInstr(List(Reg(0))),
-                LoadImmIntInstr(Reg(0), 2),
-                PushInstr(List(Reg(0))),
-                MoveInstr(Reg(0), ImmOffset(4)),
+                PopInstr(List(r1)),
+                StoreInstr(r1, r0, ImmOffset(0)),
+                PushInstr(List(r0)),
+                LoadImmIntInstr(r0, 2),
+                PushInstr(List(r0)),
+                MoveInstr(r0, ImmOffset(4)),
                 BranchLinkInstr("malloc", Condition.AL),
-                PopInstr(List(Reg(1))),
-                StoreInstr(Reg(1), Reg(0), ImmOffset(0)),
-                PushInstr(List(Reg(0))),
-                MoveInstr(Reg(0), ImmOffset(8)),
+                PopInstr(List(r1)),
+                StoreInstr(r1, r0, ImmOffset(0)),
+                PushInstr(List(r0)),
+                MoveInstr(r0, ImmOffset(8)),
                 BranchLinkInstr("malloc", Condition.AL),
-                PopInstr(List(Reg(1), Reg(2))),
-                StoreInstr(Reg(2), Reg(0), ImmOffset(0), false),
-                StoreInstr(Reg(1), Reg(0), ImmOffset(4), false)
+                PopInstr(List(r1, r2)),
+                StoreInstr(r2, r0, ImmOffset(0), false),
+                StoreInstr(r1, r0, ImmOffset(4), false)
               )
         )
         reset()
@@ -1250,25 +1251,25 @@ class CodeGenSpec extends AnyFlatSpec {
           ),
           expectedBssSection ++:
               List(
-                MoveInstr(Reg(0), ImmOffset('z')),
-                PushInstr(List(Reg(0))),
-                MoveInstr(Reg(0), ImmOffset(1)),
+                MoveInstr(r0, ImmOffset('z')),
+                PushInstr(List(r0)),
+                MoveInstr(r0, ImmOffset(1)),
                 BranchLinkInstr("malloc", Condition.AL),
-                PopInstr(List(Reg(1))),
-                StoreByteInstr(Reg(1), Reg(0), ImmOffset(0)),
-                PushInstr(List(Reg(0))),
-                MoveInstr(Reg(0), ImmOffset(1)),
-                PushInstr(List(Reg(0))),
-                MoveInstr(Reg(0), ImmOffset(1)),
+                PopInstr(List(r1)),
+                StoreByteInstr(r1, r0, ImmOffset(0)),
+                PushInstr(List(r0)),
+                MoveInstr(r0, ImmOffset(1)),
+                PushInstr(List(r0)),
+                MoveInstr(r0, ImmOffset(1)),
                 BranchLinkInstr("malloc", Condition.AL),
-                PopInstr(List(Reg(1))),
-                StoreByteInstr(Reg(1), Reg(0), ImmOffset(0)),
-                PushInstr(List(Reg(0))),
-                MoveInstr(Reg(0), ImmOffset(8)),
+                PopInstr(List(r1)),
+                StoreByteInstr(r1, r0, ImmOffset(0)),
+                PushInstr(List(r0)),
+                MoveInstr(r0, ImmOffset(8)),
                 BranchLinkInstr("malloc", Condition.AL),
-                PopInstr(List(Reg(1), Reg(2))),
-                StoreInstr(Reg(2), Reg(0), ImmOffset(0), false),
-                StoreInstr(Reg(1), Reg(0), ImmOffset(4), false)
+                PopInstr(List(r1, r2)),
+                StoreInstr(r2, r0, ImmOffset(0), false),
+                StoreInstr(r1, r0, ImmOffset(4), false)
               )
         )
     }
@@ -1295,8 +1296,8 @@ class CodeGenSpec extends AnyFlatSpec {
                   List(
                     LoadInstr(r0, sp, ImmOffset(0)),
                     BranchLinkInstr("p_check_null_pointer"),
-                    LoadInstr(Reg(0), Reg(0), ImmOffset(0)),
-                    LoadInstr(Reg(0), Reg(0), ImmOffset(0))
+                    LoadInstr(r0, r0, ImmOffset(0)),
+                    LoadInstr(r0, r0, ImmOffset(0))
                   ),
                   expectedNullPointerText(0),
                   expectedRuntimeErrText,
@@ -1325,7 +1326,7 @@ class CodeGenSpec extends AnyFlatSpec {
                   List(
                     LoadInstr(r0, sp, ImmOffset(0)),
                     BranchLinkInstr("p_check_null_pointer"),
-                    LoadInstr(Reg(0), Reg(0), ImmOffset(4)),
+                    LoadInstr(r0, r0, ImmOffset(4)),
                     LoadRegSignedByte(r0, r0, ImmOffset(0), Condition.AL)
                   ),
                   expectedNullPointerText(0),

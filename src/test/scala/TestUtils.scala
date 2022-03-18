@@ -137,22 +137,23 @@ object testUtils {
       *
       * Assumptions are made here that there are no syntax errors and no semantic errors
       */
-    def testCodegen(f: File): Unit = {
+    def testCodegen(f: File, repr: Representation): Unit = {
         import parsley.io.{ParseFromIO}
         import Helpers.cleanFilename
         val result = syntax.parse.parseFromFile(f).get
         val topLevelST = SymbolTable()
         val errorLog = ListBuffer[WaccError]()
         result.get.check(topLevelST, errorLog)
-        ARMRepresentation(
-          result.get,
-          topLevelST,
-          cleanFilename(f.getName()) + ".s"
-        )
+
+        val fname = cleanFilename(f.getName())
+
+        repr match {
+            case ARMRepresentation => ARMRepresentation(result.get, topLevelST, s"arm_${fname}.s")
+            case X86Representation => X86Representation(result.get, topLevelST, s"x86_${fname}.s")
+        }
     }
 
     def executeAndCompare(f: File): Unit = {
-
         import sys.process._
         import scala.language.postfixOps
         import parsley.{Success, Failure}
@@ -160,9 +161,9 @@ object testUtils {
         import java.io.{OutputStream, ByteArrayOutputStream, InputStream, ByteArrayInputStream}
         import regexHelper._
 
-        this.testCodegen(f)
+        this.testCodegen(f, ARMRepresentation)
 
-        s"arm-linux-gnueabi-gcc -o ${cleanFilename(f.getName())} -mcpu=arm1176jzf-s -mtune=arm1176jzf-s ${cleanFilename(f.getName())}.s" !
+        s"arm-linux-gnueabi-gcc -o arm_${cleanFilename(f.getName())} -mcpu=arm1176jzf-s -mtune=arm1176jzf-s arm_${cleanFilename(f.getName())}.s" !
 
         val (input, expectedOutput, expectedExit) = extractTest(f)
 
@@ -171,13 +172,65 @@ object testUtils {
         )
         val outputStream: OutputStream = new ByteArrayOutputStream()
         val actualExit =
-            s"qemu-arm -L /usr/arm-linux-gnueabi/ ${cleanFilename(f.getName())}" #< inputStream #> outputStream !
+            s"qemu-arm -L /usr/arm-linux-gnueabi/ arm_${cleanFilename(f.getName())}" #< inputStream #> outputStream !
 
         val actualOutput = outputStream.toString().trim()
 
-        s"rm ${cleanFilename(f.getName())}.s" !
+        s"rm arm_${cleanFilename(f.getName())}.s" !
 
-        s"rm ${cleanFilename(f.getName())}" !
+        s"rm arm_${cleanFilename(f.getName())}" !
+
+        (expectedOutput.split("\n") zip actualOutput.split("\n")).foreach {
+            case (expectedAddrRegex(el, er), actualAddrRegex(al, _, ar)) if el == al && er == ar =>
+            case (
+                  expectedDuoAddrRegex(el, em, er),
+                  actualDuoAddrRegex(al, _, am, _, ar)
+                ) if el == al && er == ar && em == am =>
+            case (expectedRuntimeErrRegex(_*), actualRuntimeErrRegex(_*)) =>
+            case (e, a) if e == a                                         =>
+            case (e, a) =>
+                fail(
+                  s"${f.getName()}\nExpected Output : [$e]\nActual Output   : [$a]"
+                )
+        }
+        if (expectedExit != actualExit)
+            fail(
+              s"${f.getName()}\nExpected Exit : [$expectedExit]\nActual Exit   : [$actualExit]"
+            )
+    }
+
+    def x86ExecuteAndCompare(f: File): Unit = {
+        import sys.process._
+        import scala.language.postfixOps
+        import parsley.{Success, Failure}
+        import Helpers.cleanFilename
+        import java.io.{OutputStream, ByteArrayOutputStream, InputStream, ByteArrayInputStream}
+        import regexHelper._
+
+        this.testCodegen(f, X86Representation)
+
+        val fname: String = cleanFilename(f.getName())
+
+        s"as x86_${fname}.s -o x86_${fname}.o" !
+
+        s"ld -m elf_x86_64 -dynamic-linker /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 -lc -o x86_$fname x86_${fname}.o" !
+
+        val (input, expectedOutput, expectedExit) = extractTest(f)
+
+        val inputStream: InputStream = new ByteArrayInputStream(
+          input.replace("\n", " ").getBytes()
+        )
+        val outputStream: OutputStream = new ByteArrayOutputStream()
+        val actualExit =
+            s"./x86_${fname}" #< inputStream #> outputStream !
+
+        val actualOutput = outputStream.toString().trim()
+
+        s"rm x86_${fname}.s" !
+
+        s"rm x86_${fname}.o" !
+
+        s"rm x86_${fname}" !
 
         (expectedOutput.split("\n") zip actualOutput.split("\n")).foreach {
             case (expectedAddrRegex(el, er), actualAddrRegex(al, _, ar)) if el == al && er == ar =>

@@ -7,7 +7,8 @@ import OptimisationFlag._
   */
 object transExpression {
     def apply(exprNode: ExprNode, stackFrame: StackFrame, assignRHS: Boolean = false, identString: String = "")(implicit
-        collector: WaccBuffer
+        collector: WaccBuffer,
+        repr: Representation
     ): Unit =
         exprNode match {
             /** IDENTIFIER */
@@ -83,40 +84,26 @@ object transExpression {
                 es.zipWithIndex.foreach {
                     case (e, idx) => {
                         transExpression(e, stackFrame)
+
                         collector.addStatement(
                           List(
-                            BranchLinkInstr(
-                              "p_check_array_bounds",
-                              Condition.AL
-                            ),
-                            AddInstr(r4, r4, ImmOffset(4), false)
+                            BranchLinkInstr("p_check_array_bounds", Condition.AL),
+                            AddInstr(r4, r4, ImmOffset(WORD_SIZE), false)
                           )
                         )
+
                         collector.addStatement(ae.typeId.get.getType() match {
                             case CharType() | BoolType() if idx == es.length - 1 =>
                                 List(
-                                  AddInstr(
-                                    r4,
-                                    r4,
-                                    RegOp(r0),
-                                    false
-                                  ),
-                                  LoadRegSignedByte(
-                                    r4,
-                                    r4,
-                                    ImmOffset(0)
-                                  )
+                                  AddInstr(r4, r4, RegOp(r0), false),
+                                  LoadRegSignedByte(r4, r4, ImmOffset(0))
                                 )
-                            case _ =>
+                            case _ => {
                                 List(
-                                  AddInstr(
-                                    r4,
-                                    r4,
-                                    LSLRegOp(r0, ShiftImm(2)),
-                                    false
-                                  ),
+                                  AddInstr(r4, r4, LSLRegOp(r0, ShiftImm(TYPE_SHIFT)), false),
                                   LoadInstr(r4, r4, ImmOffset(0))
                                 )
+                            }
                         })
                     }
                 }
@@ -147,12 +134,23 @@ object transExpression {
 
                 collector.insertUtil(PThrowOverflowError)
 
-                collector.addStatement(
-                  List(
-                    ReverseSubInstr(r0, r0, ImmOffset(0), true),
-                    BranchLinkInstr("p_throw_overflow_error", Condition.VS)
-                  )
-                )
+                repr match {
+                    case ARMRepresentation =>
+                        collector.addStatement(
+                          List(
+                            ReverseSubInstr(r0, r0, ImmOffset(0), true),
+                            BranchLinkInstr("p_throw_overflow_error", Condition.VS)
+                          )
+                        )
+                    case X86Representation =>
+                        collector.addStatement(
+                          List(
+                            MoveInstr(r1, RegOp(r0)),
+                            ReverseSubInstr(r0, r1, ImmOffset(0), true),
+                            BranchLinkInstr("p_throw_overflow_error", Condition.VS)
+                          )
+                        )
+                }
             }
             case Len(e) => {
                 transExpression(e, stackFrame)
@@ -332,14 +330,27 @@ object transExpression {
 
                 collector.insertUtil(PCheckDivideByZero)
 
-                collector.addStatement(
-                  List(
-                    MoveInstr(r1, RegOp(r0)),
-                    PopInstr(List(r0)),
-                    BranchLinkInstr("p_check_divide_by_zero"),
-                    BranchLinkInstr("__aeabi_idiv")
-                  )
-                )
+                repr match {
+                    case ARMRepresentation =>
+                        collector.addStatement(
+                          List(
+                            MoveInstr(r1, RegOp(r0)),
+                            PopInstr(List(r0)),
+                            BranchLinkInstr("p_check_divide_by_zero"),
+                            BranchLinkInstr("__aeabi_idiv")
+                          )
+                        )
+                    case X86Representation =>
+                        collector.addStatement(
+                          List(
+                            MoveInstr(r1, RegOp(r0)),
+                            PopInstr(List(r0)),
+                            BranchLinkInstr("p_check_divide_by_zero"),
+                            XorInstr(r2, r2, RegOp(r2)),
+                            SDivInstr(r1)
+                          )
+                        )
+                }
                 stackFrame.dropTempOffset(WORD_SIZE)
             }
             case Mod(e1, e2) => {
@@ -360,15 +371,29 @@ object transExpression {
 
                 collector.insertUtil(PCheckDivideByZero)
 
-                collector.addStatement(
-                  List(
-                    MoveInstr(r1, RegOp(r0)),
-                    PopInstr(List(r0)),
-                    BranchLinkInstr("p_check_divide_by_zero"),
-                    BranchLinkInstr("__aeabi_idivmod"),
-                    MoveInstr(r0, RegOp(r1))
-                  )
-                )
+                repr match {
+                    case ARMRepresentation =>
+                        collector.addStatement(
+                          List(
+                            MoveInstr(r1, RegOp(r0)),
+                            PopInstr(List(r0)),
+                            BranchLinkInstr("p_check_divide_by_zero"),
+                            BranchLinkInstr("__aeabi_idivmod"),
+                            MoveInstr(r0, RegOp(r1))
+                          )
+                        )
+                    case X86Representation =>
+                        collector.addStatement(
+                          List(
+                            MoveInstr(r1, RegOp(r0)),
+                            PopInstr(List(r0)),
+                            BranchLinkInstr("p_check_divide_by_zero"),
+                            XorInstr(r2, r2, RegOp(r2)),
+                            SDivInstr(r1),
+                            MoveInstr(r0, RegOp(r2))
+                          )
+                        )
+                }
                 stackFrame.dropTempOffset(WORD_SIZE)
             }
             case And(BoolLiterNode(x), BoolLiterNode(y)) if collector.optFlag == OptimisationFlag.Oph => {
@@ -576,24 +601,25 @@ object transExpression {
 
             case SCharAtNode(str, i) => {
                 collector.insertUtil(UtilFlag.PCheckStringBounds)
-                transExpression(str, stackFrame) 
+                transExpression(str, stackFrame)
                 stackFrame.addTempOffset(WORD_SIZE)
                 collector.addStatement(
-                    List(
-                        PushInstr(List(r0))
-                    )
+                  List(
+                    PushInstr(List(r0))
+                  )
                 )
-                transExpression(i, stackFrame) 
+                transExpression(i, stackFrame)
                 collector.addStatement(
-                    List(
-                        BranchLinkInstr("p_check_string_bounds", Condition.AL),
-                        PopInstr(List(r1)),
-                        AddInstr(r0, r0, ImmOffset(4)),
-                        LoadRegSignedByte(r0, r1, RegOp(r0))
-                    )
+                  List(
+                    BranchLinkInstr("p_check_string_bounds", Condition.AL),
+                    PopInstr(List(r1)),
+                    AddInstr(r0, r0, ImmOffset(4)),
+                    LoadRegSignedByte(r0, r1, RegOp(r0))
+                  )
                 )
                 stackFrame.dropTempOffset(WORD_SIZE)
             }
             case _ => List[Instruction]().empty
         }
+
 }

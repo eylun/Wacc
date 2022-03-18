@@ -8,7 +8,8 @@ import OptimisationFlag._
   */
 object transStatement {
     def apply(statList: StatNode, stackFrame: StackFrame)(implicit
-        collector: WaccBuffer
+        collector: WaccBuffer,
+        repr: Representation
     ): Unit = {
         val StatListNode(l) = statList
         l.foreach {
@@ -157,14 +158,7 @@ object transStatement {
 
                 /** Store instruction generated via determineStoreInstr() */
                 collector.addStatement(
-                  List(
-                    determineStoreInstr(
-                      t.typeId.get.getType(),
-                      r0,
-                      sp,
-                      stackFrame.getOffset(i.s)
-                    )
-                  )
+                  List(determineStoreInstr(t.typeId.get.getType(), r0, sp, stackFrame.getOffset(i.s)))
                 )
             }
             /** LR ASSIGNMENT STATEMENT: <Assign-LHS> '=' <Assign-RHS> */
@@ -333,6 +327,10 @@ object transStatement {
 
                 /** Evaluates expression and Branches */
                 transExpression(e, stackFrame)
+                repr match {
+                    case X86Representation => collector.addStatement(List(MoveInstr(r4, RegOp(r0))))
+                    case _                 =>
+                }
                 collector.addStatement(
                   List(
                     BranchLinkInstr("exit", Condition.AL)
@@ -362,6 +360,10 @@ object transStatement {
                 transExpression(e, stackFrame)
                 e.typeId.get.getType() match {
                     case ArrayType(_, _, _) => {
+                        repr match {
+                            case X86Representation => collector.addStatement(List(MoveInstr(r4, RegOp(r0))))
+                            case _                 =>
+                        }
                         collector.addStatement(
                           List(
                             BranchLinkInstr("free")
@@ -383,9 +385,16 @@ object transStatement {
             /** RETURN STATEMENT: ‘return’ ⟨expr ⟩ */
             case ReturnNode(e) => {
                 transExpression(e, stackFrame)
-                collector.addStatement(
-                  stackFrame.returnTail ++ List(PopInstr(List(pc)))
-                )
+                repr match {
+                    case ARMRepresentation =>
+                        collector.addStatement(
+                          stackFrame.returnTail ++ List(PopInstr(List(pc)))
+                        )
+                    case X86Representation =>
+                        collector.addStatement(
+                          stackFrame.returnTail ++ List(MoveInstr(sp, RegOp(lr)), PopInstr(List(pc)))
+                        )
+                }
             }
             /** READ STATEMENT: ‘read’ ⟨assign-lhs⟩ */
             case ReadNode(l) => {
@@ -427,38 +436,21 @@ object transStatement {
                 l.typeId.get.getType() match {
                     case CharType() => {
                         collector.insertUtil(UtilFlag.PReadChar)
-                        collector.addStatement(
-                          List(
-                            BranchLinkInstr("p_read_char")
-                          )
-                        )
+                        collector.addStatement(List(BranchLinkInstr("p_read_char")))
                     }
-
                     case IntType() => {
                         collector.insertUtil(UtilFlag.PReadInt)
-                        collector.addStatement(
-                          List(
-                            BranchLinkInstr("p_read_int")
-                          )
-                        )
+                        collector.addStatement(List(BranchLinkInstr("p_read_int")))
                     }
-
-                    case _ =>
-                        throw new RuntimeException(
-                          "Invalid Target Type for Read Statement"
-                        )
+                    case _ => throw new RuntimeException("Invalid Target Type for Read Statement")
                 }
-
             }
-            case StatListNode(_) =>
-                throw new RuntimeException("Invalid Statement List Node")
+            case StatListNode(_) => throw new RuntimeException("Invalid Statement List Node")
         }
     }
 
     /** Helper function for print and println. */
-    def printExpr(e: ExprNode, stackFrame: StackFrame)(implicit
-        collector: WaccBuffer
-    ): Unit = {
+    def printExpr(e: ExprNode, stackFrame: StackFrame)(implicit collector: WaccBuffer, repr: Representation): Unit = {
 
         /** Evaluate the expression node */
         transExpression(e, stackFrame)
@@ -490,6 +482,10 @@ object transStatement {
                 )
             }
             case CharLiterNode(_) | Chr(_) | SCharAtNode(_, _) => {
+                repr match {
+                    case X86Representation => collector.addStatement(List(MoveInstr(r4, RegOp(r0))))
+                    case _                 =>
+                }
                 collector.addStatement(
                   List(BranchLinkInstr("putchar"))
                 )
@@ -528,6 +524,7 @@ object transStatement {
                   */
                 determinePrintType(nodeType)
             }
+
             case ArrayElemNode(IdentNode(s), es) => {
 
                 /** Get array type and dimension. */
@@ -560,7 +557,7 @@ object transStatement {
 
     /** Given a type, it generates the appropriate instruction sequence and corresponding branch instruction
       */
-    def determinePrintType(nodeType: Type)(implicit collector: WaccBuffer) = {
+    def determinePrintType(nodeType: Type)(implicit collector: WaccBuffer, repr: Representation) = {
         nodeType match {
             case IntType() => {
                 collector.insertUtil(UtilFlag.PPrintInt)
@@ -579,6 +576,10 @@ object transStatement {
                 )
             }
             case CharType() => {
+                repr match {
+                    case X86Representation => collector.addStatement(List(MoveInstr(r4, RegOp(r0))))
+                    case _                 =>
+                }
                 collector.addStatement(
                   List(BranchLinkInstr("putchar"))
                 )

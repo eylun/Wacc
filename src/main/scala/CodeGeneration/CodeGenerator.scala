@@ -3,9 +3,8 @@ import OptimisationFlag._
 import PeepholeOptimisation._
 
 object CodeGenerator {
-    def apply(progNode: ProgramNode, st: SymbolTable)(implicit
-        collector: WaccBuffer
-    ): List[Instruction] = {
+    def apply(progNode: ProgramNode, st: SymbolTable)
+        (implicit collector: WaccBuffer, repr: Representation): List[Instruction] = {
 
         /** Creates the top level stack frame */
         val mainStackFrame = StackFrame(st)
@@ -18,7 +17,15 @@ object CodeGenerator {
 
         /** Add label for "main" instruction sequence and push link register onto stack
           */
-        collector.addStatement(List(Label("main"), PushInstr(List(lr))))
+
+        repr match {
+            case ARMRepresentation => collector.addStatement(List(Label("main"), PushInstr(List(lr))))
+            case X86Representation => collector.addStatement(List(
+                    Label("_start"), 
+                    PushInstr(List(lr)), 
+                    MoveInstr(lr, RegOp(sp))
+                ))
+        }
 
         /** Add instructions to decrement stack pointer */
         collector.addStatement(mainStackFrame.head)
@@ -30,7 +37,7 @@ object CodeGenerator {
         collector.addStatement(mainStackFrame.tail)
 
         collector.addStatement(
-          List(MoveInstr(Reg(0), ImmOffset(0)), PopInstr(List(pc)))
+          List(MoveInstr(r0, ImmOffset(0)), PopInstr(List(pc)))
         )
 
         /** Execute optimisation function(s) if flag is set */

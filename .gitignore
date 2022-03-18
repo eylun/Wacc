@@ -57,10 +57,12 @@ bin/
 #general
 *.class
 
-# generated assembly files
+# generated assembly files & test programs
+*.o
 *.s
 nonsense.*
 nonsense
+*.wacc
 
 # generated expected and actual directories from testing
 expected
