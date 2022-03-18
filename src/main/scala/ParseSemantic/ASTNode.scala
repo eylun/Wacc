@@ -38,13 +38,17 @@ case class ProgramNode(imps: List[ImportNode], flist: List[FuncNode], s: StatNod
         ImportNode("stdLib/stringFuncs.wacc")(0,0),
         ImportNode("stdLib/mathFuncs.wacc")(0,0)
         ) 
+    var importedFiles: Set[String] = Set()
 
     def updatedNode(): ProgramNode = {
         ProgramNode(imps, funcList, s)(0,0)
     } 
+
+    def updateImportedFiles(files: Set[String]): Unit = {
+        this.importedFiles = files
+    }
     def check(st: SymbolTable, errors: ListBuffer[WaccError]): Unit = {
 
-        var importedFiles: Set[String] = Set()
         val impList: List[ImportNode] = stdLib ++ imps 
         impList.foreach {
             case imp @ ImportNode(fn) => {
@@ -141,6 +145,7 @@ case class ImportNode(fn: String)(val pos: (Int, Int)) extends ASTNode {
     def getFuncs(st: SymbolTable, impSet: Set[String]): List[FuncNode] = {
         var importedSet: Set[String] = impSet
         val importFile = new File(fn)
+        var funclist: List[FuncNode] = List()
          /** Parse the given .wacc file */
         val parseResult = syntax.parse.parseFromFile(importFile).get
         parseResult match {
@@ -149,27 +154,31 @@ case class ImportNode(fn: String)(val pos: (Int, Int)) extends ASTNode {
                 var impsToProcess: List[ImportNode] = List()
                 imps.foreach{
                     case imp@ImportNode(fn) => {
-                        if (!impSet.contains(fn)) {
+                        if (!importedSet.contains(fn)) {
                             impsToProcess = imp :: impsToProcess
                             importedSet += fn
+                            funclist = funclist ::: imp.getFuncs(st, importedSet)
+                            
+
                         }
                     }
                 }
-                val funclist: List[FuncNode] = impsToProcess.flatMap(imp => imp.getFuncs(st, impSet))
+                // val funclist: List[FuncNode] = impsToProcess.flatMap(imp => imp.getFuncs(st, impSet))
                 val errorLog = ListBuffer[WaccError]()
                 /** checks the correctness of import file body */
                 stdLibFiles.contains(fn) match {
                     /* if a standard library file, no need to call check */
-                    case false => result.check(SymbolTable(), errorLog)
+                    case false =>  {result.updateImportedFiles(importedSet)
+                                    result.check(SymbolTable(), errorLog)
+                                }
                     case _ => 
                 }
                 if (errorLog.length == 0) {
-                    // println("adding functions")
                     funclist ++ flist
                 } else {
                     /** SEMANTIC ERROR */
                     errorLog.foreach(e => e.render())
-                    null
+                    List()
                 }
 
             case Failure(err) =>
